@@ -25,13 +25,22 @@ export interface ConflictRow {
  * The Conflicts dialog (MultipleFileMergeDialog) and the 3-way merge in VS Code's merge editor.
  */
 export class ConflictsController {
-  /** Files open in the merge editor; staged when saved without conflict markers. */
-  private readonly pending = new Map<string, { root: string; path: string }>();
+  /**
+   * Files open in the merge editor, with the file content when the editor was opened. A file is marked
+   * as resolved (staged) when its merge editor is closed and the saved result changed and has no
+   * conflict markers. Saving alone does not resolve it: VS Code's result can still hold unhandled conflicts.
+   */
+  private readonly pending = new Map<string, { root: string; path: string; initial: string }>();
   private dialog: WebviewConnection | undefined;
 
   constructor(private readonly ctx: Ctx) {
     ctx.extension.subscriptions.push(
-      vscode.workspace.onDidSaveTextDocument(doc => this.onSaved(doc)),
+      vscode.window.tabGroups.onDidChangeTabs(e => {
+        for (const tab of e.closed) {
+          const result = mergeResult(tab.input);
+          if (result) void this.onMergeEditorClosed(result);
+        }
+      }),
       ctx.repos.onDidChangeRepository(() => this.pushRows()),
     );
   }
@@ -176,7 +185,13 @@ export class ConflictsController {
     const rev = this.reversed(repo);
     const d = this.description();
     const file = vscode.Uri.file(path.join(c.root, c.path));
-    this.pending.set(file.fsPath, { root: c.root, path: c.path });
+    let initial = '';
+    try {
+      initial = fs.readFileSync(file.fsPath, 'utf8');
+    } catch {
+      // Deleted on one side: there is no work tree file yet.
+    }
+    this.pending.set(file.fsPath, { root: c.root, path: c.path, initial });
     const yoursStage = rev ? ':3' : ':2';
     const theirsStage = rev ? ':2' : ':3';
     try {
@@ -192,15 +207,37 @@ export class ConflictsController {
     }
   }
 
-  private async onSaved(doc: vscode.TextDocument) {
-    const p = this.pending.get(doc.uri.fsPath);
+  private async onMergeEditorClosed(result: vscode.Uri) {
+    const p = this.pending.get(result.fsPath);
     if (!p) return;
-    const text = doc.getText();
-    if (/^(<{7}|>{7})( |$)/m.test(text)) return;
-    this.pending.delete(doc.uri.fsPath);
+    // Another merge editor for the same file may still be open.
+    const stillOpen = vscode.window.tabGroups.all.some(g =>
+      g.tabs.some(t => mergeResult(t.input)?.fsPath === result.fsPath),
+    );
+    if (stillOpen) return;
+    this.pending.delete(result.fsPath);
+    const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === result.fsPath);
+    if (doc?.isDirty) return; // Closed without saving: the file stays in conflict.
+    let text: string;
+    try {
+      text = fs.readFileSync(result.fsPath, 'utf8');
+    } catch {
+      return;
+    }
+    if (text === p.initial || /^(<{7}|>{7})( |$)/m.test(text)) return;
     const repo = this.ctx.repos.get(p.root);
-    if (!repo) return;
+    if (!repo || !repo.status.conflicts.some(c => c.path === p.path)) return;
     await repo.batch(() => addFiles(repo, [p.path], true));
-    void notifySuccess('Conflict resolved', p.path);
+    void notifySuccess('Conflict resolved', p.path, {
+      label: 'Undo',
+      // Restores the conflicted state (git checkout -m), like Revert Resolved.
+      run: () => repo.batch(() => repo.exec(['checkout', '-m', '--', p.path])),
+    });
   }
+}
+
+/** Result file of a merge editor tab. The tab input type (TabInputTextMerge) is not in the minimum supported API. */
+function mergeResult(input: unknown): vscode.Uri | undefined {
+  const i = input as { base?: unknown; input1?: unknown; input2?: unknown; result?: unknown } | undefined;
+  return i && i.base instanceof vscode.Uri && i.input1 instanceof vscode.Uri && i.result instanceof vscode.Uri ? i.result : undefined;
 }
