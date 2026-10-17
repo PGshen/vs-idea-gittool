@@ -1,0 +1,289 @@
+import { useMemo, useState } from 'preact/hooks';
+import type { Ref } from '../../shared/types';
+import { ActionButton, Toolbar, Tree, TreeNode } from '../lib/components';
+import { Icon } from '../lib/icons';
+import { anchorAt, MenuEntry, showMenu } from '../lib/menu';
+import { call, persist, persisted, send } from '../lib/rpc';
+import { refActions } from './menus';
+import { RefIcon } from './refs';
+import { store, useStore } from './store';
+
+type Node = TreeNode<{ ref?: Ref; group?: string }>;
+
+function groupByDirectory(refs: Ref[], prefix: string, nameOf: (r: Ref) => string, makeLeaf: (r: Ref, label: string) => Node, enabled: boolean): Node[] {
+  if (!enabled) return refs.map(r => makeLeaf(r, nameOf(r)));
+  interface Dir {
+    dirs: Map<string, Dir>;
+    leaves: { r: Ref; label: string }[];
+  }
+  const root: Dir = { dirs: new Map(), leaves: [] };
+  for (const r of refs) {
+    const parts = nameOf(r).split('/');
+    let d = root;
+    for (const p of parts.slice(0, -1)) {
+      let n = d.dirs.get(p);
+      if (!n) d.dirs.set(p, (n = { dirs: new Map(), leaves: [] }));
+      d = n;
+    }
+    d.leaves.push({ r, label: parts[parts.length - 1] });
+  }
+  const toNodes = (d: Dir, path: string): Node[] => [
+    ...[...d.dirs.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([name, sub]) => ({ key: `${prefix}/${path}${name}`, label: name, text: name, icon: 'nodes/folder', children: toNodes(sub, `${path}${name}/`), data: { group: `${path}${name}` } })),
+    ...d.leaves.map(l => makeLeaf(l.r, l.label)),
+  ];
+  return toNodes(root, '');
+}
+
+function branchSort(a: Ref, b: Ref) {
+  if (a.current !== b.current) return a.current ? -1 : 1;
+  if (!!a.favorite !== !!b.favorite) return a.favorite ? -1 : 1;
+  return a.name.localeCompare(b.name);
+}
+
+/** Branches pane of the Git log (BranchesDashboardTreeComponent). */
+export function BranchesPanel({ onHide }: { onHide: () => void }) {
+  const s = useStore();
+  const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(persisted<string[]>('branchesExpanded', ['local', 'remote', 'head'])));
+  const [selection, setSelection] = useState<Set<string>>(new Set());
+  const settings = s.settings;
+  const current = s.currentBranch;
+
+  const nodes = useMemo(() => {
+    const q = search.toLowerCase();
+    const match = (r: Ref) => !q || r.name.toLowerCase().includes(q);
+    const leaf = (r: Ref, label: string): Node => {
+      const kinds = r.current ? (['head'] as const) : r.type === 'remote' ? (['remote'] as const) : r.type === 'tag' ? (['tag'] as const) : (['local'] as const);
+      return {
+        key: `ref:${r.fullName}`,
+        label,
+        text: r.name,
+        prefix: (
+          <span
+            class="star"
+            data-tip={r.favorite ? 'Remove from Favorites' : 'Add to Favorites'}
+            onClick={e => {
+              e.stopPropagation();
+              send('branchAction', { id: 'toggleFavorite', name: r.name, type: r.type });
+            }}
+          >
+            {r.favorite ? <Icon name="nodes/star" /> : r.type !== 'tag' ? <RefIcon kinds={[...kinds]} /> : <Icon name="nodes/tag" />}
+          </span>
+        ),
+        hint: (
+          <>
+            {r.ahead || r.behind ? (
+              <span class="ab-counts">
+                {r.behind ? <span data-tip={`${r.behind} incoming commits`}>↓{r.behind}</span> : null}
+                {r.ahead ? <span data-tip={`${r.ahead} outgoing commits`}>↑{r.ahead}</span> : null}
+              </span>
+            ) : null}
+            {r.upstream && <span class="secondary" style={{ marginLeft: '6px' }}>{r.upstream}</span>}
+          </>
+        ),
+        bold: r.current,
+        data: { ref: r },
+        tip: r.upstream ? `${r.name} → ${r.upstream}` : r.name,
+      };
+    };
+    const locals = s.refs.filter(r => r.type === 'local' && match(r)).sort(branchSort);
+    const remotes = s.refs.filter(r => r.type === 'remote' && match(r)).sort(branchSort);
+    const tags = s.refs.filter(r => r.type === 'tag' && match(r)).sort((a, b) => a.name.localeCompare(b.name));
+    const out: Node[] = [];
+    const headLabel = current ? `HEAD (Current Branch)` : `HEAD (detached at ${s.head.hash?.slice(0, 8) ?? ''})`;
+    if (!q || 'head'.includes(q)) out.push({ key: 'head', label: headLabel, text: 'HEAD', prefix: <RefIcon kinds={['head']} />, data: {} });
+    out.push({ key: 'local', label: 'Local', text: 'Local', icon: 'nodes/folder', children: groupByDirectory(locals, 'local', r => r.name, leaf, settings.branchesGroupByDirectory), data: { group: 'local' } });
+    const byRemote = new Map<string, Ref[]>();
+    for (const r of remotes) byRemote.set(r.remote ?? '', [...(byRemote.get(r.remote ?? '') ?? []), r]);
+    if (byRemote.size || (!q && s.refs.some(r => r.type === 'remote'))) out.push({
+      key: 'remote',
+      label: 'Remote',
+      text: 'Remote',
+      icon: 'nodes/folder',
+      data: { group: 'remote' },
+      children: [...byRemote.entries()].map(([remote, refs]) => ({
+        key: `remote/${remote}`,
+        label: remote,
+        text: remote,
+        icon: 'nodes/folder',
+        data: { group: remote },
+        children: groupByDirectory(refs, `remote/${remote}`, r => r.name.slice(remote.length + 1), leaf, settings.branchesGroupByDirectory),
+      })),
+    });
+    if (settings.branchesShowTags) out.push({ key: 'tags', label: 'Tags', text: 'Tags', icon: 'nodes/folder', data: { group: 'tags' }, children: tags.map(t => leaf(t, t.name)) });
+    return out;
+  }, [s.refs, search, settings.branchesGroupByDirectory, settings.branchesShowTags, current, s.head.hash]);
+
+  const effectiveExpanded = useMemo(() => {
+    if (!search) return expanded;
+    const all = new Set<string>();
+    const walk = (ns: Node[]) => ns.forEach(n => n.children && (all.add(n.key), walk(n.children)));
+    walk(nodes);
+    return all;
+  }, [search, expanded, nodes]);
+
+  const selectedRefs = (): Ref[] => {
+    const out: Ref[] = [];
+    const walk = (ns: Node[]) =>
+      ns.forEach(n => {
+        if (selection.has(n.key) && n.data?.ref) out.push(n.data.ref);
+        if (n.children) walk(n.children);
+      });
+    walk(nodes);
+    return out;
+  };
+
+  const filterBy = (n: Node) => {
+    if (n.key === 'head') return void store.setFilters({ ...store.filters, branches: ['HEAD'] });
+    const r = n.data?.ref;
+    if (r) void store.setFilters({ ...store.filters, branches: [r.name] });
+    else if (n.data?.group && n.children) {
+      const names: string[] = [];
+      const walk = (ns: Node[]) => ns.forEach(c => (c.data?.ref ? names.push(c.data.ref.name) : c.children && walk(c.children)));
+      walk(n.children);
+      if (names.length) void store.setFilters({ ...store.filters, branches: names });
+    }
+  };
+
+  const navigate = (n: Node) => {
+    const hash = n.key === 'head' ? store.head.hash : n.data?.ref?.hash;
+    if (!hash) return;
+    const i = store.indexOfHash(hash);
+    if (i >= 0) void store.selectIndex(i);
+    else void call<{ index: number; hash: string } | undefined>('find', hash).then(r => r && store.selectIndex(r.index, { hash: r.hash }));
+  };
+
+  const settingsMenu = (): MenuEntry[] => [
+    { separator: true, label: 'On Single Click' },
+    { label: 'Update Branch Filter', checked: settings.branchesSingleClickFilter, action: () => store.updateSettings({ branchesSingleClickFilter: true, branchesSingleClickNavigate: false }) },
+    { label: 'Navigate Log to Branch Head', checked: settings.branchesSingleClickNavigate, action: () => store.updateSettings({ branchesSingleClickNavigate: true, branchesSingleClickFilter: false }) },
+    { separator: true },
+    { label: 'Group by Directory', icon: 'actions/groupByPackage', checked: settings.branchesGroupByDirectory, action: () => store.updateSettings({ branchesGroupByDirectory: !settings.branchesGroupByDirectory }) },
+    { label: 'Group by Repository', checked: false, disabled: store.init.repos.length < 2 },
+    { label: 'Show Tags', checked: settings.branchesShowTags, action: () => store.updateSettings({ branchesShowTags: !settings.branchesShowTags }) },
+  ];
+
+  const sel = selectedRefs();
+  const one = sel.length === 1 ? sel[0] : undefined;
+  return (
+    <div class="branches-panel">
+      <Toolbar vertical class="branches-toolbar">
+        <ActionButton icon="general/chevronLeft" tip="Hide Git Branches" onClick={onHide} />
+        <span class="toolbar-separator" style={{ width: '18px', height: '1px', margin: '4px 0' }} />
+        <ActionButton icon="general/add" tip="New Branch" shortcut="Ctrl+Alt+N" onClick={() => send('command', { id: 'rebased.createBranch', args: { root: store.root, startPoint: one?.name } })} />
+        <ActionButton
+          icon="vcs/update"
+          tip="Update Selected"
+          disabled={!sel.some(r => r.type === 'local')}
+          onClick={() => sel.filter(r => r.type === 'local').forEach(r => send('branchAction', { id: 'update', name: r.name, type: r.type }))}
+        />
+        <ActionButton icon="general/delete" tip={sel.length > 1 ? 'Delete Branches' : 'Delete Branch'} disabled={!sel.length || sel.some(r => r.current)} onClick={() => sel.forEach(r => send('branchAction', { id: 'delete', name: r.name, type: r.type }))} />
+        <ActionButton icon="vcs/diff" tip="Compare with Current" shortcut="Ctrl+D" disabled={!one || one.current} onClick={() => one && send('branchAction', { id: 'compare', name: one.name, type: one.type })} />
+        <ActionButton icon="vcs/fetch" tip="Fetch" onClick={() => send('command', { id: 'rebased.fetch', args: { root: store.root } })} />
+        <ActionButton icon="nodes/star" tip="Mark/Unmark As Favorite" disabled={!sel.length || sel.some(r => r.type === 'tag')} onClick={() => sel.forEach(r => send('branchAction', { id: 'toggleFavorite', name: r.name, type: r.type }))} />
+        <ActionButton
+          icon="general/locate"
+          tip="Navigate Log to Selected Branch Head"
+          disabled={!one && !selection.has('head')}
+          onClick={() => {
+            const n = findNode(nodes, [...selection][0]);
+            if (n) navigate(n);
+          }}
+        />
+        <span class="toolbar-separator" style={{ width: '18px', height: '1px', margin: '4px 0' }} />
+        <ActionButton icon="general/settings" tip="Branches Pane Settings" menu={settingsMenu} />
+        <ActionButton icon="general/expandAll" tip="Expand All" onClick={() => {
+          const all = new Set<string>();
+          const walk = (ns: Node[]) => ns.forEach(n => n.children && (all.add(n.key), walk(n.children)));
+          walk(nodes);
+          setExpanded(all);
+        }} />
+        <ActionButton icon="general/collapseAll" tip="Collapse All" onClick={() => setExpanded(new Set())} />
+      </Toolbar>
+      <div class="branches-body">
+        <div class="branches-search">
+          <div class="search-field">
+            <Icon name="general/search" />
+            <input placeholder="Search" value={search} onInput={e => setSearch((e.currentTarget as HTMLInputElement).value)} onKeyDown={e => e.key === 'Escape' && setSearch('')} />
+          </div>
+        </div>
+        <Tree<{ ref?: Ref; group?: string }>
+          nodes={nodes}
+          expanded={effectiveExpanded}
+          onExpandedChange={e => {
+            setExpanded(e);
+            persist('branchesExpanded', [...e]);
+          }}
+          selection={selection}
+          onSelectionChange={(sel2, lead) => {
+            setSelection(sel2);
+            if (lead && sel2.size === 1) {
+              if (settings.branchesSingleClickFilter) filterBy(lead);
+              else if (settings.branchesSingleClickNavigate) navigate(lead);
+            }
+          }}
+          onOpen={n => filterBy(n)}
+          onKeyDown={(e, selected) => {
+            const r = selected[0]?.data?.ref;
+            if (e.key === 'Delete' && r) {
+              send('branchAction', { id: 'delete', name: r.name, type: r.type });
+              return true;
+            }
+            if (e.key === 'F2' && r?.type === 'local') {
+              send('branchAction', { id: 'rename', name: r.name, type: r.type });
+              return true;
+            }
+          }}
+          onContextMenu={(e, selected) => {
+            const r = selected[0]?.data?.ref;
+            if (r && selected.length === 1) {
+              showMenu([{ label: 'Update Branch Filter', action: () => filterBy(selected[0]) }, { label: 'Navigate Log to Branch Head', icon: 'general/locate', action: () => navigate(selected[0]) }, { separator: true }, ...refActions(r, current)], anchorAt(e));
+            } else if (selected.length > 1) {
+              const refs = selected.map(n => n.data?.ref).filter((x): x is Ref => !!x);
+              const withHead = selected.some(n => n.key === 'head');
+              const pair = withHead && refs.length === 1 ? { ref: refs[0].name, with: current ?? 'HEAD' } : refs.length === 2 ? { ref: refs[0].name, with: refs[1].name } : undefined;
+              showMenu(
+                [
+                  { label: 'Update Branch Filter', action: () => void store.setFilters({ ...store.filters, branches: refs.map(x => x.name) }) },
+                  { separator: true },
+                  { label: 'Compare Branches', disabled: !pair, action: () => pair && send('command', { id: 'rebased.compareRefs', args: { root: store.root, ...pair } }) },
+                  { label: 'Show Files Diff', disabled: !pair, action: () => pair && send('command', { id: 'rebased.compareRefs.files', args: { root: store.root, ...pair } }) },
+                  { label: 'Update Selected', icon: 'vcs/update', disabled: !refs.some(x => x.type === 'local'), action: () => refs.filter(x => x.type === 'local').forEach(x => send('branchAction', { id: 'update', name: x.name, type: x.type })) },
+                  { label: 'Delete Branches', icon: 'general/delete', action: () => refs.filter(x => !x.current).forEach(x => send('branchAction', { id: 'delete', name: x.name, type: x.type })) },
+                ],
+                anchorAt(e),
+              );
+            } else if (selected[0]?.key === 'remote') {
+              showMenu([{ label: 'Manage Remotes…', action: () => send('command', { id: 'rebased.remotes', args: { root: store.root } }) }], anchorAt(e));
+            } else if (selected[0]?.key.startsWith('remote/') && !selected[0].key.slice(7).includes('/')) {
+              showMenu(
+                [
+                  { label: 'Update Branch Filter', action: () => filterBy(selected[0]) },
+                  { separator: true },
+                  { label: 'Edit Remote…', action: () => send('command', { id: 'rebased.remotes', args: { root: store.root } }) },
+                  { label: 'Remove Remote', action: () => send('command', { id: 'rebased.remotes', args: { root: store.root } }) },
+                ],
+                anchorAt(e),
+              );
+            } else if (selected[0]?.key === 'head') {
+              showMenu([{ label: 'Update Branch Filter', action: () => filterBy(selected[0]) }, { label: 'New Branch…', action: () => send('command', { id: 'rebased.createBranch', args: { root: store.root } }) }], anchorAt(e));
+            }
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function findNode(nodes: Node[], key: string): Node | undefined {
+  for (const n of nodes) {
+    if (n.key === key) return n;
+    if (n.children) {
+      const f = findNode(n.children, key);
+      if (f) return f;
+    }
+  }
+  return undefined;
+}

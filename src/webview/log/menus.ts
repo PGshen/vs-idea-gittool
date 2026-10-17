@@ -1,0 +1,253 @@
+import type { ContextInfo } from '../../shared/logProtocol';
+import type { Change, Ref } from '../../shared/types';
+import { Anchor, MenuEntry, showMenu } from '../lib/menu';
+import { call, send } from '../lib/rpc';
+import { store } from './store';
+import { goToRelative } from './table';
+
+export function runCommitAction(id: string, arg?: string) {
+  const hashes = store.selectedRows().map(r => r.h);
+  if (!hashes.length) return;
+  send('commitAction', { id, hashes, arg });
+}
+
+const short = (h: string) => h.slice(0, 8);
+
+/** Vcs.Log.ContextMenu + Git.Log.ContextMenu. */
+export async function commitMenu(anchor: Anchor) {
+  const rows = store.selectedRows();
+  if (!rows.length) return;
+  const hashes = rows.map(r => r.h);
+  const info = await call<ContextInfo>('contextInfo', hashes);
+  const one = rows.length === 1;
+  const current = store.currentBranch;
+  const editable = info.inHead && info.operation === 'none';
+  const noMergesEditable = editable && !info.hasMerges;
+  const a = (id: string, arg?: string) => () => runCommitAction(id, arg);
+
+  const checkout: MenuEntry[] = [];
+  if (one) {
+    const branchRefs = info.refs.filter(r => r.type === 'local' || r.type === 'remote');
+    for (const r of branchRefs) checkout.push({ label: r.name, icon: r.type === 'local' ? 'general/vcs' : undefined, disabled: r.current, action: a('checkoutBranch', r.name) });
+    if (branchRefs.length) checkout.push({ separator: true });
+    checkout.push({ label: `Revision '${short(hashes[0])}'`, action: a('checkoutRevision') });
+  }
+  const checkoutEntry: MenuEntry =
+    checkout.length === 1 ? { label: `Checkout Revision '${short(hashes[0])}'`, action: a('checkoutRevision') } : { label: 'Checkout', disabled: !one, children: checkout };
+
+  const branchGroups: MenuEntry[] = info.refs
+    .filter(r => r.type !== 'stash')
+    .map(r => ({ label: `${r.type === 'tag' ? 'Tag' : 'Branch'} '${r.name}'`, children: refActions(r, current) }));
+
+  const entries: MenuEntry[] = [
+    { label: 'Copy Revision Number', icon: 'general/copy', shortcut: 'Ctrl+C', action: a('copy') },
+    { label: 'Create Patch…', icon: 'vcs/patch', action: a('createPatch') },
+    { label: 'Cherry-Pick', icon: 'dvcs/cherryPick', disabled: info.operation !== 'none', action: a('cherryPick') },
+    { separator: true },
+    one ? checkoutEntry : { label: 'Checkout', disabled: true },
+    { label: 'Show Repository at Revision', disabled: !one, action: a('showRepositoryAtRevision') },
+    { label: 'Compare Versions', icon: 'vcs/diff', disabled: rows.length !== 2, action: a('compareVersions') },
+    { label: 'Compare with Local', disabled: !one, action: a('compareWithLocal') },
+    { separator: true },
+    { label: 'Reset Current Branch to Here…', icon: 'vcs/revert', disabled: !one || store.head.detached && !store.head.hash, action: a('reset') },
+    { label: rows.length > 1 ? 'Revert Commits' : 'Revert Commit', disabled: info.operation !== 'none', action: a('revert') },
+    { label: 'Undo Commit…', disabled: !editable || !noMergesEditable, action: a('undo') },
+    { separator: true },
+    { label: 'Edit Commit Message…', shortcut: 'F2', disabled: !one || !editable, action: a('reword') },
+    { label: 'Fixup…', disabled: !one || !noMergesEditable, action: a('fixup') },
+    { label: 'Squash Into…', disabled: !one || !noMergesEditable, action: a('squashInto') },
+    { label: rows.length > 1 ? 'Drop Commits' : 'Drop Commit', disabled: !noMergesEditable, action: a('drop') },
+    { label: 'Squash Commits…', disabled: rows.length < 2 || !noMergesEditable, action: a('squash') },
+    { label: 'Interactively Rebase from Here…', disabled: !one || !noMergesEditable, action: a('interactiveRebase') },
+    { label: 'Push All up to Here…', disabled: !one || !info.inHead || store.head.detached, action: a('pushUpTo') },
+    { separator: true },
+    ...branchGroups,
+    { label: 'New Branch…', disabled: !one, action: a('newBranch') },
+    { label: 'New Tag…', disabled: !one, action: a('newTag') },
+    { separator: true },
+    { label: 'Go to Child Commit', shortcut: '←', disabled: !one, action: () => void goToRelative('child') },
+    { label: 'Go to Parent Commit', shortcut: '→', disabled: !one, action: () => void goToRelative('parent') },
+  ];
+  if (info.webUrl) {
+    const host = /github/.test(info.webUrl) ? 'GitHub' : /gitlab/.test(info.webUrl) ? 'GitLab' : /bitbucket/.test(info.webUrl) ? 'Bitbucket' : 'Browser';
+    entries.push({ separator: true }, { label: host === 'Browser' ? 'Open in Browser' : `Open on ${host}`, icon: host === 'GitHub' ? 'vcs/github' : 'toolwindows/web', action: () => send('openUrl', info.webUrl) });
+  }
+  showMenu(store.init.mode === 'history' ? historyMenu(info, rows.length) : entries, anchor);
+}
+
+/** Vcs.FileHistory.ContextMenu */
+function historyMenu(info: ContextInfo, count: number): MenuEntry[] {
+  const one = count === 1;
+  const a = (id: string) => () => runCommitAction(id);
+  const editable = info.inHead && info.operation === 'none' && !info.hasMerges;
+  const entries: MenuEntry[] = [
+    { label: 'Copy Revision Number', icon: 'general/copy', shortcut: 'Ctrl+C', action: a('copy') },
+    { label: 'Create Patch…', icon: 'vcs/patch', action: a('createPatch') },
+    { label: 'Cherry-Pick', icon: 'dvcs/cherryPick', disabled: info.operation !== 'none', action: a('cherryPick') },
+    { separator: true },
+    { label: 'Get', icon: 'general/download', disabled: !one, action: a('historyGet') },
+    { label: 'Show File at Revision', disabled: !one, action: a('historyShowFile') },
+    { label: 'Compare with Local', disabled: !one, action: a('historyCompareWithLocal') },
+    { label: 'Show Diff', icon: 'vcs/diff', shortcut: 'Ctrl+D', action: a('historyDiff') },
+    { label: 'Show All Affected Files', icon: 'vcs/changes', shortcut: 'Alt+Shift+A', disabled: !one, action: a('showDiff') },
+    { label: 'Annotate', icon: 'general/listFiles', disabled: !one, action: a('historyAnnotate') },
+    { label: 'Show in VCS Log', icon: 'toolwindows/vcs', disabled: !one, action: a('showInLog') },
+    { label: count > 1 ? 'Revert Commits' : 'Revert Commit', disabled: info.operation !== 'none', action: a('revert') },
+    { label: 'Fixup…', disabled: !one || !editable, action: a('fixup') },
+    { label: 'Squash Into…', disabled: !one || !editable, action: a('squashInto') },
+    { separator: true },
+    { label: 'New Tag…', disabled: !one, action: a('newTag') },
+  ];
+  if (info.webUrl) entries.push({ separator: true }, { label: 'Open on GitHub', action: () => send('openUrl', info.webUrl) });
+  return entries;
+}
+
+/** Actions of a branch / tag node (Git.Branch.Backend + branches popup), with IntelliJ texts. */
+export function refActions(r: Ref, current: string | undefined): MenuEntry[] {
+  const cur = current ?? 'HEAD';
+  const act = (id: string) => () => send('branchAction', { id, name: r.name, type: r.type });
+  if (r.type === 'tag') {
+    return [
+      { label: 'Checkout', action: act('checkout') },
+      { label: `New Branch from '${r.name}'…`, action: () => send('command', { id: 'rebased.createBranch', args: { root: store.root, startPoint: r.name } }) },
+      { separator: true },
+      { label: `Compare with '${cur}'`, action: () => send('command', { id: 'rebased.compareRefs', args: { root: store.root, ref: r.name, with: cur } }) },
+      { label: 'Show Diff with Working Tree', action: () => send('command', { id: 'rebased.branch.showDiffWithWorkingTree', args: { root: store.root, name: r.name, type: 'tag' } }) },
+      { separator: true },
+      { label: `Merge '${r.name}' into '${cur}'`, action: act('mergeIntoCurrent') },
+      { separator: true },
+      { label: 'Push Tag…', action: act('push') },
+      { separator: true },
+      { label: 'Delete', icon: 'general/delete', action: act('delete') },
+    ];
+  }
+  const isCurrent = r.type === 'local' && r.name === current;
+  if (isCurrent) {
+    return [
+      { label: `New Branch from '${r.name}'…`, action: act('newBranchFrom') },
+      { separator: true },
+      { label: 'Update', icon: 'vcs/update', action: act('update') },
+      { label: 'Push…', icon: 'vcs/push', shortcut: 'Ctrl+Shift+K', action: act('push') },
+      { label: 'Tracked Branch…', action: act('trackRemote') },
+      { separator: true },
+      { label: 'Rename…', shortcut: 'F2', action: act('rename') },
+      { separator: true },
+      { label: r.favorite ? 'Remove from Favorites' : 'Add to Favorites', icon: r.favorite ? 'nodes/star' : 'nodes/starEmpty', action: act('toggleFavorite') },
+    ];
+  }
+  const entries: MenuEntry[] = [
+    { label: 'Checkout', action: act('checkout') },
+    { label: `New Branch from '${r.name}'…`, action: act('newBranchFrom') },
+    { label: `Checkout and Rebase onto '${cur}'`, disabled: !current, action: act('checkoutAndRebase') },
+    { separator: true },
+    { label: `Compare with '${cur}'`, action: act('compare') },
+    { label: 'Show Diff with Working Tree', action: act('showDiffWithWorkingTree') },
+    { separator: true },
+    { label: `Rebase '${cur}' onto '${r.name}'`, disabled: !current, action: act('rebaseCurrentOnto') },
+    { label: `Merge '${r.name}' into '${cur}'`, action: act('mergeIntoCurrent') },
+    { separator: true },
+  ];
+  if (r.type === 'local') {
+    entries.push(
+      { label: 'Update', icon: 'vcs/update', disabled: !r.upstream, action: act('update') },
+      { label: 'Push…', icon: 'vcs/push', action: act('push') },
+      { label: 'Tracked Branch…', action: act('trackRemote') },
+      { separator: true },
+      { label: 'Rename…', action: act('rename') },
+      { label: 'Delete', icon: 'general/delete', action: act('delete') },
+    );
+  } else {
+    entries.push(
+      { label: `Pull into '${cur}' Using Rebase`, disabled: !current, action: act('pullRebase') },
+      { label: `Pull into '${cur}' Using Merge`, disabled: !current, action: act('pullMerge') },
+      { separator: true },
+      { label: 'Delete', icon: 'general/delete', action: act('delete') },
+    );
+  }
+  entries.push({ separator: true }, { label: r.favorite ? 'Remove from Favorites' : 'Add to Favorites', icon: r.favorite ? 'nodes/star' : 'nodes/starEmpty', action: act('toggleFavorite') });
+  return entries;
+}
+
+export function changeAction(id: string, changes: Change[]) {
+  const d = store.details;
+  if (!d || !changes.length) return;
+  send('changeAction', { id, changes, left: d.left, right: d.right, hashes: store.selectedRows().map(r => r.h) });
+}
+
+/** Vcs.Log.ChangesBrowser.Popup */
+export function changesMenu(anchor: Anchor, changes: Change[]) {
+  const none = changes.length === 0;
+  const c = (id: string) => () => changeAction(id, changes);
+  const single = store.selection.size === 1;
+  const merge = single && (store.selectedRows()[0]?.p.length ?? 0) > 1;
+  showMenu(
+    [
+      { label: 'Show Diff', icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: none, action: c('diff') },
+      { label: 'Compare with Local', disabled: none, action: c('compareWithLocal') },
+      { label: 'Compare Before with Local', disabled: none, action: c('compareBeforeWithLocal') },
+      { label: 'Edit Source', icon: 'general/edit', shortcut: 'F4', disabled: none, action: c('editSource') },
+      { label: 'Open Repository Version', disabled: none, action: c('openRepositoryVersion') },
+      { separator: true },
+      { label: 'Revert Selected Changes', icon: 'vcs/revert', disabled: none, action: c('revertSelected') },
+      { label: 'Cherry-Pick Selected Changes', disabled: none, action: c('applySelected') },
+      { label: 'Create Patch…', icon: 'vcs/patch', disabled: none, action: c('createPatch') },
+      { label: 'Get', icon: 'general/download', disabled: none, action: c('get') },
+      { label: 'History Up to Here', icon: 'general/history', disabled: changes.length !== 1, action: c('historyUpToHere') },
+      { separator: true },
+      { label: 'Copy Path', icon: 'general/copy', disabled: none, action: c('copyPath') },
+      { label: 'Copy Absolute Path', disabled: none, action: c('copyAbsolutePath') },
+      { separator: true },
+      {
+        label: 'Show Changes to Parents',
+        checked: store.showChangesToParents,
+        disabled: !merge,
+        action: () => {
+          store.showChangesToParents = !store.showChangesToParents;
+          void store.loadDetails();
+        },
+      },
+    ],
+    anchor,
+  );
+}
+
+/** Vcs.Log.PresentationSettings ("View Options", eye icon). */
+export function viewOptionsMenu(): MenuEntry[] {
+  const s = store.settings;
+  const t = (key: keyof typeof s) => () => store.updateSettings({ [key]: !s[key] } as any);
+  const col = (key: 'author' | 'date' | 'hash') => () => store.updateSettings({ columns: { ...s.columns, [key]: !s.columns[key] } });
+  return [
+    { separator: true, label: 'Show' },
+    ...(store.init.repos.length > 1 ? [{ label: 'Root Names', checked: s.showRootNames, action: t('showRootNames') }] : []),
+    { label: 'Compact References View', checked: s.compactRefs, action: t('compactRefs') },
+    { label: 'Tag Names', checked: s.showTagNames, action: t('showTagNames') },
+    { label: 'Long Edges', checked: true, disabled: true },
+    { label: 'Commit Timestamp', checked: s.preferCommitDate, action: t('preferCommitDate') },
+    { label: 'References on the Left', checked: s.refsOnLeft, action: t('refsOnLeft') },
+    {
+      label: 'Columns',
+      children: [
+        { label: 'Author', checked: s.columns.author, action: col('author') },
+        { label: 'Date', checked: s.columns.date, action: col('date') },
+        { label: 'Hash', checked: s.columns.hash, action: col('hash') },
+      ],
+    },
+    { separator: true, label: 'Highlight' },
+    { label: 'My Commits', checked: s.highlightMyCommits, action: t('highlightMyCommits') },
+    { label: 'Merge Commits', checked: s.highlightMergeCommits, action: t('highlightMergeCommits') },
+    { label: 'Current Branch', checked: s.highlightCurrentBranch, action: t('highlightCurrentBranch') },
+  ];
+}
+
+/** Vcs.Log.GraphOptionsGroup (IntelliSort icon in the filter bar). */
+export function graphOptionsMenu(): MenuEntry[] {
+  const o = store.options;
+  return [
+    { separator: true, label: 'Sort' },
+    { label: 'By Commit Date', checked: o.sort === 'date', action: () => void store.setFilters(store.filters, { ...o, sort: 'date' }) },
+    { label: 'Topologically', checked: o.sort === 'topo', action: () => void store.setFilters(store.filters, { ...o, sort: 'topo' }) },
+    { separator: true, label: 'Options' },
+    { label: 'First Parent', checked: o.firstParent, action: () => void store.setFilters(store.filters, { ...o, firstParent: !o.firstParent }) },
+    { label: 'No Merges', checked: !!o.noMerges, action: () => void store.setFilters(store.filters, { ...o, noMerges: !o.noMerges }) },
+  ];
+}
