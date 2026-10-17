@@ -260,6 +260,11 @@ export class Repository implements vscode.Disposable {
 
   /** Reads a file at a revision. `ref` may be a commit, `:0` (index), `:1`/`:2`/`:3` (merge stages). */
   async show(ref: string, relPath: string): Promise<Buffer> {
+    if (ref.startsWith('blob:')) {
+      // Raw blob by object id, used by the shelf.
+      const res = await this.exec(['cat-file', 'blob', ref.slice(5)], { binary: true, allowFailure: true, quiet: true });
+      return res.exitCode === 0 ? res.buffer! : Buffer.alloc(0);
+    }
     const spec = ref.startsWith(':') ? `${ref}:${relPath}` : `${ref}:${relPath}`;
     const res = await this.exec(['show', spec], { binary: true, allowFailure: true, quiet: true });
     return res.exitCode === 0 ? res.buffer! : Buffer.alloc(0);
