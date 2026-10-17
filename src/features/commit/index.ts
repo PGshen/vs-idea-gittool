@@ -9,10 +9,13 @@ import { changeKey } from '../../shared/commitProtocol';
 import { Change } from '../../shared/types';
 import { StatusDecorations } from './decorations';
 import { addFiles, addToGitignore, stashFiles } from './gitOps';
-import { CommitView } from './view';
+import { createPatchFromCommits } from './patchCommits';
+import { initPatchDialog } from './patchDialog';
+import { CommitView, copyPaths, CopyPathKind } from './view';
 
 export function register(ctx: Ctx) {
   const view = new CommitView(ctx);
+  initPatchDialog(ctx.extension.globalState);
   ctx.extension.subscriptions.push(
     vscode.window.registerWebviewViewProvider('rebased.commit', view, { webviewOptions: { retainContextWhenHidden: true } }),
     vscode.window.registerFileDecorationProvider(new StatusDecorations(ctx.repos)),
@@ -35,6 +38,20 @@ export function register(ctx: Ctx) {
     return out;
   };
   const isUriArg = (a: unknown): a is vscode.Uri => a instanceof vscode.Uri;
+  const keysUnder = (uri?: unknown, uris?: vscode.Uri[]) => changesFor(isUriArg(uri) ? uri : undefined, uris).map(changeKey);
+  /** Tracked files under the selection, including unchanged ones (Remove from VCS works on any tracked file). */
+  const trackedKeys = (uri?: unknown, uris?: vscode.Uri[]) => {
+    const targets = uris?.length ? uris : isUriArg(uri) ? [uri] : vscode.window.activeTextEditor ? [vscode.window.activeTextEditor.document.uri] : [];
+    const keys: string[] = [];
+    for (const u of targets) {
+      const repo = ctx.repos.getForFile(u.fsPath);
+      if (!repo) continue;
+      const rel = repo.relPath(u.fsPath);
+      if ([...repo.status.unversioned, ...repo.status.ignored].some(c => c.path === rel)) continue;
+      keys.push(changeKey({ root: repo.root, path: rel }));
+    }
+    return keys;
+  };
 
   // Used by Undo Commit to put the message of the undone commit back into the commit panel.
   ctx.command('rebased.setCommitMessage', async (arg: { root?: string; message: string }) => {
@@ -105,7 +122,65 @@ export function register(ctx: Ctx) {
     if (isUriArg(uri)) view.buildState();
     return view.shelveDialog(keys);
   });
-  ctx.command('rebased.shelveSilently', () => view.shelveSilently([]));
+  // Swallows shortcuts that the Commit view handles itself, so that VS Code does not run its own
+  // command for them too (Ctrl+Shift+H would open Replace in Files).
+  ctx.command('rebased.noop', () => undefined);
+  // Toolbar: shelve the included changes. API for Update Project: {root, name} shelves all local changes
+  // of the repository and returns the shelf id (undefined when there is nothing to shelve).
+  ctx.command('rebased.shelveSilently', (arg?: unknown) => {
+    if (arg && typeof arg === 'object' && 'root' in arg && typeof (arg as { root: unknown }).root === 'string') {
+      const a = arg as { root: string; name?: string };
+      return view.shelveAll(a.root, a.name ?? 'Uncommitted changes before Update');
+    }
+    return view.shelveSilently([]);
+  });
+  ctx.command('rebased.unshelveSilently', (arg?: { id?: string }) => {
+    if (arg?.id) return view.unshelveAll(arg.id);
+    return view.reveal('shelf');
+  });
+  ctx.command('rebased.removeFromVcs', async (uri?: unknown, uris?: vscode.Uri[]) => {
+    await ctx.repos.ready();
+    view.buildState();
+    return view.removeFromVcs(trackedKeys(uri, uris));
+  });
+  ctx.command('rebased.revertResolved', async (uri?: unknown, uris?: vscode.Uri[]) => {
+    await ctx.repos.ready();
+    view.buildState();
+    return view.revertResolved(isUriArg(uri) ? keysUnder(uri, uris) : undefined);
+  });
+  // Rollback File…: the Rollback Changes dialog for the selected files only.
+  ctx.command('rebased.rollbackFile', async (uri?: unknown, uris?: vscode.Uri[]) => {
+    await ctx.repos.ready();
+    const keys = changesFor(isUriArg(uri) ? uri : undefined, uris)
+      .filter(c => c.status !== '?')
+      .map(changeKey);
+    if (!keys.length) {
+      void vscode.window.showInformationMessage('No changes to roll back');
+      return;
+    }
+    view.buildState();
+    return view.rollbackDialog(keys);
+  });
+  ctx.command('rebased.copyPath', async (arg?: { kind?: CopyPathKind } | vscode.Uri, uris?: vscode.Uri[], kindArg?: CopyPathKind) => {
+    // From menus: (uri, uris) with the kind bound by the command id; from code: {kind}.
+    const kind = kindArg ?? (arg && !(arg instanceof vscode.Uri) ? arg.kind : undefined) ?? 'absolute';
+    const editor = vscode.window.activeTextEditor;
+    const targets = uris?.length ? uris : arg instanceof vscode.Uri ? [arg] : editor ? [editor.document.uri] : [];
+    const files = targets.filter(u => u.scheme === 'file').map(u => u.fsPath);
+    if (!files.length) return;
+    const line = editor && files.length === 1 && editor.document.uri.fsPath === files[0] ? editor.selection.active.line + 1 : undefined;
+    await copyPaths(files, kind, ctx, line);
+  });
+  for (const kind of ['absolute', 'name', 'lineNumber', 'contentRoot', 'repo', 'reference'] as CopyPathKind[]) {
+    ctx.command(`rebased.copyPath.${kind}`, (uri?: vscode.Uri, uris?: vscode.Uri[]) => vscode.commands.executeCommand('rebased.copyPath', uri, uris, kind));
+  }
+  ctx.command('rebased.createPatchFromChanges', async (arg?: { keys?: string[]; changes?: Change[]; root?: string; hashes?: string[] } | vscode.Uri, uris?: vscode.Uri[]) => {
+    await ctx.repos.ready();
+    view.buildState();
+    if (arg instanceof vscode.Uri || !arg) return view.createPatchFile(arg ? changesFor(arg, uris) : []);
+    if (arg.hashes?.length && arg.root) return createPatchFromCommits(ctx, arg.root, arg.hashes, arg.changes);
+    return view.createPatchFile(arg.changes ?? view.changes(arg.keys ?? []));
+  });
   ctx.command('rebased.unshelve', () => view.reveal('shelf'));
   ctx.command('rebased.showShelf', () => view.reveal('shelf'));
   ctx.command('rebased.showStashes', () => view.reveal('stash'));
@@ -187,6 +262,7 @@ export function register(ctx: Ctx) {
   const updateContext = () => {
     const hasConflicts = ctx.repos.repositories.some(r => r.status.conflicts.length > 0);
     void vscode.commands.executeCommand('setContext', 'rebased.hasConflicts', hasConflicts);
+    void vscode.commands.executeCommand('setContext', 'rebased.inOperation', ctx.repos.repositories.some(r => r.info.operation !== 'none'));
   };
   ctx.repos.onDidChangeRepository(updateContext);
 }

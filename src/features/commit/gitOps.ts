@@ -180,7 +180,7 @@ export interface PatchFile {
  * Builds a binary patch of the given changes against HEAD, including unversioned files, without touching
  * the real index (a temporary index is used). Returns the patch and per-file blob ids.
  */
-export async function createPatch(repo: Repository, changes: Change[]): Promise<{ patch: string; files: PatchFile[] }> {
+export async function createPatch(repo: Repository, changes: Change[], opts: { reverse?: boolean } = {}): Promise<{ patch: string; files: PatchFile[] }> {
   const index = tmpFile('rebased-index');
   const env = { GIT_INDEX_FILE: index };
   const head = (await hasHead(repo)) ? 'HEAD' : EMPTY_TREE;
@@ -189,7 +189,7 @@ export async function createPatch(repo: Repository, changes: Change[]): Promise<
     if (head === 'HEAD') await repo.exec(['read-tree', 'HEAD'], { env, quiet: true });
     else await repo.exec(['read-tree', '--empty'], { env, quiet: true });
     await repo.exec(['add', '-A', '-f', '--pathspec-from-file=-', '--pathspec-file-nul'], { env, input: nulList(paths), quiet: true });
-    const patch = (await repo.exec(['diff', '--cached', '--binary', '-M', '--full-index', head, '--', ...paths], { env, quiet: true })).stdout;
+    const patch = (await repo.exec(['diff', '--cached', '--binary', '-M', '--full-index', ...(opts.reverse ? ['-R'] : []), head, '--', ...paths], { env, quiet: true })).stdout;
     const raw = (await repo.exec(['diff', '--cached', '-M', '--full-index', '--raw', '-z', head, '--', ...paths], { env, quiet: true })).stdout;
     const files: PatchFile[] = [];
     const parts = raw.split('\0');

@@ -3,3 +3,4 @@ import './commitDialogs.css';
 import './changeDialogs';
 import './stashDialogs';
 import './conflictsDialog';
+import './createPatchDialog';

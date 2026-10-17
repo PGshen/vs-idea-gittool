@@ -56,7 +56,7 @@
       },
       {
         "command": "rebased.shelve",
-        "group": "3_rollback@2"
+        "group": "3_rollback@3"
       },
       {
         "command": "rebased.resolveConflicts",

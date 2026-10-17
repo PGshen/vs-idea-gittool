@@ -133,7 +133,7 @@
       "command": "rebased.rollback",
       "key": "ctrl+alt+z",
       "mac": "alt+cmd+z",
-      "when": "config.rebased.intellijShortcuts && !editorTextFocus"
+      "when": "config.rebased.intellijShortcuts && !editorTextFocus && focusedView != rebased.commit"
     },
     {
       "command": "rebased.unshelve",
