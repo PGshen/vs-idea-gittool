@@ -12,6 +12,8 @@ IntelliJ platform. It keeps the IntelliJ git workflow, menu wording, keyboard sh
 - Changed files of the selected commits and the commit details panel ("In N branches … Show all").
 - Commit context menu: Copy Revision Number, Create Patch, Cherry-Pick, Checkout, Show Repository at Revision, Compare, Reset Current Branch to Here, Revert, Undo Commit, Edit Commit Message, Fixup, Squash Into, Drop, Squash Commits, Interactively Rebase from Here, Push All up to Here, New Branch, New Tag, Go to Child/Parent.
 - File History, Show History for Selection, Annotate with Git Blame, Compare with Revision / Branch or Tag.
+- Long edges, GPG signature column, diff preview (side-by-side / unified), Collapse / Expand Linear Branches, Not Cherry-Picked Commits, Show My Branches.
+- Multi-repository log with root colors, Group by Repository; Drop / Extract Selected Changes, Add Commits to Remote Branch.
 
 **Commit tool window** (activity bar)
 - Commit / Shelf / Stash tabs. Changelists, Unversioned Files, Merge Conflicts, checkboxes, Group By, speed search, drag & drop.
@@ -19,12 +21,19 @@ IntelliJ platform. It keeps the IntelliJ git workflow, menu wording, keyboard sh
 - Shelve / Unshelve (untracked files included), Stash / Unstash dialogs, Rollback, Add to VCS, Add to .gitignore.
 - Conflicts dialog with Accept Yours / Accept Theirs / Resolve All Simple Conflicts / Resolve Manually (VS Code 3-way merge editor).
 - IntelliJ file status colors in the Explorer and editor tabs.
+- Rollback File…, Remove from VCS, Revert Resolved, Copy Path/Reference…, Create Patch dialog.
+
+**Local History**
+- Snapshots on save, create, delete, rename and external changes (git operations), labels such as "Before Update".
+- Show History, Show History for Selection, Show Project History, Recent Changes (Alt+Shift+C), Put Label…, revert and create patch.
 
 **Toolbar and operations**
 - Status bar in Rebased order: Update Project ↙, Push ↗, branch widget (↓↑ counts), merge/rebase widget with Continue / Abort.
 - Branches popup (Ctrl+Shift+`) with Recent / Local / Remote / Tags and the per-branch actions (Checkout, New Branch from, Checkout and Rebase, Compare, Show Diff with Working Tree, Rebase onto, Merge into, Pull using Rebase/Merge, Update, Push, Rename, Delete, …), smart checkout.
 - Dialogs: Push (Force Push, push tags, Run Git hooks), Push Rejected, Update Project, Pull, Fetch, Merge, Rebase, interactive rebase (Rebasing Commits), Reset HEAD, New Branch, Tag, Remotes, Clone, Edit Commit Message, Create Patch.
 - Git menu (`Rebased: Git Menu…`) and VCS Operations Popup (Alt+`).
+- Update Project cleans the working tree using Stash or Shelve; Reset to the Remote Branch and Update Force-Pushed Branch.
+- Worktrees view and New Worktree dialog; synchronous branch control across several repositories.
 - Every git command is shown in the *Rebased: Git Console* output channel.
 
 ## Settings
@@ -40,7 +49,11 @@ VS Code has no floating windows or gutter menus, so:
 - Diffs and merges use the VS Code diff editor and 3-way merge editor.
 - Annotation options live in the hover and the line-number context menu.
 
-Not implemented yet: Local History, worktrees, long-edge collapsing in the log graph, GPG signature column, Linearize Merges, Add Commits to Remote Branch, Drop/Extract Selected Changes, executing branch actions on all roots at once, *Reset to the Remote Branch* in the Update dialog.
+Other limitations:
+- In a workspace with several repositories, file history and branch comparison show one repository (as in IntelliJ), and the combined log orders commits by date.
+- With synchronous branch control, branch submenu labels use the first repository's current branch name.
+- *Linearize Merges* is not offered (IntelliJ shows it only behind an internal registry flag).
+- Opening a worktree always uses a new window.
 
 ## Development
 
