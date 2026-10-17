@@ -112,7 +112,21 @@ export class StatusBarWidgets implements vscode.Disposable {
     if (info.ahead) counts.push(`↑${info.ahead}`);
     this.branch.text = counts.length ? `${text} ${counts.join(' ')}` : text;
     const tip: string[] = [info.detached ? "Git: Detached HEAD doesn't point to any branch" : `Git Branch: ${name}`];
-    if (multi) tip.push(`Root: ${repo.name}`);
+    const sync = multi && vscode.workspace.getConfiguration('rebased').get<boolean>('branches.syncControl', true);
+    if (sync) {
+      // Synchronous branch control: the widget stands for all repositories.
+      const repos = this.ctx.repos.repositories;
+      const names = new Set(repos.map(r => r.info.branch ?? r.info.headHash?.slice(0, 8) ?? 'HEAD'));
+      if (names.size === 1 && op === 'none') {
+        const behind = repos.reduce((s, r) => s + r.info.behind, 0);
+        const ahead = repos.reduce((s, r) => s + r.info.ahead, 0);
+        const c = [behind ? `↓${behind}` : '', ahead ? `↑${ahead}` : ''].filter(Boolean).join(' ');
+        this.branch.text = `$(git-branch) ${name}${c ? ' ' + c : ''}`;
+      }
+      tip.length = 0;
+      tip.push(names.size === 1 ? `Git Branch: ${name} (in all ${repos.length} repositories)` : 'Git Branches:');
+      for (const r of repos) tip.push(`${r.name}: ${r.info.branch ?? r.info.headHash?.slice(0, 8) ?? 'HEAD'}${r.info.behind ? ` ↓${r.info.behind}` : ''}${r.info.ahead ? ` ↑${r.info.ahead}` : ''}`);
+    } else if (multi) tip.push(`Root: ${repo.name}`);
     if (info.behind) tip.push(`${info.behind} incoming ${info.behind === 1 ? 'commit' : 'commits'}`);
     if (info.ahead) tip.push(`${info.ahead} outgoing ${info.ahead === 1 ? 'commit' : 'commits'}`);
     if (op === 'rebase') tip.push('Git: Rebase in progress');

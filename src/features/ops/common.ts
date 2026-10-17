@@ -3,7 +3,8 @@ import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { showDialog } from '../../host/dialog';
 import { CancelledError, showError } from '../../host/webviewHost';
-import { OperationOutcome, smartOperation } from './engine';
+import { GitError } from '../../git/exec';
+import { ChangesSaver, OperationOutcome, smartOperation, StashSaver } from './engine';
 
 export interface RootArg {
   root?: string;
@@ -114,7 +115,11 @@ export async function withSmartOperation(
   );
   if (!choice || choice.button === 'dont') return undefined;
   if (choice.button === 'force') return run(true);
-  return smartOperation(repo, () => run(false), operation);
+  // Smart Checkout / Smart Merge save the changes with the configured policy (stash or shelve).
+  const saver = makeSaver(undefined, true);
+  const outcome = await smartOperation(repo, () => run(false), operation, saver);
+  if (outcome.kind === 'conflicts' && repo.detectOperation() === 'none') await reportRestore(repo, saver, operation, outcome, false);
+  return outcome;
 }
 
 export function remoteOf(repo: Repository, remoteBranch: string): string | undefined {
@@ -128,4 +133,82 @@ export function upstreamOf(repo: Repository, branch: string): string | undefined
 
 export function settings() {
   return vscode.workspace.getConfiguration('rebased');
+}
+
+// ------------------------------------------------------------------ preserving local changes
+
+/**
+ * Shelf-based saver: uses the commit feature's shelf (`rebased.shelveSilently {root, name}` → shelf id,
+ * `rebased.unshelveSilently {id}` → {ok, conflicts}). Falls back to the stash when the shelf commands fail.
+ */
+export class ShelveSaver implements ChangesSaver {
+  method: 'stash' | 'shelve' = 'shelve';
+  private id: string | undefined;
+  private fallback: StashSaver | undefined;
+
+  constructor(private readonly includeUntracked: boolean) {}
+
+  async save(repo: Repository, reason: string): Promise<boolean> {
+    const name = `Uncommitted changes before ${capitalize(reason)} at ${new Date().toLocaleString()}`;
+    try {
+      const id = await vscode.commands.executeCommand<string | undefined>('rebased.shelveSilently', { root: repo.root, name });
+      this.id = typeof id === 'string' ? id : undefined;
+      await repo.refresh();
+      return !!this.id;
+    } catch {
+      this.method = 'stash';
+      this.fallback = new StashSaver(this.includeUntracked);
+      return this.fallback.save(repo, reason);
+    }
+  }
+
+  async restore(repo: Repository): Promise<OperationOutcome> {
+    if (this.fallback) return this.fallback.restore(repo);
+    try {
+      const r = await vscode.commands.executeCommand<{ ok: boolean; conflicts?: string[] | number } | undefined>('rebased.unshelveSilently', { id: this.id, root: repo.root });
+      await repo.refresh();
+      if (r?.ok) return { kind: 'success', output: '' };
+      const files = Array.isArray(r?.conflicts) ? r!.conflicts : repo.status.conflicts.map(c => c.path);
+      if (files.length || r?.conflicts) return { kind: 'conflicts', output: '', files };
+      return { kind: 'error', output: '', error: new GitError('Could not unshelve local changes', ['unshelve'], 1, '', '') };
+    } catch (e) {
+      return { kind: 'error', output: '', error: new GitError(e instanceof Error ? e.message : String(e), ['unshelve'], 1, '', '') };
+    }
+  }
+}
+
+/** Saver for the "Clean working tree using Stash / Shelve" policy (rebased.update.saveChangesPolicy). */
+export function makeSaver(policy?: string, includeUntracked = false): ChangesSaver {
+  const p = policy ?? settings().get<string>('update.saveChangesPolicy', 'stash');
+  return p === 'shelve' ? new ShelveSaver(includeUntracked) : new StashSaver(includeUntracked);
+}
+
+/**
+ * Notifies about local changes that could not be restored after an operation (GitPreservingProcess):
+ * "Local changes were not restored" / "Local changes were restored with conflicts".
+ */
+export async function reportRestore(repo: Repository, saver: ChangesSaver, operation: string, restore: OperationOutcome | undefined, kept: boolean) {
+  const where = saver.method === 'shelve' ? 'shelf' : 'stash';
+  const view = () => vscode.commands.executeCommand(saver.method === 'shelve' ? 'rebased.showShelf' : 'rebased.showStashes', { root: repo.root });
+  if (restore?.kind === 'conflicts') {
+    const a = await vscode.window.showWarningMessage(
+      `Local changes were restored with conflicts: Your uncommitted changes were saved to ${where}. ${saver.method === 'shelve' ? 'Unshelve' : 'Unstash'} is not complete, you have unresolved merges in your working tree. Resolve conflicts and ${saver.method === 'shelve' ? 'remove the shelved changes' : 'drop the stash'}.`,
+      'Resolve conflicts…',
+      'View saved changes…',
+    );
+    if (a === 'Resolve conflicts…') await vscode.commands.executeCommand('rebased.resolveConflicts', { root: repo.root });
+    else if (a) await view();
+  } else if (kept) {
+    const a = await vscode.window.showWarningMessage(`Local changes were not restored: Before ${operation} your uncommitted changes were saved to ${where}.`, 'View saved changes…');
+    if (a) await view();
+  }
+}
+
+/** Puts a system label into Local History before a working tree change (best effort). */
+export async function putLocalHistoryLabel(repo: Repository, label: string) {
+  try {
+    await vscode.commands.executeCommand('rebased.localHistory.putSystemLabel', { root: repo.root, label });
+  } catch {
+    // Local History is optional.
+  }
 }

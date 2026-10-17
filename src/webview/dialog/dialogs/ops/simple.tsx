@@ -341,7 +341,7 @@ registerDialog<{ branch: string; hasMerges?: boolean }>('ops.pushRejected', ({ p
 
 // ------------------------------------------------------------------ Update Project (VcsUpdateDialog / GitUpdateOptionsPanel)
 
-registerDialog<{ method: string; saveChanges: string; repos: string[] }>('ops.update', ({ props, submit, cancel }) => {
+registerDialog<{ method: string; saveChanges: string; repos: string[]; canReset?: boolean }>('ops.update', ({ props, submit, cancel }) => {
   const [method, setMethod] = useState(props.method === 'rebase' ? 'rebase' : 'merge');
   const [save, setSave] = useState(props.saveChanges === 'shelve' ? 'shelve' : 'stash');
   const [dontShow, setDontShow] = useState(false);
@@ -352,7 +352,16 @@ registerDialog<{ method: string; saveChanges: string; repos: string[] }>('ops.up
       width={520}
       onCancel={cancel}
       onOk={ok}
-      left={<Checkbox checked={dontShow} onChange={setDontShow} label="Don't show again" />}
+      left={
+        <>
+          {props.canReset && (
+            <Button tip="Checks out the corresponding remote branch" onClick={() => submit({ method, saveChanges: save, dontShow: false, button: 'reset' })}>
+              Reset to the Remote Branch
+            </Button>
+          )}
+          <Checkbox checked={dontShow} onChange={setDontShow} label="Don't show again" />
+        </>
+      }
       buttons={
         <>
           <Button onClick={cancel}>Cancel</Button>

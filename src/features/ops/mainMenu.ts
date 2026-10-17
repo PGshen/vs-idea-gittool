@@ -76,6 +76,9 @@ export function mainMenuItems(repo: Repository | undefined): MenuItem[] {
     item('New Tag…', 'rebased.createTag', { args: root }),
     item('Reset HEAD…', 'rebased.resetHead', { args: root }),
     sep(),
+    item('New Worktree…', 'rebased.worktrees.create', { args: root }),
+    item('Worktrees…', 'rebased.worktrees.show'),
+    sep(),
     item('Show Git Log', 'rebased.showLog', { icon: 'toolwindows/vcs', args: root }),
     {
       label: 'Patch',
@@ -92,7 +95,7 @@ export function mainMenuItems(repo: Repository | undefined): MenuItem[] {
       children: () => [
         item('Shelve Changes…', 'rebased.shelve', { icon: 'vcsimpl/stash' }),
         item('Show Shelf', 'rebased.showShelf'),
-        item('Show Git Stash', 'rebased.showStash'),
+        item('Show Git Stash', 'rebased.showStashes'),
         item('Stash Changes…', 'rebased.stash', { args: root }),
         item('Unstash Changes…', 'rebased.unstash', { args: root }),
         item('Rollback…', 'rebased.rollback', { icon: 'vcs/revert', shortcut: 'Ctrl+Alt+Z' }),

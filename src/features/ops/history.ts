@@ -10,7 +10,7 @@ import { withProgress } from '../../host/ui';
 import { CancelledError, showError } from '../../host/webviewHost';
 import { Change } from '../../shared/types';
 import { commitChanges } from './changes';
-import { capitalize, currentName, repoFor, reportOutcome, RootArg, withSmartOperation } from './common';
+import { capitalize, currentName, putLocalHistoryLabel, repoFor, reportOutcome, RootArg, withSmartOperation } from './common';
 import {
   commitMessages,
   dropCommits,
@@ -220,6 +220,7 @@ export async function resetCommand(ctx: Ctx, arg?: RootArg & { hash?: string }) 
     const a = await vscode.window.showWarningMessage('Hard Reset', { modal: true, detail: 'Any local changes will be lost. Continue?' }, 'Hard Reset');
     if (!a) return;
   }
+  await putLocalHistoryLabel(repo, 'Before Reset');
   const outcome = await withProgress('Git Reset', () => repo.batch(() => runConflictAware(repo, ['reset', `--${res.mode}`, target])), { location: 'window' });
   if (outcome.kind === 'success') void vscode.window.showInformationMessage('Reset successful');
   else await reportOutcome(repo, outcome, { operation: 'reset', failedTitle: 'Reset failed' });
@@ -368,6 +369,7 @@ export async function merge(repo: Repository, branch: string, options: string[] 
   if (!options.includes('commit-msg')) args.push('--no-edit');
   args.push(branch);
   const before = repo.info.headHash;
+  await putLocalHistoryLabel(repo, 'Before Merge');
   const outcome = await withSmartOperation(repo, 'merge', async force => {
     if (force) await repo.exec(['reset', '--hard']);
     return withProgress(`Merging ${branch}…`, () => repo.batch(() => runConflictAware(repo, args)), { location: 'window' });
@@ -436,6 +438,7 @@ export async function rebaseCommand(ctx: Ctx, arg?: RootArg & { upstream?: strin
 }
 
 export async function rebase(repo: Repository, args: string[], branch: string, onto: string) {
+  await putLocalHistoryLabel(repo, 'Before Rebase');
   const outcome = await withProgress(`Rebasing onto ${onto}…`, () => repo.batch(() => runConflictAware(repo, ['rebase', '--autostash', ...args], { env: nonInteractiveEnv() })), { location: 'window' });
   if (outcome.kind === 'success') {
     void vscode.window.showInformationMessage(`Rebase successful: Rebased ${branch} on ${onto}`);

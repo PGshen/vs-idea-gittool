@@ -135,31 +135,88 @@ export async function isAncestor(repo: Repository, a: string, b: string): Promis
 
 // ------------------------------------------------------------------ checkout
 
-export async function checkout(repo: Repository, ref: string, opts: { force?: boolean; newBranch?: string; overwrite?: boolean; track?: boolean } & RunOptions = {}): Promise<OperationOutcome> {
+export async function checkout(
+  repo: Repository,
+  ref: string,
+  opts: { force?: boolean; newBranch?: string; overwrite?: boolean; track?: boolean; ignoreOtherWorktrees?: boolean } & RunOptions = {},
+): Promise<OperationOutcome> {
   const args = ['checkout'];
   if (opts.force) args.push('--force');
+  if (opts.ignoreOtherWorktrees) args.push('--ignore-other-worktrees');
   if (opts.newBranch) args.push(opts.overwrite ? '-B' : '-b', opts.newBranch);
   if (opts.track === false) args.push('--no-track');
   args.push(ref, '--');
   return runConflictAware(repo, args, opts);
 }
 
-/** Smart checkout: stash local changes, checkout, unstash. */
-export async function smartOperation(repo: Repository, op: () => Promise<OperationOutcome>, label: string): Promise<OperationOutcome> {
-  const stash = await repo.exec(['stash', 'push', '--include-untracked', '-m', `Uncommitted changes before ${label} at ${new Date().toLocaleString()}`], { allowFailure: true });
-  if (stash.exitCode !== 0) return { kind: 'error', output: stash.stderr, error: new GitError(stash.stderr.trim(), ['stash'], stash.exitCode, stash.stdout, stash.stderr) };
-  const stashed = !/No local changes to save/.test(stash.stdout + stash.stderr);
+// ------------------------------------------------------------------ preserving local changes
+
+/**
+ * Saves and restores local changes around an operation, like IntelliJ's GitPreservingProcess with the
+ * "Clean working tree using Stash / Shelve" setting. `save` returns false when there was nothing to save.
+ */
+export interface ChangesSaver {
+  readonly method: 'stash' | 'shelve';
+  save(repo: Repository, reason: string): Promise<boolean>;
+  /** Restores the saved changes; 'conflicts' leaves them partly applied. */
+  restore(repo: Repository): Promise<OperationOutcome>;
+}
+
+/** Stash-based saver (git stash push / stash pop --index). */
+export class StashSaver implements ChangesSaver {
+  readonly method = 'stash' as const;
+  private hash: string | undefined;
+
+  constructor(private readonly includeUntracked = false) {}
+
+  async save(repo: Repository, reason: string): Promise<boolean> {
+    const msg = `Uncommitted changes before ${reason} at ${new Date().toLocaleString()}`;
+    const args = ['stash', 'push', ...(this.includeUntracked ? ['--include-untracked'] : []), '-m', msg];
+    const r = await repo.exec(args, { allowFailure: true });
+    if (r.exitCode !== 0) throw new GitError(r.stderr.trim() || 'Could not stash local changes', args, r.exitCode, r.stdout, r.stderr);
+    if (/No local changes to save/.test(r.stdout + r.stderr)) return false;
+    this.hash = (await revParse(repo, 'refs/stash')) ?? undefined;
+    return true;
+  }
+
+  async restore(repo: Repository): Promise<OperationOutcome> {
+    // Find our entry: other stashes could have been created meanwhile.
+    let ref = 'stash@{0}';
+    if (this.hash) {
+      const list = await repo.execText(['stash', 'list', '--format=%gd %H'], { quiet: true, allowFailure: true });
+      const line = list.split('\n').find(l => l.endsWith(` ${this.hash}`));
+      if (line) ref = line.split(' ')[0];
+    }
+    const pop = await runConflictAware(repo, ['stash', 'pop', '--index', ref]);
+    // --index fails when the index cannot be restored; retry without it.
+    if (pop.kind === 'error') return runConflictAware(repo, ['stash', 'pop', ref]);
+    return pop;
+  }
+}
+
+/** Does the work tree have tracked changes (or untracked ones, when asked)? */
+export async function hasLocalChanges(repo: Repository, includeUntracked = false): Promise<boolean> {
+  const r = await repo.exec(['status', '--porcelain', `--untracked-files=${includeUntracked ? 'normal' : 'no'}`], { allowFailure: true, quiet: true });
+  return r.stdout.trim().length > 0;
+}
+
+/** Smart checkout: save local changes (stash by default), run the operation, restore the changes. */
+export async function smartOperation(repo: Repository, op: () => Promise<OperationOutcome>, label: string, saver: ChangesSaver = new StashSaver(true)): Promise<OperationOutcome> {
+  let saved: boolean;
+  try {
+    saved = await saver.save(repo, label);
+  } catch (e) {
+    const err = e instanceof GitError ? e : new GitError(e instanceof Error ? e.message : String(e), ['stash'], 1, '', '');
+    return { kind: 'error', output: err.stderr, error: err };
+  }
   const result = await op();
-  if (!stashed || result.kind === 'error' || result.kind === 'localChanges') {
-    if (stashed && (result.kind === 'error' || result.kind === 'localChanges')) await repo.exec(['stash', 'pop', '--index'], { allowFailure: true });
+  if (!saved) return result;
+  if (result.kind === 'error' || result.kind === 'localChanges') {
+    await saver.restore(repo);
     return result;
   }
-  const pop = await runConflictAware(repo, ['stash', 'pop', '--index']);
-  if (pop.kind === 'error') {
-    // --index may fail when the index cannot be restored; retry without it.
-    const retry = await runConflictAware(repo, ['stash', 'pop']);
-    if (retry.kind !== 'success') return retry;
-  } else if (pop.kind !== 'success') return pop;
+  const restored = await saver.restore(repo);
+  if (restored.kind !== 'success') return restored;
   return result;
 }
 
@@ -273,29 +330,51 @@ export interface UpdateResult {
   files: number;
   before?: string;
   after?: string;
+  /** Result of restoring local changes saved with `saver`, when they were saved and restored. */
+  restore?: OperationOutcome;
+  /** The saved changes are still in the stash / shelf (the update stopped, or restoring failed). */
+  savedChangesKept?: boolean;
+  /** The tracked branch was force-pushed: its previous position is not an ancestor of the fetched one. */
+  forcePushed?: { upstream: string; oldHash: string; newHash: string };
 }
 
 /**
  * "Update Project" for one repository: fetch the tracked remote, then merge or rebase onto the upstream.
- * Local changes are kept with `--autostash` (IntelliJ saves them with stash or shelve).
+ * With a `saver`, local changes are saved before the update and restored after it, like IntelliJ's
+ * GitUpdateProcess; without one, they are kept with `--autostash`.
  */
-export async function updateRepository(repo: Repository, method: UpdateMethod, opts: RunOptions = {}): Promise<UpdateResult> {
+export async function updateRepository(repo: Repository, method: UpdateMethod, opts: RunOptions & { saver?: ChangesSaver } = {}): Promise<UpdateResult> {
   const upstream = await repo.exec(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'], { allowFailure: true, quiet: true });
   const branch = await repo.exec(['symbolic-ref', '-q', '--short', 'HEAD'], { allowFailure: true, quiet: true });
   if (branch.exitCode !== 0) return { outcome: { kind: 'skipped', output: '', reason: 'detached HEAD' }, commits: 0, files: 0 };
   if (upstream.exitCode !== 0) return { outcome: { kind: 'skipped', output: '', reason: 'no tracked branch' }, commits: 0, files: 0 };
   const up = upstream.stdout.trim();
+  const upBefore = await revParse(repo, up);
   const remoteName = await repo.getConfig(`branch.${branch.stdout.trim()}.remote`);
   if (remoteName && remoteName !== '.') {
     opts.progress?.(`Fetching ${remoteName}…`);
     const f = await fetch(repo, remoteName, opts);
     if (!f.ok) return { outcome: { kind: 'error', output: f.output, error: f.error! }, commits: 0, files: 0 };
   }
+  const upAfter = await revParse(repo, up);
+  const forcePushed =
+    upBefore && upAfter && upBefore !== upAfter && !(await isAncestor(repo, upBefore, upAfter)) ? { upstream: up, oldHash: upBefore, newHash: upAfter } : undefined;
   const before = (await revParse(repo, 'HEAD'))!;
   const incoming = await countCommits(repo, `HEAD..${up}`);
-  if (incoming === 0) return { outcome: { kind: 'success', output: '' }, commits: 0, files: 0, before, after: before };
+  if (incoming === 0) return { outcome: { kind: 'success', output: '' }, commits: 0, files: 0, before, after: before, forcePushed };
+  let saved = false;
+  if (opts.saver) {
+    opts.progress?.(opts.saver.method === 'shelve' ? 'Shelving local changes…' : 'Stashing local changes…');
+    try {
+      saved = await opts.saver.save(repo, 'update');
+    } catch (e) {
+      const err = e instanceof GitError ? e : new GitError(e instanceof Error ? e.message : String(e), ['stash'], 1, '', '');
+      return { outcome: { kind: 'error', output: err.message, error: err }, commits: 0, files: 0, before, forcePushed };
+    }
+  }
   opts.progress?.(method === 'rebase' ? `Rebasing onto ${up}…` : `Merging ${up}…`);
-  const args = method === 'rebase' ? ['rebase', '--autostash', up] : ['merge', '--autostash', '--no-edit', up];
+  const auto = opts.saver ? [] : ['--autostash'];
+  const args = method === 'rebase' ? ['rebase', ...auto, up] : ['merge', ...auto, '--no-edit', up];
   const outcome = await runConflictAware(repo, args, opts);
   const after = (await revParse(repo, 'HEAD')) ?? before;
   let files = 0;
@@ -303,7 +382,195 @@ export async function updateRepository(repo: Repository, method: UpdateMethod, o
     const d = await repo.exec(['diff', '--name-only', '-z', before, after], { allowFailure: true, quiet: true });
     files = d.stdout.split('\0').filter(Boolean).length;
   }
-  return { outcome, commits: incoming, files, before, after };
+  let restore: OperationOutcome | undefined;
+  let savedChangesKept = false;
+  if (saved && opts.saver) {
+    if (outcome.kind === 'conflicts' || outcome.kind === 'stopped') {
+      // IntelliJ keeps the changes saved until the merge / rebase is finished.
+      savedChangesKept = true;
+    } else {
+      opts.progress?.(opts.saver.method === 'shelve' ? 'Unshelving local changes…' : 'Unstashing local changes…');
+      restore = await opts.saver.restore(repo);
+      savedChangesKept = restore.kind === 'error';
+    }
+  }
+  return { outcome, commits: incoming, files, before, after, restore, savedChangesKept, forcePushed };
+}
+
+export interface ForcePushedUpdateResult {
+  /** 'regular': local merge commits exist, a normal update was done instead (see `update`). */
+  result: 'success' | 'nothing' | 'incomplete' | 'error' | 'regular';
+  /** Backup branch with the old local commits; kept when not all of them could be cherry-picked. */
+  backup?: string;
+  error?: GitError;
+  update?: UpdateResult;
+  cherryPick?: OperationOutcome;
+  restore?: OperationOutcome;
+}
+
+/**
+ * IntelliJ's "Update Force-Pushed Branch" (GitForcePushedBranchUpdateExecutor): back up the current branch,
+ * hard-reset it to the fetched tracked branch and cherry-pick the local commits again. With merge commits
+ * among the local commits a regular update is done instead.
+ */
+export async function updateForcePushedBranch(repo: Repository, opts: RunOptions & { saver?: ChangesSaver; method?: UpdateMethod } = {}): Promise<ForcePushedUpdateResult> {
+  const branch = (await repo.exec(['symbolic-ref', '-q', '--short', 'HEAD'], { allowFailure: true, quiet: true })).stdout.trim();
+  const upstream = await repo.exec(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'], { allowFailure: true, quiet: true });
+  if (!branch || upstream.exitCode !== 0) return { result: 'nothing' };
+  const up = upstream.stdout.trim();
+  const remote = await repo.getConfig(`branch.${branch}.remote`);
+  if (!remote || remote === '.') return { result: 'nothing' };
+  // Local commits relative to the tracked branch as it was known before fetching.
+  const log = await repo.execText(['log', '--format=%H %P', `${up}..${branch}`], { quiet: true, allowFailure: true });
+  const local = log
+    .split('\n')
+    .filter(Boolean)
+    .map(l => l.split(' '));
+  if (local.some(c => c.length > 2)) {
+    return { result: 'regular', update: await updateRepository(repo, opts.method ?? 'merge', opts) };
+  }
+  const backup = local.length ? `${branch}-${randomId()}` : undefined;
+  if (backup) await repo.exec(['branch', backup, 'HEAD']);
+  opts.progress?.(`Fetching ${remote}…`);
+  const f = await fetch(repo, remote, opts);
+  if (!f.ok) {
+    if (backup) await repo.exec(['branch', '-D', backup], { allowFailure: true });
+    return { result: 'error', error: f.error };
+  }
+  let saved = false;
+  if (opts.saver) {
+    try {
+      saved = await opts.saver.save(repo, 'update');
+    } catch (e) {
+      if (backup) await repo.exec(['branch', '-D', backup], { allowFailure: true });
+      return { result: 'error', error: e instanceof GitError ? e : new GitError(String(e), ['stash'], 1, '', '') };
+    }
+  }
+  const reset = await repo.exec(['reset', '--hard', up], { allowFailure: true });
+  if (reset.exitCode !== 0) {
+    const restore = saved ? await opts.saver!.restore(repo) : undefined;
+    return { result: 'error', backup, restore, error: new GitError(reset.stderr.trim(), ['reset', '--hard', up], reset.exitCode, reset.stdout, reset.stderr) };
+  }
+  let cherryPick: OperationOutcome | undefined;
+  if (local.length) {
+    opts.progress?.('Cherry-picking local commits…');
+    cherryPick = await runConflictAware(repo, ['cherry-pick', ...local.map(c => c[0]).reverse()], opts);
+    if (cherryPick.kind !== 'success') return { result: 'incomplete', backup, cherryPick };
+    await repo.exec(['branch', '-D', backup!], { allowFailure: true });
+  }
+  const restore = saved ? await opts.saver!.restore(repo) : undefined;
+  return { result: 'success', cherryPick, restore };
+}
+
+/**
+ * "Reset to the Remote Branch" of the Update dialog (GitResetUpdater): fetch, then recreate the current
+ * branch from its tracked branch (`checkout -B`), dropping local commits.
+ */
+export async function resetToRemoteBranch(repo: Repository, opts: RunOptions & { force?: boolean } = {}): Promise<{ outcome: OperationOutcome | { kind: 'skipped'; output: string; reason: string }; before?: string; after?: string }> {
+  const branch = (await repo.exec(['symbolic-ref', '-q', '--short', 'HEAD'], { allowFailure: true, quiet: true })).stdout.trim();
+  if (!branch) return { outcome: { kind: 'skipped', output: '', reason: 'detached HEAD' } };
+  const upstream = await repo.exec(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'], { allowFailure: true, quiet: true });
+  if (upstream.exitCode !== 0) return { outcome: { kind: 'skipped', output: '', reason: 'no tracked branch' } };
+  const up = upstream.stdout.trim();
+  const remote = await repo.getConfig(`branch.${branch}.remote`);
+  if (remote && remote !== '.') {
+    opts.progress?.(`Fetching ${remote}…`);
+    const f = await fetch(repo, remote, opts);
+    if (!f.ok) return { outcome: { kind: 'error', output: f.output, error: f.error! } };
+  }
+  const before = await revParse(repo, 'HEAD');
+  const outcome = await checkout(repo, up, { newBranch: branch, overwrite: true, force: opts.force, ...opts });
+  if (outcome.kind === 'success') await repo.exec(['branch', '--set-upstream-to', up, branch], { allowFailure: true, quiet: true });
+  return { outcome, before, after: await revParse(repo, 'HEAD') };
+}
+
+function randomId() {
+  const h = () => Math.floor(Math.random() * 0x10000).toString(16).padStart(4, '0');
+  return `${h()}${h()}-${h()}-${h()}-${h()}-${h()}${h()}${h()}`;
+}
+
+// ------------------------------------------------------------------ worktrees
+
+export interface Worktree {
+  path: string;
+  head?: string;
+  /** Short branch name, undefined when detached. */
+  branch?: string;
+  bare: boolean;
+  detached: boolean;
+  locked: boolean;
+  lockReason?: string;
+  prunable: boolean;
+  prunableReason?: string;
+  /** The first entry of `git worktree list` is the main worktree. */
+  main: boolean;
+}
+
+/** Parses `git worktree list --porcelain` (GitWorktreeListParser). */
+export function parseWorktreeList(out: string): Worktree[] {
+  const list: Worktree[] = [];
+  for (const block of out.split(/\n\s*\n/)) {
+    const lines = block.split('\n').filter(Boolean);
+    if (!lines.length || !lines[0].startsWith('worktree ')) continue;
+    const w: Worktree = { path: lines[0].slice(9), bare: false, detached: false, locked: false, prunable: false, main: list.length === 0 };
+    for (const l of lines.slice(1)) {
+      if (l.startsWith('HEAD ')) w.head = l.slice(5);
+      else if (l.startsWith('branch ')) w.branch = l.slice(7).replace(/^refs\/heads\//, '');
+      else if (l === 'bare') w.bare = true;
+      else if (l === 'detached') w.detached = true;
+      else if (l === 'locked' || l.startsWith('locked ')) {
+        w.locked = true;
+        w.lockReason = l.slice(7) || undefined;
+      } else if (l === 'prunable' || l.startsWith('prunable ')) {
+        w.prunable = true;
+        w.prunableReason = l.slice(9) || undefined;
+      }
+    }
+    list.push(w);
+  }
+  return list;
+}
+
+export async function listWorktrees(repo: Repository): Promise<Worktree[]> {
+  const r = await repo.exec(['worktree', 'list', '--porcelain'], { allowFailure: true, quiet: true });
+  return r.exitCode === 0 ? parseWorktreeList(r.stdout) : [];
+}
+
+export function samePath(a: string, b: string) {
+  const norm = (p: string) => path.resolve(p).replace(/\\/g, '/').replace(/\/$/, '');
+  return process.platform === 'win32' || process.platform === 'darwin' ? norm(a).toLowerCase() === norm(b).toLowerCase() : norm(a) === norm(b);
+}
+
+/** Worktree other than this repository's own where `branch` is checked out. */
+export async function worktreeOfBranch(repo: Repository, branch: string): Promise<Worktree | undefined> {
+  const list = await listWorktrees(repo);
+  return list.find(w => w.branch === branch && !samePath(w.path, repo.root));
+}
+
+export interface CreateWorktreeRequest {
+  path: string;
+  /** Branch (local or remote), tag or commit to check out; the start point when `newBranch` is set. */
+  ref: string;
+  newBranch?: string;
+  /** Allow a branch that is checked out in another worktree (--force). */
+  force?: boolean;
+}
+
+export async function createWorktree(repo: Repository, req: CreateWorktreeRequest, opts: RunOptions = {}): Promise<OperationOutcome> {
+  const args = ['worktree', 'add'];
+  if (req.force) args.push('--force');
+  if (req.newBranch) args.push('-b', req.newBranch);
+  else if (repo.refs.some(r => r.type === 'remote' && r.name === req.ref) && !repo.refs.some(r => r.type === 'local' && r.name === req.ref)) {
+    // A remote branch gets a local tracking branch with the remote name, like IntelliJ's default local branch name.
+    const remote = repo.refs.find(r => r.type === 'remote' && r.name === req.ref)!.remote!;
+    args.push('--track', '-b', req.ref.slice(remote.length + 1));
+  }
+  args.push(req.path, req.ref);
+  return runConflictAware(repo, args, opts);
+}
+
+export async function removeWorktree(repo: Repository, wtPath: string, force = false): Promise<OperationOutcome> {
+  return runConflictAware(repo, ['worktree', 'remove', ...(force ? ['--force'] : []), wtPath]);
 }
 
 export function updateSummary(files: number, commits: number): string {

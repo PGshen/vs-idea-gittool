@@ -6,6 +6,8 @@ import * as h from './history';
 import { registerMainMenu } from './mainMenu';
 import * as r from './remote';
 import { StatusBarWidgets } from './statusBar';
+import * as u from './update';
+import * as w from './worktrees';
 
 /**
  * Git operations: branches popup, toolbar widgets, push / update / pull / fetch, merge / rebase,
@@ -23,7 +25,9 @@ export function register(ctx: Ctx) {
   c('rebased.push', (arg?: { root?: string; upTo?: string; branch?: string }) => r.pushCommand(ctx, normalize(arg)));
   c('rebased.fetch', (arg?: { root?: string }) => r.fetchCommand(ctx, normalize(arg)));
   c('rebased.pull', (arg?: { root?: string }) => r.pullCommand(ctx, normalize(arg)));
-  c('rebased.updateProject', (arg?: { root?: string }) => r.updateProjectCommand(ctx, normalize(arg)));
+  c('rebased.updateProject', (arg?: { root?: string }) => u.updateProjectCommand(ctx, normalize(arg)));
+  c('rebased.updateForcePushedBranch', (arg?: { root?: string }) => u.updateForcePushedBranchCommand(ctx, normalize(arg)));
+  c('rebased.resetToRemoteBranch', (arg?: { root?: string }) => u.resetToRemoteCommand(ctx, normalize(arg)));
   c('rebased.remotes', (arg?: { root?: string }) => r.remotesCommand(ctx, normalize(arg)));
   c('rebased.clone', () => r.cloneCommand(ctx));
   c('rebased.init', () => r.initCommand(ctx));
@@ -56,6 +60,18 @@ export function register(ctx: Ctx) {
     const repo = await repoFor(ctx, normalize(arg));
     await vscode.env.clipboard.writeText(repo.info.branch ?? repo.info.headHash ?? '');
   });
+
+  // Worktrees
+  const worktrees = new w.WorktreesView(ctx);
+  ctx.extension.subscriptions.push(worktrees);
+  c('rebased.worktrees.create', (arg?: { root?: string; ref?: string }) => w.createWorktreeCommand(ctx, normalize(arg), worktrees));
+  c('rebased.worktrees.show', () => vscode.commands.executeCommand('rebased.worktrees.focus'));
+  c('rebased.worktrees.refresh', () => worktrees.refresh());
+  c('rebased.worktrees.open', (arg?: w.WorktreeArg & { branch?: string }) => w.openWorktreeCommand(ctx, worktrees, arg));
+  c('rebased.worktrees.delete', (arg?: w.WorktreeArg) => w.deleteWorktreeCommand(ctx, worktrees, arg));
+  c('rebased.worktrees.prune', (arg?: { root?: string }) => w.pruneWorktreesCommand(ctx, worktrees, normalize(arg)));
+  c('rebased.worktrees.lock', (arg?: w.WorktreeArg) => w.toggleLockCommand(ctx, worktrees, arg, true));
+  c('rebased.worktrees.unlock', (arg?: w.WorktreeArg) => w.toggleLockCommand(ctx, worktrees, arg, false));
 
   // History editing and repository operations
   c('rebased.merge', (arg?: { root?: string; branch?: string }) => h.mergeCommand(ctx, normalize(arg)));

@@ -11,7 +11,8 @@ import { withProgress } from '../../host/ui';
 import { CancelledError, showError } from '../../host/webviewHost';
 import { Change } from '../../shared/types';
 import { commitChanges } from './changes';
-import { currentName, repoFor, reportOutcome, RootArg, settings } from './common';
+import { currentName, repoFor, reportOutcome, reportRestore, RootArg, settings } from './common';
+import { updateWithSavedChanges } from './update';
 import { countCommits, fetch, push, PushSpec, pushSuccessMessage, runConflictAware, updateRepository, UpdateMethod, updateSummary } from './engine';
 
 interface PushCommit {
@@ -189,7 +190,8 @@ export async function doPush(ctx: Ctx, repo: Repository, spec: PushSpec, isNew: 
       method = choice.button as UpdateMethod;
       if (choice.remember) await settings().update('push.autoUpdateOnRejected', method, vscode.ConfigurationTarget.Global);
     }
-    const up = await withProgress('Updating…', (progress, token) => updateRepository(repo, method!, { progress, token }));
+    const up = await withProgress('Updating…', (progress, token) => updateWithSavedChanges(repo, method!, { progress, token }));
+    await reportRestore(repo, up.saver, 'update', up.restore, up.savedChangesKept ?? false);
     if (up.outcome.kind !== 'success') {
       await reportOutcome(repo, up.outcome as never, { operation: 'update', failedTitle: 'Push was rejected, and update failed with an error' });
       return false;
@@ -227,74 +229,6 @@ export async function fetchCommand(ctx: Ctx, arg?: RootArg) {
   );
   if (failures.length) showError(failures.join('\n'), 'Fetch failed');
   else void vscode.window.showInformationMessage('Fetch successful');
-}
-
-/** `rebased.updateProject {root?}`: Update Project (Ctrl+T). */
-export async function updateProjectCommand(ctx: Ctx, arg?: RootArg & { method?: UpdateMethod }) {
-  await ctx.repos.ready();
-  const repos = arg?.root ? [await repoFor(ctx, arg)] : ctx.repos.repositories;
-  if (repos.length === 0) throw new Error('No Git repository found in the workspace.');
-  let method: UpdateMethod = arg?.method ?? (settings().get<string>('updateMethod', 'merge') === 'rebase' ? 'rebase' : 'merge');
-  if (!arg?.method && settings().get<boolean>('update.showDialog', true)) {
-    const r = await showDialog<{ method: UpdateMethod; saveChanges: string; dontShow: boolean }>(
-      'ops.update',
-      { method, saveChanges: settings().get('update.saveChangesPolicy', 'stash'), repos: repos.map(r => r.name) },
-      { title: 'Update Project' },
-    );
-    if (!r) return;
-    method = r.method;
-    await settings().update('updateMethod', r.method, vscode.ConfigurationTarget.Global);
-    await settings().update('update.saveChangesPolicy', r.saveChanges, vscode.ConfigurationTarget.Global);
-    if (r.dontShow) await settings().update('update.showDialog', false, vscode.ConfigurationTarget.Global);
-  }
-  for (const repo of repos) {
-    if (repo.detectOperation() !== 'none' || repo.status.conflicts.length) {
-      void vscode.window.showErrorMessage(
-        repo.detectOperation() === 'rebase'
-          ? 'Can\'t update: You have unfinished rebase process. These conflicts must be resolved before update.'
-          : 'Can\'t update: Unmerged files detected. These conflicts must be resolved before update.',
-      );
-      return;
-    }
-  }
-  const results: { repo: Repository; res: Awaited<ReturnType<typeof updateRepository>> }[] = [];
-  await withProgress(
-    'Updating…',
-    async (progress, token) => {
-      for (const repo of repos) {
-        // Per-branch config "pull.rebase" = Branch Default.
-        let m = method;
-        if (settings().get<string>('updateMethod') === 'branchDefault') {
-          const cfg = (await repo.getConfig(`branch.${repo.info.branch}.rebase`)) ?? (await repo.getConfig('pull.rebase'));
-          m = cfg === 'true' || cfg === 'merges' || cfg === 'interactive' ? 'rebase' : 'merge';
-        }
-        results.push({ repo, res: await repo.batch(() => updateRepository(repo, m, { progress: t => progress(repos.length > 1 ? `${repo.name}: ${t}` : t), token })) });
-      }
-    },
-    { cancellable: true },
-  );
-  const skipped = results.filter(r => r.res.outcome.kind === 'skipped');
-  const failed = results.filter(r => r.res.outcome.kind !== 'success' && r.res.outcome.kind !== 'skipped');
-  for (const f of failed) await reportOutcome(f.repo, f.res.outcome as never, { operation: 'update', failedTitle: 'Update failed' });
-  if (failed.length) return;
-  if (skipped.length === results.length) {
-    const reason = (skipped[0].res.outcome as { reason: string }).reason;
-    void vscode.window.showWarningMessage(
-      reason === 'detached HEAD' ? "Can't update: no current branch. You are in 'detached HEAD' state, which means that you're not on any branch. Checkout a branch to make update possible." : `Can't update: no tracked branch. No tracked branch configured for branch ${currentName(skipped[0].repo)} or the branch doesn't exist. To make your branch track a remote branch call, for example, git branch --set-upstream-to=origin/${currentName(skipped[0].repo)} ${currentName(skipped[0].repo)}`,
-    );
-    return;
-  }
-  const commits = results.reduce((s, r) => s + r.res.commits, 0);
-  const files = results.reduce((s, r) => s + r.res.files, 0);
-  const title = skipped.length ? 'Project Partially Updated' : 'Project updated';
-  const skippedText = skipped.length ? ` Skipped ${skipped.length} ${skipped.length === 1 ? 'repository' : 'repositories'}: ${skipped.map(s => `${s.repo.name} was skipped (${(s.res.outcome as { reason: string }).reason})`).join(', ')}` : '';
-  if (commits === 0) {
-    void vscode.window.showInformationMessage(`All files are up-to-date${skippedText}`);
-    return;
-  }
-  const first = results.find(r => r.res.commits > 0)!;
-  const a = await vscode.window.showInformationMessage(`${title}: ${updateSummary(files, commits)}${skippedText}`, 'View Commits');
-  if (a) void vscode.commands.executeCommand('rebased.compareRefs', { root: first.repo.root, ref: first.res.after, with: first.res.before });
 }
 
 /** `rebased.pull {root?}`: the Pull dialog. */

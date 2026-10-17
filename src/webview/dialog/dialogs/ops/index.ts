@@ -5,3 +5,4 @@ import './mergeRebase';
 import './push';
 import './interactiveRebase';
 import './remotes';
+import './worktree';

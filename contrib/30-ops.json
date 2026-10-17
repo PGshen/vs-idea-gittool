@@ -121,6 +121,76 @@
       "category": "Rebased"
     },
     {
+      "command": "rebased.updateForcePushedBranch",
+      "title": "Update Force-Pushed Branch",
+      "category": "Rebased"
+    },
+    {
+      "command": "rebased.resetToRemoteBranch",
+      "title": "Reset to the Remote Branch",
+      "category": "Rebased"
+    },
+    {
+      "command": "rebased.worktrees.create",
+      "title": "New Worktree…",
+      "category": "Rebased",
+      "icon": {
+        "light": "media/icons/general/add.svg",
+        "dark": "media/icons/general/add_dark.svg"
+      }
+    },
+    {
+      "command": "rebased.worktrees.show",
+      "title": "Worktrees…",
+      "category": "Rebased"
+    },
+    {
+      "command": "rebased.worktrees.refresh",
+      "title": "Refresh Worktrees",
+      "category": "Rebased",
+      "icon": {
+        "light": "media/icons/general/refresh.svg",
+        "dark": "media/icons/general/refresh_dark.svg"
+      }
+    },
+    {
+      "command": "rebased.worktrees.prune",
+      "title": "Prune Worktrees",
+      "category": "Rebased",
+      "icon": {
+        "light": "media/icons/actions/clearCash.svg",
+        "dark": "media/icons/actions/clearCash_dark.svg"
+      }
+    },
+    {
+      "command": "rebased.worktrees.open",
+      "title": "Open Worktree…",
+      "category": "Rebased",
+      "icon": {
+        "light": "media/icons/general/open.svg",
+        "dark": "media/icons/general/open_dark.svg"
+      }
+    },
+    {
+      "command": "rebased.worktrees.delete",
+      "title": "Delete Worktree…",
+      "category": "Rebased",
+      "icon": {
+        "light": "media/icons/general/delete.svg",
+        "dark": "media/icons/general/delete_dark.svg"
+      }
+    },
+    {
+      "command": "rebased.worktrees.lock",
+      "title": "Lock Worktree",
+      "category": "Rebased"
+    },
+    {
+      "command": "rebased.worktrees.unlock",
+      "title": "Unlock Worktree",
+      "category": "Rebased"
+    },
+    {
       "command": "rebased.branch.checkout",
       "title": "branch.checkout",
       "category": "Rebased"
@@ -458,6 +528,46 @@
         "when": "rebased.hasRepository"
       },
       {
+        "command": "rebased.updateForcePushedBranch",
+        "when": "rebased.hasRepository"
+      },
+      {
+        "command": "rebased.resetToRemoteBranch",
+        "when": "rebased.hasRepository"
+      },
+      {
+        "command": "rebased.worktrees.create",
+        "when": "rebased.hasRepository"
+      },
+      {
+        "command": "rebased.worktrees.show",
+        "when": "rebased.hasRepository"
+      },
+      {
+        "command": "rebased.worktrees.refresh",
+        "when": "rebased.hasRepository"
+      },
+      {
+        "command": "rebased.worktrees.prune",
+        "when": "rebased.hasRepository"
+      },
+      {
+        "command": "rebased.worktrees.open",
+        "when": "rebased.hasRepository"
+      },
+      {
+        "command": "rebased.worktrees.delete",
+        "when": "rebased.hasRepository"
+      },
+      {
+        "command": "rebased.worktrees.lock",
+        "when": "rebased.hasRepository"
+      },
+      {
+        "command": "rebased.worktrees.unlock",
+        "when": "rebased.hasRepository"
+      },
+      {
         "command": "rebased.abortOperation",
         "when": "rebased.operation && rebased.operation != 'none'"
       },
@@ -468,6 +578,50 @@
       {
         "command": "rebased.skipCommit",
         "when": "rebased.operation && rebased.operation != 'none'"
+      }
+    ],
+    "view/title": [
+      {
+        "command": "rebased.worktrees.create",
+        "when": "view == rebased.worktrees",
+        "group": "navigation@1"
+      },
+      {
+        "command": "rebased.worktrees.refresh",
+        "when": "view == rebased.worktrees",
+        "group": "navigation@2"
+      },
+      {
+        "command": "rebased.worktrees.delete",
+        "when": "view == rebased.worktrees",
+        "group": "navigation@3"
+      },
+      {
+        "command": "rebased.worktrees.prune",
+        "when": "view == rebased.worktrees",
+        "group": "navigation@4"
+      }
+    ],
+    "view/item/context": [
+      {
+        "command": "rebased.worktrees.open",
+        "when": "view == rebased.worktrees && viewItem =~ /^worktree/",
+        "group": "1_open@1"
+      },
+      {
+        "command": "rebased.worktrees.lock",
+        "when": "view == rebased.worktrees && viewItem =~ / linked / && viewItem =~ / unlocked/",
+        "group": "1_open@2"
+      },
+      {
+        "command": "rebased.worktrees.unlock",
+        "when": "view == rebased.worktrees && viewItem =~ / locked/",
+        "group": "1_open@2"
+      },
+      {
+        "command": "rebased.worktrees.delete",
+        "when": "view == rebased.worktrees && viewItem =~ / linked /",
+        "group": "2_delete@1"
       }
     ]
   },
@@ -549,7 +703,11 @@
           "shelve"
         ],
         "default": "stash",
-        "description": "Clean working tree before update using stash or shelve. Local changes are kept with git --autostash."
+        "enumDescriptions": [
+          "Using Stash",
+          "Using Shelve"
+        ],
+        "description": "Clean working tree using: Stash / Shelve. Local changes are saved before Update Project, Smart Checkout and Smart Merge, and restored afterwards."
       },
       "rebased.push.tags": {
         "type": "string",
@@ -591,11 +749,31 @@
         "default": true,
         "description": "Show tags in the branches popup."
       },
+      "rebased.branches.syncControl": {
+        "type": "boolean",
+        "default": true,
+        "description": "Execute branch operations on all roots: with several repositories, branches that exist in all of them are shown once in the branches popup and their actions run in every repository."
+      },
       "rebased.statusBar.enabled": {
         "type": "boolean",
         "default": true,
         "description": "Show the Git toolbar widgets (Update Project, Push, branch, merge/rebase actions) in the status bar."
       }
     }
-  }
+  },
+  "views": {
+    "rebased-panel": [
+      {
+        "id": "rebased.worktrees",
+        "name": "Worktrees",
+        "when": "rebased.hasRepository"
+      }
+    ]
+  },
+  "viewsWelcome": [
+    {
+      "view": "rebased.worktrees",
+      "contents": "No linked worktrees\n[Create worktree…](command:rebased.worktrees.create)\n[What is a Git worktree](https://git-scm.com/docs/git-worktree)"
+    }
+  ]
 }

@@ -7,11 +7,13 @@ import { withProgress } from '../../host/ui';
 import { CancelledError, showError } from '../../host/webviewHost';
 import { Ref } from '../../shared/types';
 import { diffChanges } from './changes';
-import { currentName, remoteOf, repoFor, reportOutcome, RootArg, settings, withSmartOperation } from './common';
-import { checkout, countCommits, fetch, isAncestor, runConflictAware, validateNewBranch } from './engine';
+import { currentName, putLocalHistoryLabel, remoteOf, repoFor, reportOutcome, RootArg, settings, withSmartOperation } from './common';
+import { checkWorktreeConflict } from './worktrees';
+import { checkout, countCommits, fetch, isAncestor, runConflictAware, validateNewBranch, worktreeOfBranch } from './engine';
 import { merge, rebase } from './history';
 import { ijIcon } from './icons';
-import { pull, pushCommand, updateProjectCommand } from './remote';
+import { pull, pushCommand } from './remote';
+import { updateProjectCommand } from './update';
 
 export type RefKind = 'local' | 'remote' | 'tag';
 
@@ -67,8 +69,15 @@ function refTooltip(ref: Ref) {
   return tips.join(', ');
 }
 
+/** Synchronous branch control (Settings | Git: "Execute branch operations on all roots"). */
+export function syncControl(ctx: Ctx) {
+  return ctx.repos.repositories.length > 1 && settings().get<boolean>('branches.syncControl', true);
+}
+
 /** `rebased.branches`: the Git branches popup (GitBranchesTreePopup). */
-export async function branchesPopup(ctx: Ctx, arg?: RootArg) {
+export async function branchesPopup(ctx: Ctx, arg?: RootArg & { single?: boolean }) {
+  await ctx.repos.ready();
+  if (!arg?.single && syncControl(ctx)) return syncBranchesPopup(ctx);
   let repo = await repoFor(ctx, arg);
   const qp = vscode.window.createQuickPick<PopupItem>();
   qp.matchOnDescription = false;
@@ -173,7 +182,7 @@ export async function branchesPopup(ctx: Ctx, arg?: RootArg) {
     if (!item) return;
     if (item.ref) {
       qp.hide();
-      await refActionsPopup(ctx, repo, item.ref, () => branchesPopup(ctx, { root: repo.root }));
+      await refActionsPopup(ctx, repo, item.ref, () => branchesPopup(ctx, { root: repo.root, single: true }));
       return;
     }
     if (item.run) {
@@ -219,19 +228,30 @@ function ongoingActions(repo: Repository): PopupItem[] {
 }
 
 /** Per-ref submenu (Git.Branch group), with labels per ref kind as in GitBranchPopupActions. */
-export function refActions(ctx: Ctx, repo: Repository, ref: Ref): PopupItem[] {
+export function refActions(ctx: Ctx, repo: Repository, ref: Ref, otherWorktree?: string, roots?: string[]): PopupItem[] {
   const cur = repo.info.branch;
   const current = ref.type === 'local' && ref.current;
   const arg = { root: repo.root, name: ref.name, type: ref.type as RefKind };
-  const cmd = (id: string) => () => vscode.commands.executeCommand(id, arg);
+  // Synchronous branch control: the action runs in every repository (root by root, like IntelliJ).
+  const cmd = (id: string) => async () => {
+    if (id === 'rebased.branch.newBranchFrom' && roots) return newBranchCommand(ctx, { roots, startPoint: ref.name, title: `Create Branch from ${ref.name}` });
+    for (const root of roots ?? [repo.root]) await vscode.commands.executeCommand(id, { ...arg, root });
+  };
   const items: PopupItem[] = [];
   const sep = () => items.push({ label: '', kind: SEP });
   const isTag = ref.type === 'tag';
   const ns = isTag ? 'rebased.tag' : 'rebased.branch';
   if (!current) items.push({ label: 'Checkout', run: cmd(`${ns}.checkout`) });
+  if (otherWorktree && !roots) items.push({ label: 'Open Worktree…', run: () => vscode.commands.executeCommand('rebased.worktrees.open', { root: repo.root, branch: ref.name }) });
   items.push({ label: `New Branch from '${ref.name}'…`, iconPath: ijIcon('general/add'), run: cmd('rebased.branch.newBranchFrom') });
   if (!current && !isTag && cur) items.push({ label: `Checkout and Rebase onto '${cur}'`, run: cmd('rebased.branch.checkoutAndRebase') });
   if (ref.type === 'local' && !current && ref.upstream) items.push({ label: 'Checkout and Update', run: cmd('rebased.branch.checkoutAndUpdate') });
+  if (!current && !otherWorktree && !roots) {
+    items.push({
+      label: `New Worktree from '${ref.name}'…`,
+      run: () => vscode.commands.executeCommand('rebased.worktrees.create', { root: repo.root, ref: ref.name }),
+    });
+  }
   sep();
   if (!current && cur) items.push({ label: `Compare with '${cur}'`, run: cmd('rebased.branch.compare') });
   items.push({ label: 'Show Diff with Working Tree', iconPath: ijIcon('vcs/diff'), run: cmd('rebased.branch.showDiffWithWorkingTree') });
@@ -259,10 +279,12 @@ export function refActions(ctx: Ctx, repo: Repository, ref: Ref): PopupItem[] {
   return items.filter((it, i, all) => it.kind !== SEP || (i > 0 && i < all.length - 1 && all[i - 1].kind !== SEP));
 }
 
-async function refActionsPopup(ctx: Ctx, repo: Repository, ref: Ref, back: () => unknown) {
+async function refActionsPopup(ctx: Ctx, repo: Repository, ref: Ref, back: () => unknown, roots?: string[]) {
   const qp = vscode.window.createQuickPick<PopupItem>();
   qp.title = ref.type === 'tag' ? `Tag '${ref.name}'` : `Branch '${ref.name}'`;
-  qp.items = refActions(ctx, repo, ref);
+  if (roots) qp.title += ` in ${roots.length} repositories`;
+  const otherWorktree = ref.type === 'local' && !roots ? (await worktreeOfBranch(repo, ref.name))?.path : undefined;
+  qp.items = refActions(ctx, repo, ref, otherWorktree, roots);
   qp.buttons = [vscode.QuickInputButtons.Back];
   qp.placeholder = ref.upstream ? `Tracking ${ref.upstream}` : undefined;
   let goBack = false;
@@ -288,6 +310,90 @@ async function refActionsPopup(ctx: Ctx, repo: Repository, ref: Ref, back: () =>
   qp.show();
 }
 
+/**
+ * Branches popup with synchronous branch control: branches that exist in every repository are listed once and
+ * their actions run in all repositories; each repository has its own node for repository-specific branches.
+ */
+async function syncBranchesPopup(ctx: Ctx) {
+  const repos = ctx.repos.repositories;
+  const roots = repos.map(r => r.root);
+  const first = repos[0];
+  const qp = vscode.window.createQuickPick<PopupItem>();
+  qp.title = 'Git Branches';
+  qp.placeholder = 'Search for branches and actions';
+  const fetchButton: vscode.QuickInputButton = { iconPath: ijIcon('vcs/fetch'), tooltip: 'Fetch' };
+  qp.buttons = [fetchButton];
+  const common = (type: 'local' | 'remote' | 'tag') => {
+    const names = repos.map(r => new Set(r.refs.filter(x => x.type === type).map(x => x.name)));
+    return first.refs.filter(x => x.type === type && names.every(n => n.has(x.name)));
+  };
+  const build = () => {
+    const items: PopupItem[] = [];
+    items.push({ label: 'Commit…', iconPath: ijIcon('vcs/commit'), run: () => vscode.commands.executeCommand('rebased.commit') });
+    items.push({ label: '', kind: SEP });
+    items.push({ label: 'New Branch…', iconPath: ijIcon('general/add'), description: 'Ctrl+Alt+N', run: () => newBranchCommand(ctx, { roots }) });
+    const branches = new Set(repos.map(r => r.info.branch ?? ''));
+    const currentText = branches.size === 1 ? [...branches][0] : undefined;
+    const item = (ref: Ref): PopupItem => {
+      const current = ref.type === 'local' && repos.every(r => r.info.branch === ref.name);
+      return { label: ref.name, iconPath: current ? ijIcon('dvcs/currentBranchLabel') : ref.type === 'tag' ? ijIcon('nodes/tag') : ijIcon(ref.favorite ? 'nodes/star' : 'general/vcs'), ref: { ...ref, current } };
+    };
+    const locals = common('local');
+    if (locals.length) {
+      items.push({ label: 'Local', kind: SEP });
+      for (const ref of locals.sort((a, b) => (a.name === currentText ? -1 : b.name === currentText ? 1 : a.name.localeCompare(b.name)))) items.push(item(ref));
+    }
+    const remotes = common('remote');
+    if (remotes.length) {
+      items.push({ label: 'Remote', kind: SEP });
+      for (const ref of remotes.sort((a, b) => a.name.localeCompare(b.name))) items.push(item(ref));
+    }
+    if (settings().get<boolean>('branches.showTags', true)) {
+      const tags = common('tag');
+      if (tags.length) {
+        items.push({ label: 'Tags', kind: SEP });
+        for (const ref of tags) items.push(item(ref));
+      }
+    }
+    items.push({ label: 'Repositories', kind: SEP });
+    for (const r of repos) {
+      items.push({
+        label: r.name,
+        description: currentName(r),
+        detail: undefined,
+        iconPath: ijIcon('nodes/folder'),
+        alwaysShow: true,
+        run: () => branchesPopup(ctx, { root: r.root, single: true }),
+      });
+    }
+    qp.items = items;
+  };
+  qp.onDidTriggerButton(async b => {
+    if (b !== fetchButton) return;
+    qp.busy = true;
+    await withProgress('Fetching…', async (progress, token) => {
+      for (const r of repos) await fetch(r, 'all', { progress, token });
+    }, { location: 'window' });
+    await Promise.all(repos.map(r => r.refresh()));
+    qp.busy = false;
+    build();
+  });
+  qp.onDidAccept(async () => {
+    const it = qp.selectedItems[0];
+    if (!it) return;
+    qp.hide();
+    try {
+      if (it.ref) await refActionsPopup(ctx, first, it.ref, () => syncBranchesPopup(ctx), roots);
+      else await it.run?.();
+    } catch (e) {
+      showError(e);
+    }
+  });
+  qp.onDidHide(() => qp.dispose());
+  build();
+  qp.show();
+}
+
 async function checkoutTagOrRevision(ctx: Ctx, repo: Repository) {
   const refs = repo.refs.map(r => ({ value: r.name, icon: r.type === 'tag' ? 'nodes/tag' : 'general/vcs', group: r.type === 'local' ? 'Local' : r.type === 'remote' ? 'Remote' : 'Tags' }));
   await showDialog('ops.checkoutRevision', { refs }, {
@@ -307,7 +413,8 @@ function findRef(repo: Repository, arg: BranchArg): Ref | undefined {
   return repo.refs.find(r => r.name === arg.name && (!arg.type || r.type === arg.type));
 }
 
-export async function newBranchCommand(ctx: Ctx, arg?: RootArg & { startPoint?: string; title?: string }) {
+export async function newBranchCommand(ctx: Ctx, arg?: RootArg & { startPoint?: string; title?: string; roots?: string[] }) {
+  if (arg?.roots && arg.roots.length > 1) return newBranchInRoots(ctx, arg.roots, arg.startPoint, arg.title);
   const repo = await repoFor(ctx, arg);
   const start = arg?.startPoint;
   const startRef = start ? repo.refs.find(r => r.name === start) : undefined;
@@ -342,6 +449,51 @@ export async function newBranchCommand(ctx: Ctx, arg?: RootArg & { startPoint?: 
     await repo.batch(() => repo.exec(['branch', ...(res.overwrite ? ['-f'] : []), res.name, from]));
     void vscode.window.showInformationMessage(`Branch ${res.name} was created`);
   }
+}
+
+/** New Branch… with synchronous branch control: one dialog, the branch is created in every repository. */
+async function newBranchInRoots(ctx: Ctx, roots: string[], start?: string, title = start ? `Create Branch from ${start}` : 'Create New Branch') {
+  const repos = roots.map(r => ctx.repos.get(r)).filter((r): r is Repository => !!r);
+  const res = await showDialog<{ name: string; checkout: boolean; overwrite: boolean }>(
+    'ops.newBranch',
+    {
+      title,
+      okLabel: 'Create',
+      initial: '',
+      mode: 'create',
+      checkout: true,
+      showCheckout: true,
+      showOverwrite: true,
+      locals: [...new Set(repos.flatMap(r => r.refs.filter(x => x.type === 'local').map(x => x.name)))],
+      remotes: [...new Set(repos.flatMap(r => r.refs.filter(x => x.type === 'remote').map(x => x.name)))],
+    },
+    {
+      title,
+      validate: (v: { name: string; overwrite: boolean }) => {
+        for (const r of repos) {
+          const err = validateNewBranch(r, v.name, v.overwrite);
+          if (err) return repos.length > 1 ? `${err} in ${r.name}` : err;
+        }
+        return true;
+      },
+    },
+  );
+  if (!res) return;
+  const failed: string[] = [];
+  for (const repo of repos) {
+    const from = start ?? 'HEAD';
+    if (res.checkout) {
+      const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => checkout(repo, from, { newBranch: res.name, overwrite: res.overwrite, force })));
+      if (outcome && outcome.kind !== 'success') {
+        failed.push(repo.name);
+        await reportOutcome(repo, outcome, { operation: 'checkout', failedTitle: `Could not create new branch ${res.name}` });
+      }
+    } else {
+      const r = await repo.batch(() => repo.exec(['branch', ...(res.overwrite ? ['-f'] : []), res.name, from], { allowFailure: true }));
+      if (r.exitCode !== 0) failed.push(repo.name);
+    }
+  }
+  if (!failed.length) void vscode.window.showInformationMessage(res.checkout ? `Checked out new branch ${res.name}` : `Branch ${res.name} was created`);
 }
 
 export async function checkoutRef(ctx: Ctx, arg: BranchArg) {
@@ -382,7 +534,14 @@ export async function checkoutRef(ctx: Ctx, arg: BranchArg) {
       if (local.hash !== ref.hash) await repo.exec(['branch', '-f', localName, arg.name], { allowFailure: true });
     }
   }
-  const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => checkout(repo, target, { ...opts, force })));
+  let ignoreOtherWorktrees = false;
+  if (!opts.newBranch) {
+    const conflict = await checkWorktreeConflict(repo, target);
+    if (conflict === 'cancel' || conflict === 'opened') return;
+    ignoreOtherWorktrees = conflict === 'proceed';
+  }
+  await putLocalHistoryLabel(repo, 'Before Checkout');
+  const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => checkout(repo, target, { ...opts, force, ignoreOtherWorktrees })));
   if (!outcome) return;
   await reportCheckout(repo, outcome, label, ref?.type === 'remote' && opts.newBranch ? arg.name : undefined);
 }
