@@ -1,0 +1,340 @@
+/* Styles for the ops dialogs (push, merge, rebase, interactive rebase, ...). */
+
+.combo-field {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  border: 1px solid var(--border-control);
+  border-radius: 4px;
+  background: var(--bg-input);
+  flex: 1;
+  min-width: 0;
+}
+.combo-field:focus-within {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 1px var(--focus);
+}
+.combo-field.error {
+  border-color: var(--fg-error);
+  box-shadow: 0 0 0 1px var(--fg-error);
+}
+.combo-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  padding: 0 8px;
+}
+.combo-arrow {
+  width: 24px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.combo-arrow:hover {
+  background: var(--bg-action-hover);
+  border-radius: 0 3px 3px 0;
+}
+
+.modify-options {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 22px;
+  padding: 0 2px 0 8px;
+  border-radius: 4px;
+  background: var(--bg-tag);
+  color: var(--fg);
+  font-family: 'JetBrains Mono', var(--vscode-editor-font-family), monospace;
+  font-size: 12px;
+}
+.chip-close {
+  display: inline-flex;
+  border-radius: 3px;
+}
+.chip-close:hover {
+  background: var(--bg-action-hover);
+}
+.field-hint {
+  color: var(--fg-secondary);
+  font-size: 12px;
+}
+.dialog-header-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+}
+.dialog-header-line .title {
+  font-weight: 600;
+}
+.mono-text {
+  font-family: 'JetBrains Mono', var(--vscode-editor-font-family), monospace;
+}
+
+/* Push dialog */
+.push-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  background: var(--bg-editor);
+  overflow: hidden;
+}
+.push-left {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  outline: none;
+  padding: 4px 0;
+}
+.push-right {
+  width: 42%;
+  min-width: 200px;
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.push-row {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
+  margin: 0 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.push-row:hover {
+  background: var(--bg-row-hover);
+}
+.push-row.selected {
+  background: var(--bg-selection-inactive);
+}
+.push-left:focus .push-row.selected,
+.push-left:focus-within .push-row.selected {
+  background: var(--bg-selection);
+}
+.push-row .subject {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.push-row .meta {
+  color: var(--fg-secondary);
+}
+.push-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.push-target .editable {
+  color: var(--fg-link);
+  cursor: pointer;
+  border-bottom: 1px dashed var(--fg-link);
+}
+.push-target input {
+  height: 20px;
+  border: 1px solid var(--focus);
+  border-radius: 3px;
+  background: var(--bg-input);
+  color: var(--fg);
+  font: inherit;
+  padding: 0 4px;
+  outline: none;
+  width: 160px;
+}
+.push-tag {
+  font-size: 11px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--bg-tag);
+  color: var(--fg-info);
+}
+.details-pane {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border-subtle);
+  overflow: auto;
+  user-select: text;
+  white-space: pre-wrap;
+  max-height: 40%;
+}
+
+/* Interactive rebase */
+.irebase-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--border-subtle);
+  min-height: 32px;
+}
+.irebase-table {
+  flex: 1;
+  overflow: auto;
+  outline: none;
+  min-height: 0;
+}
+.irebase-row {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 4px;
+  white-space: nowrap;
+}
+.irebase-row:hover {
+  background: var(--bg-row-hover);
+}
+.irebase-row.selected {
+  background: var(--bg-selection-inactive);
+}
+.irebase-table:focus .irebase-row.selected {
+  background: var(--bg-selection);
+}
+.irebase-node {
+  width: 26px;
+  height: 26px;
+  position: relative;
+  flex: none;
+}
+.irebase-node::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--fg-info);
+  opacity: 0.6;
+}
+.irebase-row:first-child .irebase-node::before {
+  top: 13px;
+}
+.irebase-row:last-child .irebase-node::before {
+  bottom: 13px;
+}
+.irebase-node .dot {
+  position: absolute;
+  left: 8px;
+  top: 9px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--fg-info);
+}
+.irebase-node.squash .dot,
+.irebase-node.fixup .dot {
+  left: 20px;
+  width: 8px;
+  height: 8px;
+  top: 10px;
+}
+.irebase-node .action-icon {
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  background: var(--bg-editor);
+  border-radius: 50%;
+}
+.irebase-row .subject {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.irebase-row.drop .subject {
+  text-decoration: line-through;
+  color: var(--fg-secondary);
+}
+.irebase-row.reword .subject {
+  font-style: italic;
+}
+.irebase-action {
+  width: 54px;
+  color: var(--fg-secondary);
+  font-size: 12px;
+}
+.irebase-row input.reword {
+  flex: 1;
+  height: 22px;
+  border: 1px solid var(--focus);
+  border-radius: 3px;
+  background: var(--bg-input);
+  color: var(--fg);
+  font: inherit;
+  padding: 0 4px;
+  outline: none;
+}
+.irebase-reword-area {
+  flex: 1;
+  min-height: 60px;
+  resize: none;
+}
+.toolbar-button-text {
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  border-radius: 4px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.toolbar-button-text:hover:not(:disabled) {
+  background: var(--bg-action-hover);
+}
+.toolbar-button-text:disabled {
+  color: var(--fg-disabled);
+}
+
+/* Reset dialog */
+.reset-modes {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  align-items: start;
+  margin: 6px 0 2px;
+}
+.reset-modes .desc {
+  color: var(--fg-secondary);
+  padding-top: 4px;
+}
+
+.remote-table {
+  flex: 1;
+  min-height: 160px;
+  overflow: auto;
+}
+.file-list {
+  max-height: 200px;
+  overflow: auto;
+  padding: 4px 0;
+}
+.combo-input:focus,
+.combo-input:focus-visible {
+  outline: none !important;
+}

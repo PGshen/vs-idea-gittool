@@ -36,6 +36,14 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
   };
 
   useEffect(() => on('focusMessage', () => textRef.current?.focus()), []);
+  useEffect(
+    () =>
+      on('setMessage', (m: string) => {
+        updateMessage(m);
+        textRef.current?.focus();
+      }),
+    [],
+  );
   useEffect(() => on('commitAndPush', () => doCommit(true)), [message, amend, amendTarget, included]);
   useEffect(() => {
     if (commitTrigger) textRef.current?.focus();

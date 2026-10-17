@@ -36,6 +36,12 @@ export function register(ctx: Ctx) {
   };
   const isUriArg = (a: unknown): a is vscode.Uri => a instanceof vscode.Uri;
 
+  // Used by Undo Commit to put the message of the undone commit back into the commit panel.
+  ctx.command('rebased.setCommitMessage', async (arg: { root?: string; message: string }) => {
+    await ctx.extension.workspaceState.update('rebased.commit.draft', arg.message);
+    await vscode.commands.executeCommand('rebased.commit.focus');
+    view.post('setMessage', arg.message);
+  });
   ctx.command('rebased.commit', async (uri?: unknown, uris?: vscode.Uri[]) => {
     await ctx.repos.ready();
     if (isUriArg(uri)) {

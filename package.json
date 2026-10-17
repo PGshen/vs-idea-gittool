@@ -100,7 +100,7 @@
         "rebased.intellijShortcuts": {
           "type": "boolean",
           "default": true,
-          "description": "Enable IntelliJ keyboard shortcuts that do not conflict with common VS Code chords (Ctrl+Alt+K Commit and Push, Ctrl+Alt+Z Rollback)."
+          "description": "Use IntelliJ keyboard shortcuts for Git actions (Ctrl+T Update Project, Ctrl+Shift+K Push, Ctrl+Shift+` Branches, Alt+` VCS Operations Popup, Ctrl+Alt+N New Branch)."
         },
         "rebased.log.showInEditor": {
           "type": "boolean",
@@ -168,6 +168,85 @@
           "type": "boolean",
           "default": false,
           "description": "Annotate with Git Blame: detect lines moved from other files (-C)."
+        },
+        "rebased.intellijShortcutsInEditor": {
+          "type": "boolean",
+          "default": false,
+          "description": "Also use Ctrl+Shift+K for Push while a text editor has focus (it replaces VS Code's Delete Line)."
+        },
+        "rebased.updateMethod": {
+          "type": "string",
+          "enum": [
+            "merge",
+            "rebase",
+            "branchDefault"
+          ],
+          "enumDescriptions": [
+            "Merge incoming changes into the current branch",
+            "Rebase the current branch on top of incoming changes",
+            "Branch Default (git config branch.<name>.rebase / pull.rebase)"
+          ],
+          "default": "merge",
+          "description": "Update method used by Update Project."
+        },
+        "rebased.update.showDialog": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the Update Project dialog before updating."
+        },
+        "rebased.update.saveChangesPolicy": {
+          "type": "string",
+          "enum": [
+            "stash",
+            "shelve"
+          ],
+          "default": "stash",
+          "description": "Clean working tree before update using stash or shelve. Local changes are kept with git --autostash."
+        },
+        "rebased.push.tags": {
+          "type": "string",
+          "enum": [
+            "none",
+            "all",
+            "current"
+          ],
+          "default": "none",
+          "description": "Push tags option of the Push dialog."
+        },
+        "rebased.push.runHooks": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run Git hooks on push."
+        },
+        "rebased.push.autoUpdateOnRejected": {
+          "type": "string",
+          "enum": [
+            "",
+            "merge",
+            "rebase"
+          ],
+          "default": "",
+          "description": "Update method to use silently when a push is rejected. Empty: ask with the Push Rejected dialog."
+        },
+        "rebased.fetch.prune": {
+          "type": "boolean",
+          "default": false,
+          "description": "Prune obsolete remote references on fetch."
+        },
+        "rebased.branches.showRecent": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show recent branches in the branches popup."
+        },
+        "rebased.branches.showTags": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show tags in the branches popup."
+        },
+        "rebased.statusBar.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the Git toolbar widgets (Update Project, Push, branch, merge/rebase actions) in the status bar."
         }
       }
     },
@@ -347,6 +426,276 @@
         "command": "rebased.copyText",
         "title": "Copy",
         "category": "Rebased"
+      },
+      {
+        "command": "rebased.push",
+        "title": "Push…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.fetch",
+        "title": "Fetch",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.pull",
+        "title": "Pull…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.updateProject",
+        "title": "Update Project…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.remotes",
+        "title": "Manage Remotes…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.clone",
+        "title": "Clone…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.init",
+        "title": "Create Git Repository…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.unshallow",
+        "title": "Unshallow repository",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branches",
+        "title": "Branches…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.createBranch",
+        "title": "New Branch…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.merge",
+        "title": "Merge…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.rebase",
+        "title": "Rebase…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.resetHead",
+        "title": "Reset HEAD…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.createTag",
+        "title": "New Tag…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.createPatch",
+        "title": "Create Patch from Local Changes…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.applyPatch",
+        "title": "Apply Patch…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.applyPatchFromClipboard",
+        "title": "Apply Patch from Clipboard…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.abortOperation",
+        "title": "Abort Merge / Rebase / Cherry-Pick / Revert",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.continueOperation",
+        "title": "Continue Rebase / Cherry-Pick / Commit Merge",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.skipCommit",
+        "title": "Skip Commit",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.mainMenu",
+        "title": "Git Menu…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.vcsOperationsPopup",
+        "title": "VCS Operations Popup…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.currentFileMenu",
+        "title": "Git: Current File…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.copyBranchName",
+        "title": "Copy Current Branch Name",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.checkout",
+        "title": "branch.checkout",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.newBranchFrom",
+        "title": "branch.newBranchFrom",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.checkoutAndRebase",
+        "title": "branch.checkoutAndRebase",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.checkoutAndUpdate",
+        "title": "branch.checkoutAndUpdate",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.compare",
+        "title": "branch.compare",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.showDiffWithWorkingTree",
+        "title": "branch.showDiffWithWorkingTree",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.rebaseCurrentOnto",
+        "title": "branch.rebaseCurrentOnto",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.mergeIntoCurrent",
+        "title": "branch.mergeIntoCurrent",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.pullRebase",
+        "title": "branch.pullRebase",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.pullMerge",
+        "title": "branch.pullMerge",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.push",
+        "title": "branch.push",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.update",
+        "title": "branch.update",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.rename",
+        "title": "branch.rename",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.delete",
+        "title": "branch.delete",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.toggleFavorite",
+        "title": "branch.toggleFavorite",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.branch.trackRemote",
+        "title": "branch.trackRemote",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.tag.checkout",
+        "title": "tag.checkout",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.tag.mergeIntoCurrent",
+        "title": "tag.mergeIntoCurrent",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.tag.push",
+        "title": "tag.push",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.tag.delete",
+        "title": "tag.delete",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.cherryPick",
+        "title": "Cherry-Pick",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.revertCommits",
+        "title": "Revert Commit",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.undoCommit",
+        "title": "Undo Commit…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.rewordCommit",
+        "title": "Edit Commit Message…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.fixupCommit",
+        "title": "Fixup…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.squashCommits",
+        "title": "Squash Commits…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.dropCommits",
+        "title": "Drop Commits",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.interactiveRebase",
+        "title": "Interactively Rebase from Here…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.checkoutRevision",
+        "title": "Checkout Revision",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.ops.pickToolbarRepository",
+        "title": "Select Toolbar Repository",
+        "category": "Rebased"
       }
     ],
     "viewsContainers": {
@@ -384,26 +733,11 @@
         }
       ]
     },
-    "submenus": [
-      {
-        "id": "rebased.git.file",
-        "label": "Git"
-      },
-      {
-        "id": "rebased.git.file",
-        "label": "Git"
-      }
-    ],
     "menus": {
       "explorer/context": [
         {
           "submenu": "rebased.git.file",
           "group": "7_modification@9",
-          "when": "rebased.hasRepository"
-        },
-        {
-          "submenu": "rebased.git.file",
-          "group": "7_rebased",
           "when": "rebased.hasRepository"
         }
       ],
@@ -412,11 +746,6 @@
           "submenu": "rebased.git.file",
           "group": "1_modification@9",
           "when": "rebased.hasRepository && resourceScheme == file"
-        },
-        {
-          "submenu": "rebased.git.file",
-          "group": "9_rebased",
-          "when": "rebased.hasRepository && resourceScheme == file"
         }
       ],
       "editor/title/context": [
@@ -424,69 +753,6 @@
           "submenu": "rebased.git.file",
           "group": "2_files@9",
           "when": "rebased.hasRepository && resourceScheme == file"
-        },
-        {
-          "submenu": "rebased.git.file",
-          "group": "9_rebased",
-          "when": "rebased.hasRepository && resourceScheme == file"
-        }
-      ],
-      "rebased.git.file": [
-        {
-          "command": "rebased.commit",
-          "group": "1_file@1"
-        },
-        {
-          "command": "rebased.addToVcs",
-          "group": "1_file@2"
-        },
-        {
-          "command": "rebased.addToGitignore",
-          "group": "1_file@3"
-        },
-        {
-          "command": "rebased.showLocalDiff",
-          "group": "2_compare@2"
-        },
-        {
-          "command": "rebased.rollback",
-          "group": "4_rollback@1"
-        },
-        {
-          "command": "rebased.shelve",
-          "group": "4_rollback@2"
-        },
-        {
-          "command": "rebased.resolveConflicts",
-          "group": "5_conflicts@1",
-          "when": "rebased.hasConflicts"
-        },
-        {
-          "command": "rebased.showFileHistory",
-          "group": "1_history@1"
-        },
-        {
-          "command": "rebased.showHistoryForSelection",
-          "group": "1_history@2",
-          "when": "editorHasSelection"
-        },
-        {
-          "command": "rebased.annotate",
-          "group": "1_history@3",
-          "when": "!rebased.annotated"
-        },
-        {
-          "command": "rebased.annotateClose",
-          "group": "1_history@3",
-          "when": "rebased.annotated"
-        },
-        {
-          "command": "rebased.compareWithRevision",
-          "group": "2_compare@1"
-        },
-        {
-          "command": "rebased.compareWithBranch",
-          "group": "2_compare@2"
         }
       ],
       "commandPalette": [
@@ -533,6 +799,202 @@
         {
           "command": "rebased.showHistoryForSelection",
           "when": "editorHasSelection"
+        },
+        {
+          "command": "rebased.branch.checkout",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.newBranchFrom",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.checkoutAndRebase",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.checkoutAndUpdate",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.compare",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.showDiffWithWorkingTree",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.rebaseCurrentOnto",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.mergeIntoCurrent",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.pullRebase",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.pullMerge",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.push",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.update",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.rename",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.delete",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.toggleFavorite",
+          "when": "false"
+        },
+        {
+          "command": "rebased.branch.trackRemote",
+          "when": "false"
+        },
+        {
+          "command": "rebased.tag.checkout",
+          "when": "false"
+        },
+        {
+          "command": "rebased.tag.mergeIntoCurrent",
+          "when": "false"
+        },
+        {
+          "command": "rebased.tag.push",
+          "when": "false"
+        },
+        {
+          "command": "rebased.tag.delete",
+          "when": "false"
+        },
+        {
+          "command": "rebased.cherryPick",
+          "when": "false"
+        },
+        {
+          "command": "rebased.revertCommits",
+          "when": "false"
+        },
+        {
+          "command": "rebased.undoCommit",
+          "when": "false"
+        },
+        {
+          "command": "rebased.rewordCommit",
+          "when": "false"
+        },
+        {
+          "command": "rebased.fixupCommit",
+          "when": "false"
+        },
+        {
+          "command": "rebased.squashCommits",
+          "when": "false"
+        },
+        {
+          "command": "rebased.dropCommits",
+          "when": "false"
+        },
+        {
+          "command": "rebased.interactiveRebase",
+          "when": "false"
+        },
+        {
+          "command": "rebased.checkoutRevision",
+          "when": "false"
+        },
+        {
+          "command": "rebased.ops.pickToolbarRepository",
+          "when": "false"
+        },
+        {
+          "command": "rebased.push",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.fetch",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.pull",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.updateProject",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.branches",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.createBranch",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.merge",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.rebase",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.resetHead",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.createTag",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.remotes",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.unshallow",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.copyBranchName",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.createPatch",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.applyPatch",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.applyPatchFromClipboard",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.abortOperation",
+          "when": "rebased.operation && rebased.operation != 'none'"
+        },
+        {
+          "command": "rebased.continueOperation",
+          "when": "rebased.operation && rebased.operation != 'none'"
+        },
+        {
+          "command": "rebased.skipCommit",
+          "when": "rebased.operation && rebased.operation != 'none'"
         }
       ],
       "editor/lineNumber/context": [
@@ -550,6 +1012,64 @@
           "command": "rebased.annotateOptions",
           "when": "rebased.annotated",
           "group": "9_rebased"
+        }
+      ],
+      "rebased.git.file": [
+        {
+          "command": "rebased.commit",
+          "group": "1_file@1"
+        },
+        {
+          "command": "rebased.addToVcs",
+          "group": "1_file@2"
+        },
+        {
+          "command": "rebased.addToGitignore",
+          "group": "1_file@3"
+        },
+        {
+          "command": "rebased.annotate",
+          "group": "2_history@1",
+          "when": "!rebased.annotated"
+        },
+        {
+          "command": "rebased.annotateClose",
+          "group": "2_history@2",
+          "when": "rebased.annotated"
+        },
+        {
+          "command": "rebased.showLocalDiff",
+          "group": "2_history@3"
+        },
+        {
+          "command": "rebased.compareWithRevision",
+          "group": "2_history@4"
+        },
+        {
+          "command": "rebased.compareWithBranch",
+          "group": "2_history@5"
+        },
+        {
+          "command": "rebased.showFileHistory",
+          "group": "2_history@6"
+        },
+        {
+          "command": "rebased.showHistoryForSelection",
+          "group": "2_history@7",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "rebased.rollback",
+          "group": "3_rollback@1"
+        },
+        {
+          "command": "rebased.shelve",
+          "group": "3_rollback@2"
+        },
+        {
+          "command": "rebased.resolveConflicts",
+          "group": "4_conflicts@1",
+          "when": "rebased.hasConflicts"
         }
       ]
     },
@@ -592,6 +1112,42 @@
         "command": "rebased.annotateClose",
         "key": "ctrl+alt+shift+a",
         "when": "editorTextFocus && rebased.annotated"
+      },
+      {
+        "command": "rebased.push",
+        "key": "ctrl+shift+k",
+        "mac": "cmd+shift+k",
+        "when": "config.rebased.intellijShortcuts && !editorTextFocus"
+      },
+      {
+        "command": "rebased.push",
+        "key": "ctrl+shift+k",
+        "mac": "cmd+shift+k",
+        "when": "config.rebased.intellijShortcuts && editorTextFocus && config.rebased.intellijShortcutsInEditor"
+      },
+      {
+        "command": "rebased.updateProject",
+        "key": "ctrl+t",
+        "mac": "cmd+t",
+        "when": "config.rebased.intellijShortcuts"
+      },
+      {
+        "command": "rebased.branches",
+        "key": "ctrl+shift+`",
+        "mac": "cmd+shift+`",
+        "when": "config.rebased.intellijShortcuts"
+      },
+      {
+        "command": "rebased.vcsOperationsPopup",
+        "key": "alt+`",
+        "mac": "ctrl+v",
+        "when": "config.rebased.intellijShortcuts && !terminalFocus && !editorTextFocus"
+      },
+      {
+        "command": "rebased.createBranch",
+        "key": "ctrl+alt+n",
+        "mac": "alt+cmd+n",
+        "when": "config.rebased.intellijShortcuts && rebased.hasRepository"
       }
     ],
     "colors": [
@@ -654,6 +1210,12 @@
           "highContrast": "#DE6A66",
           "highContrastLight": "#DE1B2E"
         }
+      }
+    ],
+    "submenus": [
+      {
+        "id": "rebased.git.file",
+        "label": "Git"
       }
     ]
   },
