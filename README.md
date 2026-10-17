@@ -19,7 +19,8 @@ IntelliJ platform. It keeps the IntelliJ git workflow, menu wording, keyboard sh
 - Commit / Shelf / Stash tabs. Changelists, Unversioned Files, Merge Conflicts, checkboxes, Group By, speed search, drag & drop.
 - Amend (also of older commits), commit message history, Commit / Commit and Push…, commit options (Author, Sign-off, extra commit for file movements). Commits exactly the checked files, without the staging area.
 - Shelve / Unshelve (untracked files included), Stash / Unstash dialogs, Rollback, Add to VCS, Add to .gitignore.
-- Conflicts dialog with Accept Yours / Accept Theirs / Resolve All Simple Conflicts / Resolve Manually (VS Code 3-way merge editor).
+- Conflicts dialog with Accept Yours / Accept Theirs / Resolve All Simple Conflicts / Resolve Manually.
+- IntelliJ's three-pane merge window: Yours on the left, the editable Result in the middle, Theirs on the right, with curved connectors, synchronized scrolling, word highlighting, »/«/× per change (append for the second side of a conflict), magic resolve, Apply Non-Conflicting Changes (Left / All / Right), Resolve Simple Conflicts, Revert Conflict Resolution, Compare Contents, F7 / Shift+F7, undo, Accept Left / Accept Right / Apply Changes. Binary and deleted/modified conflicts get a simple Accept Left / Accept Right choice. Set `rebased.merge.useVsCodeMergeEditor` to use VS Code's merge editor instead.
 - IntelliJ file status colors in the Explorer and editor tabs.
 - Rollback File…, Remove from VCS, Revert Resolved, Copy Path/Reference…, Create Patch dialog.
 
@@ -46,7 +47,7 @@ IntelliJ platform. It keeps the IntelliJ git workflow, menu wording, keyboard sh
 
 VS Code has no floating windows or gutter menus, so:
 - Dialogs open as editor tabs that look like IntelliJ dialogs; popups such as the branches popup are VS Code quick picks.
-- Diffs and merges use the VS Code diff editor and 3-way merge editor.
+- Diffs use the VS Code diff editor; merges use an IntelliJ-style three-pane merge window built on CodeMirror.
 - Annotation options live in the hover and the line-number context menu.
 
 Other limitations:

@@ -229,6 +229,11 @@
         "type": "boolean",
         "default": true,
         "description": "Enable IntelliJ keyboard shortcuts that do not conflict with common VS Code chords (Ctrl+Alt+K Commit and Push, Ctrl+Alt+Z Rollback)."
+      },
+      "rebased.merge.useVsCodeMergeEditor": {
+        "type": "boolean",
+        "default": false,
+        "description": "Resolve Manually\u2026 opens VS Code's merge editor instead of the IntelliJ-style three-pane merge window."
       }
     }
   }

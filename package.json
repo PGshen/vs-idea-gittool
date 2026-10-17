@@ -33,7 +33,7 @@
     "watch": "node scripts/build.mjs --watch",
     "typecheck": "tsc -p . --noEmit && tsc -p src/webview --noEmit",
     "test": "node scripts/test.mjs",
-    "package": "npm run build && vsce package --no-dependencies"
+    "package": "npm run contrib && node scripts/build.mjs --production && vsce package --no-dependencies --allow-missing-repository"
   },
   "contributes": {
     "configuration": {
@@ -101,6 +101,11 @@
           "type": "boolean",
           "default": true,
           "description": "Use IntelliJ keyboard shortcuts for Git actions (Ctrl+T Update Project, Ctrl+Shift+K Push, Ctrl+Shift+` Branches, Alt+` VCS Operations Popup, Ctrl+Alt+N New Branch)."
+        },
+        "rebased.merge.useVsCodeMergeEditor": {
+          "type": "boolean",
+          "default": false,
+          "description": "Resolve Manually… opens VS Code's merge editor instead of the IntelliJ-style three-pane merge window."
         },
         "rebased.localHistory.enabled": {
           "type": "boolean",
@@ -1651,6 +1656,12 @@
     ]
   },
   "devDependencies": {
+    "@codemirror/commands": "^6.7.1",
+    "@codemirror/language": "^6.10.3",
+    "@codemirror/language-data": "^6.5.1",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.34.1",
+    "@lezer/highlight": "^1.2.1",
     "@types/node": "^20.16.10",
     "@types/vscode": "^1.90.0",
     "@vscode/test-electron": "^2.4.1",

@@ -1,0 +1,232 @@
+/* IntelliJ merge window. Diff colors: DIFF_* of the Darcula / Default editor color schemes. */
+body.ij-dark,
+body.ij-vscode.vscode-dark {
+  --mg-editor-bg: #1e1f22;
+  --mg-editor-fg: #bcbec4;
+  --mg-line-number: #4b5059;
+  --mg-line-number-active: #a1a3ab;
+  --mg-caret: #ced0d6;
+  --mg-caret-row: #26282e;
+  --mg-selection: #214283;
+  --mg-modified: #385570;
+  --mg-modified-inner: #43698d;
+  --mg-inserted: #294436;
+  --mg-inserted-inner: #447152;
+  --mg-deleted: #484a4a;
+  --mg-deleted-inner: #656e76;
+  --mg-conflict: #45302b;
+  --mg-conflict-inner: #8f5247;
+  --mg-modified-border: #43698d;
+  --mg-inserted-border: #447152;
+  --mg-deleted-border: #656e76;
+  --mg-conflict-border: #8f5247;
+  --mg-divider-bg: #2b2d30;
+}
+body.ij-light,
+body.ij-vscode.vscode-light {
+  --mg-editor-bg: #ffffff;
+  --mg-editor-fg: #080808;
+  --mg-line-number: #aeb3c2;
+  --mg-line-number-active: #767a8a;
+  --mg-caret: #000000;
+  --mg-caret-row: #f5f8fe;
+  --mg-selection: #a6d2ff;
+  --mg-modified: #c2d8f2;
+  --mg-modified-inner: #9fbfe8;
+  --mg-inserted: #bee6be;
+  --mg-inserted-inner: #9fd79f;
+  --mg-deleted: #d6d6d6;
+  --mg-deleted-inner: #bdbdbd;
+  --mg-conflict: #ffd5cc;
+  --mg-conflict-inner: #ffb3a3;
+  --mg-modified-border: #b6d2f2;
+  --mg-inserted-border: #aadeaa;
+  --mg-deleted-border: #c8c8c8;
+  --mg-conflict-border: #ffc8bd;
+  --mg-divider-bg: #f7f8fa;
+}
+body.ij-vscode {
+  --mg-editor-bg: var(--vscode-editor-background);
+  --mg-editor-fg: var(--vscode-editor-foreground);
+  --mg-line-number: var(--vscode-editorLineNumber-foreground);
+  --mg-line-number-active: var(--vscode-editorLineNumber-activeForeground);
+  --mg-caret: var(--vscode-editorCursor-foreground);
+  --mg-selection: var(--vscode-editor-selectionBackground);
+}
+
+.mg-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+}
+.mg-toolbar {
+  border-bottom: 1px solid var(--border);
+}
+.mg-toolbar-label {
+  color: var(--fg-secondary);
+  font-size: 12px;
+  margin: 0 2px 0 4px;
+  white-space: nowrap;
+}
+.mg-text-action {
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.mg-text-action:hover:not(:disabled) {
+  background: var(--bg-action-hover);
+}
+.mg-text-action:disabled {
+  opacity: 0.45;
+}
+.mg-status {
+  color: var(--fg-secondary);
+  margin-right: 8px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.mg-status.done {
+  color: var(--fg-success);
+}
+
+/* Titles: same columns as the panes, separated by the 30px dividers. */
+.mg-titles {
+  display: flex;
+  flex: none;
+  height: 30px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.mg-title {
+  flex: 1;
+  min-width: 0;
+  padding: 0 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mg-title b {
+  font-weight: 600;
+}
+.mg-title-gap {
+  width: 30px;
+  flex: none;
+}
+
+.mg-panes {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  background: var(--mg-editor-bg);
+}
+.mg-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  position: relative;
+}
+.mg-host {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+.mg-host .cm-editor {
+  height: 100%;
+}
+.mg-divider {
+  width: 30px;
+  flex: none;
+  height: 100%;
+  background: var(--mg-editor-bg);
+}
+
+/* Apply / ignore controls next to the dividers. */
+.mg-ctrl {
+  width: 36px;
+  flex: none;
+  position: relative;
+  overflow: hidden;
+  background: var(--mg-editor-bg);
+}
+.mg-ctrl-result {
+  width: 20px;
+}
+.mg-ctrl-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+}
+.mg-ctrl-btn {
+  width: 16px;
+  height: 16px;
+  padding: 1px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mg-ctrl-btn:hover {
+  background: var(--bg-action-hover);
+}
+.mg-ctrl-btn img {
+  pointer-events: none;
+}
+
+/* Change blocks. */
+.cm-line.mg-modified { background: var(--mg-modified); }
+.cm-line.mg-inserted { background: var(--mg-inserted); }
+.cm-line.mg-deleted { background: var(--mg-deleted); }
+.cm-line.mg-conflict { background: var(--mg-conflict); }
+.cm-line.mg-empty-before { background: none; box-shadow: inset 0 1px 0 0 var(--mg-line-color); }
+.cm-line.mg-empty-after { background: none; box-shadow: inset 0 -1px 0 0 var(--mg-line-color); }
+.cm-line.mg-modified.mg-empty-before, .cm-line.mg-modified.mg-empty-after { --mg-line-color: var(--mg-modified-border); }
+.cm-line.mg-inserted.mg-empty-before, .cm-line.mg-inserted.mg-empty-after { --mg-line-color: var(--mg-inserted-border); }
+.cm-line.mg-deleted.mg-empty-before, .cm-line.mg-deleted.mg-empty-after { --mg-line-color: var(--mg-deleted-border); }
+.cm-line.mg-conflict.mg-empty-before, .cm-line.mg-conflict.mg-empty-after { --mg-line-color: var(--mg-conflict-border); }
+.mg-inner-modified { background: var(--mg-modified-inner); }
+.mg-inner-inserted { background: var(--mg-inserted-inner); }
+.mg-inner-deleted { background: var(--mg-deleted-inner); }
+.mg-inner-conflict { background: var(--mg-conflict-inner); }
+
+/* Divider connectors. */
+.mg-conn {
+  stroke-width: 1;
+}
+.mg-conn.mg-modified { fill: var(--mg-modified); stroke: var(--mg-modified-border); }
+.mg-conn.mg-inserted { fill: var(--mg-inserted); stroke: var(--mg-inserted-border); }
+.mg-conn.mg-deleted { fill: var(--mg-deleted); stroke: var(--mg-deleted-border); }
+.mg-conn.mg-conflict { fill: var(--mg-conflict); stroke: var(--mg-conflict-border); }
+.mg-conn-line { fill: none; stroke-width: 1.5; }
+.mg-conn-line.mg-modified { stroke: var(--mg-modified-border); }
+.mg-conn-line.mg-inserted { stroke: var(--mg-inserted-border); }
+.mg-conn-line.mg-deleted { stroke: var(--mg-deleted-border); }
+.mg-conn-line.mg-conflict { stroke: var(--mg-conflict-border); }
+
+.mg-south {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  flex: none;
+}
+.mg-south .spacer {
+  flex: 1;
+}

@@ -24,7 +24,7 @@ src/
     index.ts            FEATURES list: each feature is (ctx: Ctx) => void
     localHistory/       Local History: recorder (file watcher, saves), store (events + blobs), Local History window
     log/                Git log editor tab / panel view, file history, annotate, compare
-    commit/             Commit tool window (changes, changelists, commit, amend, shelf, stash), conflicts, rollback
+    commit/             Commit tool window (changes, changelists, commit, amend, shelf, stash), conflicts, merge window (mergeTool.ts + webview/merge), rollback
     ops/                Branches popup, status bar widgets, push/update/pull/fetch/merge/rebase/reset/tag/remotes/clone dialogs,
                         interactive rebase, commit editing in log, cherry-pick/revert, ongoing operation actions, Git main menu
   webview/

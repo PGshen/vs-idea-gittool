@@ -10,6 +10,7 @@ import { WebviewConnection } from '../../host/webviewHost';
 import { changeKey } from '../../shared/commitProtocol';
 import { Change } from '../../shared/types';
 import { acceptSide, addFiles, conflictKind, resolveSimpleConflict } from './gitOps';
+import { MergeTool } from './mergeTool';
 
 export interface ConflictRow {
   key: string;
@@ -32,8 +33,10 @@ export class ConflictsController {
    */
   private readonly pending = new Map<string, { root: string; path: string; initial: string }>();
   private dialog: WebviewConnection | undefined;
+  private readonly mergeTool: MergeTool;
 
   constructor(private readonly ctx: Ctx) {
+    this.mergeTool = new MergeTool(ctx);
     ctx.extension.subscriptions.push(
       vscode.window.tabGroups.onDidChangeTabs(e => {
         for (const tab of e.closed) {
@@ -179,8 +182,21 @@ export class ConflictsController {
     }
   }
 
-  /** Opens VS Code's 3-way merge editor: base (stage 1), yours, theirs; result written to the work tree file. */
+  /**
+   * "Resolve Manually…": IntelliJ's three-pane merge window, or VS Code's merge editor when
+   * `rebased.merge.useVsCodeMergeEditor` is set.
+   */
   async openMergeEditor(c: Change) {
+    const repo = this.ctx.repos.get(c.root);
+    if (repo && !vscode.workspace.getConfiguration('rebased').get<boolean>('merge.useVsCodeMergeEditor', false)) {
+      await this.mergeTool.open(repo, c, this.reversed(repo));
+      return;
+    }
+    await this.openVsCodeMergeEditor(c);
+  }
+
+  /** VS Code's 3-way merge editor: base (stage 1), yours, theirs; result written to the work tree file. */
+  private async openVsCodeMergeEditor(c: Change) {
     const repo = this.ctx.repos.get(c.root);
     const rev = this.reversed(repo);
     const d = this.description();
