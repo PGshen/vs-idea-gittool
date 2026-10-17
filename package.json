@@ -1,0 +1,116 @@
+{
+  "name": "rebased-vscode",
+  "displayName": "Rebased Git Client",
+  "description": "The Rebased / IntelliJ git client, remade as a VS Code extension: git log with graph, commit tool window, shelf, branches popup, interactive rebase, push/update dialogs, conflicts resolver and annotations.",
+  "version": "0.1.0",
+  "publisher": "rebased-vscode",
+  "license": "Apache-2.0",
+  "icon": "media/rebased.png",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "keywords": [
+    "git",
+    "log",
+    "graph",
+    "intellij",
+    "rebase",
+    "shelf",
+    "rebased"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:.git",
+    "onStartupFinished"
+  ],
+  "scripts": {
+    "contrib": "node scripts/merge-contrib.mjs",
+    "build": "npm run contrib && node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc -p . --noEmit && tsc -p src/webview --noEmit",
+    "test": "node scripts/build.mjs && node --test test/",
+    "package": "npm run build && vsce package --no-dependencies"
+  },
+  "contributes": {
+    "configuration": {
+      "title": "Rebased",
+      "properties": {
+        "rebased.gitPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the Git executable. Leave empty to use git from PATH."
+        },
+        "rebased.appearance": {
+          "type": "string",
+          "enum": [
+            "intellij",
+            "vscode"
+          ],
+          "enumDescriptions": [
+            "Use the IntelliJ New UI light/dark palette (picked by the VS Code theme kind).",
+            "Keep the IntelliJ layout and icons but use the colors of the current VS Code theme."
+          ],
+          "default": "intellij",
+          "description": "Color palette of the Rebased views and dialogs."
+        },
+        "rebased.untrackedFiles": {
+          "type": "string",
+          "enum": [
+            "all",
+            "normal",
+            "hide"
+          ],
+          "default": "all",
+          "description": "How to show unversioned files in the Commit view."
+        },
+        "rebased.showIgnoredFiles": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show ignored files in the Commit view."
+        },
+        "rebased.repositoryScanMaxDepth": {
+          "type": "number",
+          "default": 1,
+          "description": "How deep to look for nested Git repositories below each workspace folder."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "rebased.showConsole",
+        "title": "Show Git Console",
+        "category": "Rebased"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "rebased",
+          "title": "Rebased",
+          "icon": "media/activity/commit.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "rebased-panel",
+          "title": "Git",
+          "icon": "media/activity/vcs.svg"
+        }
+      ]
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.10",
+    "@types/vscode": "^1.90.0",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.0",
+    "playwright-core": "^1.48.2",
+    "preact": "^10.24.3",
+    "typescript": "^5.6.3"
+  }
+}

@@ -1,0 +1,8 @@
+src/**
+scripts/**
+contrib/**
+test/**
+node_modules/**
+tsconfig.json
+**/*.map
+media/icons/PlatformIconMappings.json

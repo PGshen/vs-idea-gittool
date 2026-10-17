@@ -1,0 +1,782 @@
+/*
+ * Shared styles for all Rebased webviews. Colors follow the IntelliJ New UI (Int UI) themes:
+ * expUI_dark.theme.json / expUI_light.theme.json and the matching editor color schemes.
+ * body.ij-dark / body.ij-light use the IntelliJ palette, body.ij-vscode maps the same tokens to the VS Code theme.
+ */
+
+body.ij-dark {
+  --bg: #2b2d30;            /* Gray2: panels */
+  --bg-editor: #1e1f22;     /* Gray1: editor, frame */
+  --bg-input: #2b2d30;
+  --bg-hover: #393b40;      /* Gray3 */
+  --bg-row-hover: #2e3033;
+  --bg-selection: #2e436e;  /* Blue2 */
+  --bg-selection-inactive: #43454a; /* Gray4 */
+  --bg-current-branch: #283044;
+  --bg-popup: #2b2d30;
+  --bg-tooltip: #393b40;
+  --bg-action-hover: #ffffff16;
+  --bg-action-pressed: #ffffff26;
+  --bg-tag: #393b40;
+  --bg-banner-info: #25324d;
+  --bg-banner-warning: #3d3223;
+  --bg-banner-error: #402929;
+  --border: #1e1f22;
+  --border-subtle: #393b40;
+  --border-control: #4e5157; /* Gray5 */
+  --border-popup: #43454a;
+  --separator: #393b40;
+  --fg: #dfe1e5;            /* Gray12 */
+  --fg-strong: #ffffff;
+  --fg-secondary: #6f737a;  /* Gray7 */
+  --fg-info: #868a91;       /* Gray8 */
+  --fg-disabled: #5a5d63;
+  --fg-link: #548af7;
+  --fg-error: #db5c5c;
+  --fg-warning: #d6ae58;
+  --fg-success: #57965c;
+  --accent: #3574f0;        /* Blue6 */
+  --accent-fg: #ffffff;
+  --focus: #3574f0;
+  --status-modified: #70aeff;
+  --status-added: #73bd79;
+  --status-deleted: #6f737a;
+  --status-unknown: #e88f89;
+  --status-ignored: #d69a6b;
+  --status-conflict: #de6a66;
+  --status-merged: #cf84cf;
+  --ref-head: #f5d273;
+  --ref-local: #5fad65;
+  --ref-remote: #b189f5;
+  --ref-tag: #868a91;
+  --diff-added: #73bd79;
+  --diff-deleted: #de6a66;
+  --graph-saturation: 0.6;
+  --graph-brightness: 0.6;
+  --scrollbar: #ffffff26;
+  --scrollbar-hover: #ffffff40;
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+body.ij-light {
+  --bg: #f7f8fa;            /* Gray13 */
+  --bg-editor: #ffffff;
+  --bg-input: #ffffff;
+  --bg-hover: #dfe1e5;
+  --bg-row-hover: #edf3ff;
+  --bg-selection: #d4e2ff;  /* Blue11 */
+  --bg-selection-inactive: #dfe1e5;
+  --bg-current-branch: #edf3ff;
+  --bg-popup: #ffffff;
+  --bg-tooltip: #ffffff;
+  --bg-action-hover: #dfe1e5;
+  --bg-action-pressed: #c9ccd6;
+  --bg-tag: #ebecf0;
+  --bg-banner-info: #f5f8fe;
+  --bg-banner-warning: #fffaeb;
+  --bg-banner-error: #fff7f7;
+  --border: #ebecf0;
+  --border-subtle: #ebecf0;
+  --border-control: #c9ccd6;
+  --border-popup: #dfe1e5;
+  --separator: #ebecf0;
+  --fg: #000000;
+  --fg-strong: #000000;
+  --fg-secondary: #818594;
+  --fg-info: #6c707e;
+  --fg-disabled: #a8adbd;
+  --fg-link: #2e55a3;
+  --fg-error: #db3b4b;
+  --fg-warning: #a46704;
+  --fg-success: #208a3c;
+  --accent: #3574f0;
+  --accent-fg: #ffffff;
+  --focus: #3574f0;
+  --status-modified: #0033b3;
+  --status-added: #067d17;
+  --status-deleted: #6c707e;
+  --status-unknown: #b23247;
+  --status-ignored: #8c4f00;
+  --status-conflict: #de1b2e;
+  --status-merged: #643cb8;
+  --ref-head: #ffaf0f;
+  --ref-local: #369650;
+  --ref-remote: #834dF0;
+  --ref-tag: #6c707e;
+  --diff-added: #208a3c;
+  --diff-deleted: #db3b4b;
+  --graph-saturation: 0.6;
+  --graph-brightness: 0.7;
+  --scrollbar: #0000001f;
+  --scrollbar-hover: #00000033;
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  color-scheme: light;
+}
+
+/* Follow the current VS Code color theme, keeping the IntelliJ layout. */
+body.ij-vscode {
+  --bg: var(--vscode-sideBar-background, var(--vscode-editor-background));
+  --bg-editor: var(--vscode-editor-background);
+  --bg-input: var(--vscode-input-background);
+  --bg-hover: var(--vscode-toolbar-hoverBackground);
+  --bg-row-hover: var(--vscode-list-hoverBackground);
+  --bg-selection: var(--vscode-list-activeSelectionBackground);
+  --bg-selection-inactive: var(--vscode-list-inactiveSelectionBackground);
+  --bg-current-branch: var(--vscode-editor-lineHighlightBackground, transparent);
+  --bg-popup: var(--vscode-menu-background, var(--vscode-editorWidget-background));
+  --bg-tooltip: var(--vscode-editorHoverWidget-background);
+  --bg-action-hover: var(--vscode-toolbar-hoverBackground);
+  --bg-action-pressed: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
+  --bg-tag: var(--vscode-badge-background);
+  --bg-banner-info: var(--vscode-editorInfo-background, var(--vscode-editorWidget-background));
+  --bg-banner-warning: var(--vscode-inputValidation-warningBackground);
+  --bg-banner-error: var(--vscode-inputValidation-errorBackground);
+  --border: var(--vscode-panel-border, transparent);
+  --border-subtle: var(--vscode-widget-border, var(--vscode-panel-border, transparent));
+  --border-control: var(--vscode-input-border, var(--vscode-widget-border, #8888));
+  --border-popup: var(--vscode-menu-border, var(--vscode-widget-border, #8888));
+  --separator: var(--vscode-menu-separatorBackground, var(--vscode-panel-border, #8884));
+  --fg: var(--vscode-foreground);
+  --fg-strong: var(--vscode-foreground);
+  --fg-secondary: var(--vscode-descriptionForeground);
+  --fg-info: var(--vscode-descriptionForeground);
+  --fg-disabled: var(--vscode-disabledForeground);
+  --fg-link: var(--vscode-textLink-foreground);
+  --fg-error: var(--vscode-errorForeground);
+  --fg-warning: var(--vscode-editorWarning-foreground);
+  --fg-success: var(--vscode-testing-iconPassed, #57965c);
+  --accent: var(--vscode-button-background);
+  --accent-fg: var(--vscode-button-foreground);
+  --focus: var(--vscode-focusBorder);
+  --status-modified: var(--vscode-gitDecoration-modifiedResourceForeground);
+  --status-added: var(--vscode-gitDecoration-addedResourceForeground);
+  --status-deleted: var(--vscode-gitDecoration-deletedResourceForeground);
+  --status-unknown: var(--vscode-gitDecoration-untrackedResourceForeground);
+  --status-ignored: var(--vscode-gitDecoration-ignoredResourceForeground);
+  --status-conflict: var(--vscode-gitDecoration-conflictingResourceForeground);
+  --status-merged: var(--vscode-gitDecoration-submoduleResourceForeground);
+  --ref-head: var(--vscode-charts-yellow);
+  --ref-local: var(--vscode-charts-green);
+  --ref-remote: var(--vscode-charts-purple);
+  --ref-tag: var(--vscode-descriptionForeground);
+  --diff-added: var(--vscode-gitDecoration-addedResourceForeground);
+  --diff-deleted: var(--vscode-gitDecoration-deletedResourceForeground);
+  --graph-saturation: 0.6;
+  --graph-brightness: 0.65;
+  --scrollbar: var(--vscode-scrollbarSlider-background);
+  --scrollbar-hover: var(--vscode-scrollbarSlider-hoverBackground);
+  --shadow: 0 4px 14px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.3));
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Noto Sans', sans-serif;
+  font-size: 13px;
+  line-height: 16px;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', var(--vscode-editor-font-family), Menlo, Consolas, monospace;
+}
+
+a,
+.link {
+  color: var(--fg-link);
+  text-decoration: none;
+  cursor: pointer;
+}
+a:hover,
+.link:hover {
+  text-decoration: underline;
+}
+
+.secondary {
+  color: var(--fg-secondary);
+}
+.info {
+  color: var(--fg-info);
+}
+.error-text {
+  color: var(--fg-error);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-hover);
+  background-clip: content-box;
+}
+::-webkit-scrollbar-corner,
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- Icons ---------- */
+.icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  display: inline-block;
+  vertical-align: middle;
+  pointer-events: none;
+}
+.icon.s12 {
+  width: 12px;
+  height: 12px;
+}
+.icon.s14 {
+  width: 14px;
+  height: 14px;
+}
+.icon.s20 {
+  width: 20px;
+  height: 20px;
+}
+
+/* ---------- Toolbar & action buttons (ActionButton: 26x26 hit area, 4px arc) ---------- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+  min-height: 34px;
+  flex: none;
+}
+.toolbar.vertical {
+  flex-direction: column;
+  padding: 6px 0;
+}
+.toolbar .spacer {
+  flex: 1;
+}
+.toolbar-separator {
+  width: 1px;
+  height: 18px;
+  background: var(--separator);
+  margin: 0 5px;
+  flex: none;
+}
+.action-button {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--fg);
+  cursor: default;
+  flex: none;
+  position: relative;
+}
+.action-button:hover:not(:disabled) {
+  background: var(--bg-action-hover);
+}
+.action-button:active:not(:disabled),
+.action-button.pressed {
+  background: var(--bg-action-pressed);
+}
+.action-button.toggled {
+  background: var(--bg-action-pressed);
+}
+.action-button:disabled {
+  opacity: 0.4;
+}
+.action-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+.action-button .dropdown-mark {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-top: 3px solid var(--fg-info);
+  transform: rotate(-45deg);
+}
+
+/* ---------- Buttons (Button: 28px height, 8px arc... IntelliJ uses arc 8 = radius 4) ---------- */
+.btn {
+  height: 28px;
+  min-width: 72px;
+  padding: 0 14px;
+  border-radius: 4px;
+  border: 1px solid var(--border-control);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: default;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+.btn:disabled {
+  color: var(--fg-disabled);
+  border-color: var(--border-subtle);
+}
+.btn.primary:disabled {
+  background: var(--bg);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.btn-split {
+  display: inline-flex;
+}
+.btn-split .btn:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.btn-split .btn.arrow {
+  min-width: 0;
+  width: 26px;
+  padding: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ---------- Inputs ---------- */
+.text-field,
+textarea.text-area,
+select.combo {
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid var(--border-control);
+  background: var(--bg-input);
+  color: var(--fg);
+  font: inherit;
+  padding: 0 8px;
+  outline: none;
+  min-width: 0;
+}
+textarea.text-area {
+  height: auto;
+  padding: 6px 8px;
+  resize: none;
+}
+.text-field:focus,
+textarea.text-area:focus,
+select.combo:focus {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 1px var(--focus);
+}
+.text-field.error {
+  border-color: var(--fg-error);
+}
+select.combo {
+  padding: 0 4px;
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: default;
+  min-height: 24px;
+}
+.checkbox input,
+.tree-check {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  border-radius: 3px;
+  border: 1px solid var(--border-control);
+  background: var(--bg-input);
+  flex: none;
+  position: relative;
+}
+.checkbox input:checked,
+.tree-check:checked,
+.tree-check.indeterminate {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.checkbox input:checked::after,
+.tree-check:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 1.6px 1.6px 0;
+  transform: rotate(45deg);
+}
+.tree-check.indeterminate::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 5.5px;
+  width: 6px;
+  height: 1.6px;
+  background: #fff;
+}
+.checkbox input:focus-visible,
+.tree-check:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.checkbox.disabled {
+  color: var(--fg-disabled);
+}
+
+.radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+}
+.radio input {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+/* ---------- Tree / list rows (rowHeight 24) ---------- */
+.tree {
+  outline: none;
+  overflow: auto;
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.tree-row {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  padding-right: 8px;
+  gap: 4px;
+  border-radius: 4px;
+  margin: 0 6px;
+}
+.tree-row:hover {
+  background: var(--bg-row-hover);
+}
+.tree-row.selected {
+  background: var(--bg-selection-inactive);
+}
+.tree:focus .tree-row.selected,
+.tree:focus-within .tree-row.selected {
+  background: var(--bg-selection);
+}
+.tree-row .chevron {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.tree-row .label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tree-row .hint {
+  color: var(--fg-secondary);
+  margin-left: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.st-M,
+.st-R,
+.st-T,
+.st-C {
+  color: var(--status-modified);
+}
+.st-A {
+  color: var(--status-added);
+}
+.st-D {
+  color: var(--status-deleted);
+}
+.st-U {
+  color: var(--status-conflict);
+}
+.st-\? {
+  color: var(--status-unknown);
+}
+.st-\! {
+  color: var(--status-ignored);
+}
+
+/* ---------- Popup / context menu ---------- */
+.popup {
+  position: fixed;
+  z-index: 1000;
+  background: var(--bg-popup);
+  border: 1px solid var(--border-popup);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 6px 0;
+  min-width: 140px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  outline: none;
+}
+.menu-item {
+  height: 24px;
+  margin: 0 6px;
+  padding: 0 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.menu-item.active:not(.disabled) {
+  background: var(--bg-selection);
+}
+.menu-item.disabled {
+  color: var(--fg-disabled);
+}
+.menu-item .menu-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  flex: none;
+}
+.menu-item .menu-text {
+  flex: 1;
+}
+.menu-item .menu-shortcut {
+  color: var(--fg-info);
+  margin-left: 24px;
+}
+.menu-item .menu-arrow {
+  margin-left: 12px;
+}
+.menu-separator {
+  height: 1px;
+  background: var(--separator);
+  margin: 4px 14px;
+}
+.menu-separator-text {
+  color: var(--fg-info);
+  font-size: 12px;
+  padding: 4px 14px 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.menu-separator-text::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--separator);
+}
+.menu-search {
+  margin: 0 8px 6px;
+  display: flex;
+}
+.menu-search .text-field {
+  flex: 1;
+}
+
+/* ---------- Tooltip ---------- */
+.tooltip {
+  position: fixed;
+  z-index: 2000;
+  background: var(--bg-tooltip);
+  border: 1px solid var(--border-popup);
+  border-radius: 4px;
+  padding: 6px 10px;
+  max-width: 420px;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  white-space: pre-wrap;
+}
+.tooltip .shortcut {
+  color: var(--fg-info);
+  margin-left: 8px;
+}
+
+/* ---------- Splitters ---------- */
+.split {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.split.vertical {
+  flex-direction: column;
+}
+.split > .pane {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.splitter {
+  flex: none;
+  background: var(--border);
+  position: relative;
+}
+.split:not(.vertical) > .splitter {
+  width: 1px;
+  cursor: col-resize;
+}
+.split.vertical > .splitter {
+  height: 1px;
+  cursor: row-resize;
+}
+.splitter::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+}
+
+/* ---------- Tabs (tool window header tabs) ---------- */
+.tw-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+  height: 40px;
+  flex: none;
+}
+.tw-tab {
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--fg);
+  cursor: default;
+}
+.tw-tab:hover {
+  background: var(--bg-action-hover);
+}
+.tw-tab.selected {
+  background: var(--bg-hover);
+  box-shadow: inset 0 0 0 1px var(--border-control);
+}
+
+/* ---------- Banner (EditorNotificationPanel / ongoing operation banner) ---------- */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-banner-info);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+.banner.warning {
+  background: var(--bg-banner-warning);
+}
+.banner.error {
+  background: var(--bg-banner-error);
+}
+.banner .spacer {
+  flex: 1;
+}
+
+.empty-text {
+  color: var(--fg-secondary);
+  text-align: center;
+  padding: 24px 12px;
+}
+.empty-text .link {
+  display: inline-block;
+  margin-top: 4px;
+}
+
+/* Loading spinner (AnimatedIcon "dots") */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--fg-secondary);
+  border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+  flex: none;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Ref labels (branch / tag chips in log and details) */
+.ref-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--fg-info);
+  white-space: nowrap;
+  font-size: 12px;
+}
+.ref-label .ref-icon {
+  width: 10px;
+  height: 10px;
+}
+
+.speed-search {
+  position: sticky;
+  bottom: 4px;
+  left: 8px;
+  display: inline-block;
+  margin-left: 8px;
+  background: var(--bg-popup);
+  border: 1px solid var(--border-popup);
+  border-radius: 4px;
+  padding: 2px 8px;
+  box-shadow: var(--shadow);
+}
+.tree-row.drop-target {
+  box-shadow: inset 0 0 0 1px var(--focus);
+}
+.tree-row .tree-check {
+  margin-right: 2px;
+}
