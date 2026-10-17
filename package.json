@@ -76,6 +76,73 @@
           "type": "number",
           "default": 1,
           "description": "How deep to look for nested Git repositories below each workspace folder."
+        },
+        "rebased.log.showInEditor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the log in the editor window (Rebased default). When off, the log is shown in the \"Git\" panel at the bottom, like in JetBrains IDEs."
+        },
+        "rebased.log.openOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Open the Git log when a workspace with a Git repository is opened."
+        },
+        "rebased.annotate.showAuthor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Annotate with Git Blame: show the author."
+        },
+        "rebased.annotate.showDate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Annotate with Git Blame: show the date."
+        },
+        "rebased.annotate.showRevision": {
+          "type": "boolean",
+          "default": false,
+          "description": "Annotate with Git Blame: show the revision."
+        },
+        "rebased.annotate.preferCommitDate": {
+          "type": "boolean",
+          "default": false,
+          "description": "Annotate with Git Blame: show the commit timestamp instead of the author timestamp."
+        },
+        "rebased.annotate.names": {
+          "type": "string",
+          "enum": [
+            "full",
+            "first",
+            "last",
+            "initials",
+            "email"
+          ],
+          "default": "first",
+          "description": "Annotate with Git Blame: how to show author names."
+        },
+        "rebased.annotate.colors": {
+          "type": "string",
+          "enum": [
+            "order",
+            "author",
+            "hide"
+          ],
+          "default": "order",
+          "description": "Annotate with Git Blame: background colors by commit order (age), by author, or none."
+        },
+        "rebased.annotate.ignoreWhitespace": {
+          "type": "boolean",
+          "default": false,
+          "description": "Annotate with Git Blame: ignore whitespace changes (-w)."
+        },
+        "rebased.annotate.detectMovementsWithinFile": {
+          "type": "boolean",
+          "default": false,
+          "description": "Annotate with Git Blame: detect moved lines within the file (-M)."
+        },
+        "rebased.annotate.detectMovementsAcrossFiles": {
+          "type": "boolean",
+          "default": false,
+          "description": "Annotate with Git Blame: detect lines moved from other files (-C)."
         }
       }
     },
@@ -83,6 +150,88 @@
       {
         "command": "rebased.showConsole",
         "title": "Show Git Console",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.showLog",
+        "title": "Show Git Log",
+        "category": "Rebased",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "rebased.log.newTab",
+        "title": "Open New Git Log Tab",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.log.selectCommit",
+        "title": "Show in Git Log",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.showFileHistory",
+        "title": "Show History",
+        "category": "Rebased",
+        "icon": "$(history)"
+      },
+      {
+        "command": "rebased.showHistoryForSelection",
+        "title": "Show History for Selection",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.annotate",
+        "title": "Annotate with Git Blame",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.annotateClose",
+        "title": "Close Annotations",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.annotateOptions",
+        "title": "Annotations View Options",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.annotateRevision",
+        "title": "Annotate Revision",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.compareWithRevision",
+        "title": "Compare with Revision…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.compareWithBranch",
+        "title": "Compare with Branch or Tag…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.compareRefs",
+        "title": "Compare with Branch…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.compareRefs.files",
+        "title": "Show Files Diff",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.showCommitDiff",
+        "title": "Show Commit Diff",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.showRepositoryAtRevision",
+        "title": "Show Repository at Revision",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.copyText",
+        "title": "Copy",
         "category": "Rebased"
       }
     ],
@@ -101,7 +250,148 @@
           "icon": "media/activity/vcs.svg"
         }
       ]
-    }
+    },
+    "views": {
+      "rebased-panel": [
+        {
+          "type": "webview",
+          "id": "rebased.logView",
+          "name": "Log",
+          "when": "rebased.logInPanel"
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "rebased.git.file",
+        "label": "Git"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "rebased.log.selectCommit",
+          "when": "false"
+        },
+        {
+          "command": "rebased.annotateRevision",
+          "when": "false"
+        },
+        {
+          "command": "rebased.compareRefs.files",
+          "when": "false"
+        },
+        {
+          "command": "rebased.showCommitDiff",
+          "when": "false"
+        },
+        {
+          "command": "rebased.showRepositoryAtRevision",
+          "when": "false"
+        },
+        {
+          "command": "rebased.copyText",
+          "when": "false"
+        },
+        {
+          "command": "rebased.annotate",
+          "when": "rebased.hasRepository && editorIsOpen && !rebased.annotated"
+        },
+        {
+          "command": "rebased.annotateClose",
+          "when": "rebased.annotated"
+        },
+        {
+          "command": "rebased.showHistoryForSelection",
+          "when": "editorHasSelection"
+        }
+      ],
+      "rebased.git.file": [
+        {
+          "command": "rebased.showFileHistory",
+          "group": "1_history@1"
+        },
+        {
+          "command": "rebased.showHistoryForSelection",
+          "group": "1_history@2",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "rebased.annotate",
+          "group": "1_history@3",
+          "when": "!rebased.annotated"
+        },
+        {
+          "command": "rebased.annotateClose",
+          "group": "1_history@3",
+          "when": "rebased.annotated"
+        },
+        {
+          "command": "rebased.compareWithRevision",
+          "group": "2_compare@1"
+        },
+        {
+          "command": "rebased.compareWithBranch",
+          "group": "2_compare@2"
+        }
+      ],
+      "editor/context": [
+        {
+          "submenu": "rebased.git.file",
+          "group": "9_rebased",
+          "when": "rebased.hasRepository && resourceScheme == file"
+        }
+      ],
+      "explorer/context": [
+        {
+          "submenu": "rebased.git.file",
+          "group": "7_rebased",
+          "when": "rebased.hasRepository"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "submenu": "rebased.git.file",
+          "group": "9_rebased",
+          "when": "rebased.hasRepository && resourceScheme == file"
+        }
+      ],
+      "editor/lineNumber/context": [
+        {
+          "command": "rebased.annotate",
+          "when": "rebased.hasRepository && !rebased.annotated",
+          "group": "9_rebased"
+        },
+        {
+          "command": "rebased.annotateClose",
+          "when": "rebased.annotated",
+          "group": "9_rebased"
+        },
+        {
+          "command": "rebased.annotateOptions",
+          "when": "rebased.annotated",
+          "group": "9_rebased"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "rebased.showLog",
+        "key": "alt+9",
+        "mac": "cmd+9",
+        "when": "rebased.hasRepository"
+      },
+      {
+        "command": "rebased.annotate",
+        "key": "ctrl+alt+shift+a",
+        "when": "editorTextFocus && rebased.hasRepository && !rebased.annotated"
+      },
+      {
+        "command": "rebased.annotateClose",
+        "key": "ctrl+alt+shift+a",
+        "when": "editorTextFocus && rebased.annotated"
+      }
+    ]
   },
   "devDependencies": {
     "@types/node": "^20.16.10",

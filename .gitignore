@@ -5,3 +5,4 @@ out
 out-test
 test/shots
 .vscode-test
+.claude
