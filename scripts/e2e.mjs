@@ -43,6 +43,12 @@ const shot = async name => {
   console.log('shot', p);
 };
 const command = async title => {
+  // Keys typed while a webview has focus go to the webview iframe; move focus back to the workbench first.
+  await window.evaluate(() => {
+    const a = document.activeElement;
+    if (a && a !== document.body) a.blur();
+  });
+  await sleep(100);
   await window.keyboard.press('F1');
   await sleep(400);
   await window.keyboard.type(title);

@@ -4,7 +4,7 @@ import { Repository } from '../../git/repository';
 import { showDialog } from '../../host/dialog';
 import { CancelledError, showError } from '../../host/webviewHost';
 import { GitError } from '../../git/exec';
-import { ChangesSaver, OperationOutcome, smartOperation, StashSaver } from './engine';
+import { ChangesSaver, hasLocalChanges, OperationOutcome, smartOperation, StashSaver } from './engine';
 
 export interface RootArg {
   root?: string;
@@ -150,6 +150,7 @@ export class ShelveSaver implements ChangesSaver {
 
   async save(repo: Repository, reason: string): Promise<boolean> {
     const name = `Uncommitted changes before ${capitalize(reason)} at ${new Date().toLocaleString()}`;
+    if (!(await hasLocalChanges(repo, this.includeUntracked))) return false;
     try {
       const id = await vscode.commands.executeCommand<string | undefined>('rebased.shelveSilently', { root: repo.root, name });
       this.id = typeof id === 'string' ? id : undefined;

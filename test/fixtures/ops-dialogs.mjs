@@ -3,7 +3,8 @@ const kind = process.env.DIALOG ?? 'ops.reset';
 const props = {
   'ops.reset': { commits: [{ hash: 'c1c9c29a00000000000000000000000000000000', subject: 'fixes from merge', author: 'detachhead', repo: 'rebased' }], branch: 'master' },
   'ops.newBranch': { title: 'Create New Branch', okLabel: 'Create', initial: 'feature/foo', mode: 'create', checkout: true, showCheckout: true, showOverwrite: true, locals: ['master', 'feature/foo'], remotes: ['origin/master'] },
-  'ops.update': { method: 'merge', saveChanges: 'stash', repos: ['rebased'] },
+  'ops.update': { method: 'merge', saveChanges: 'stash', repos: ['rebased'], canReset: true },
+  'ops.newWorktree': { repos: [{ root: '/home/user/rebased', name: 'rebased', current: 'master', refs: [{ name: 'master', type: 'local' }, { name: 'feature/log-graph', type: 'local', worktree: '/home/user/rebased-log-graph' }, { name: 'origin/master', type: 'remote' }], tags: ['v1.0'] }], root: '/home/user/rebased', ref: 'master', parent: '/home/user' },
   'ops.rebase': { repos: [{ root: '/r', name: 'rebased', branch: 'master' }], root: '/r', refs: { '/r': [{ value: 'origin/master', icon: 'general/vcs', group: 'Remote' }] }, locals: {}, initialUpstream: 'origin/master', initialOptions: ['interactive', 'rebase-merges'] },
   'ops.pull': { repos: [{ root: '/r', name: 'rebased', branch: 'master' }], root: '/r', remotes: { '/r': ['origin', 'upstream'] }, remoteBranches: { '/r': { origin: ['master', 'dev'] } }, defaultRemote: { '/r': 'origin' }, defaultBranch: { '/r': 'master' }, options: ['rebase'] },
   'ops.tag': { root: '/r', repoName: 'rebased', currentBranch: 'master', tags: ['v1.0'] },

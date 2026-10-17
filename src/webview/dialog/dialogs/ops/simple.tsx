@@ -349,7 +349,7 @@ registerDialog<{ method: string; saveChanges: string; repos: string[]; canReset?
   return (
     <DialogFrame
       title="Update Project"
-      width={520}
+      width={props.canReset ? 600 : 520}
       onCancel={cancel}
       onOk={ok}
       left={
