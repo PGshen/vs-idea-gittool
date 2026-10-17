@@ -1,2 +1,5 @@
-// Each dialog module registers itself with registerDialog(). Import new dialogs here.
+// Each dialog module registers itself with registerDialog(). Every feature owns one subdirectory.
 import './confirm';
+import './commit';
+import './log';
+import './ops';

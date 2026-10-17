@@ -1,4 +1,7 @@
 import { Ctx } from '../context';
+import * as commit from './commit';
+import * as log from './log';
+import * as ops from './ops';
 
 /** Feature modules. Each registers its commands, views and providers. */
-export const FEATURES: ((ctx: Ctx) => void)[] = [];
+export const FEATURES: ((ctx: Ctx) => void)[] = [commit.register, log.register, ops.register];
