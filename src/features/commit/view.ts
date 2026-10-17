@@ -762,7 +762,8 @@ export class CommitView implements vscode.WebviewViewProvider {
     const repo = this.ctx.repos.get(root);
     if (!repo) throw new Error(`Repository ${root} is not available`);
     await repo.refresh();
-    const changes = [...repo.status.changes.filter(c => c.status !== 'U'), ...repo.status.unversioned];
+    // Like IntelliJ's VcsShelveChangesSaver: only tracked changes are shelved, unversioned files stay in place.
+    const changes = repo.status.changes.filter(c => c.status !== 'U');
     if (!changes.length) return undefined;
     const item = await this.shelf.shelve(repo, changes, name);
     return item.id;

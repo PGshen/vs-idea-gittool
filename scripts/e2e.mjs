@@ -3,7 +3,7 @@
 // The scenario exports `run({ window, shot, command, sleep })`.
 import { _electron as electron } from 'playwright-core';
 import { resolve } from 'node:path';
-import { mkdtempSync, existsSync } from 'node:fs';
+import { mkdtempSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -15,7 +15,23 @@ const userData = mkdtempSync(resolve(tmpdir(), 'rebased-e2e-user-'));
 const extDir = mkdtempSync(resolve(tmpdir(), 'rebased-e2e-ext-'));
 const outDir = process.env.SHOTS ?? resolve('test/shots');
 execSync(`mkdir -p ${outDir}`);
-execSync(`mkdir -p ${userData}/User && echo '{"workbench.startupEditor":"none","window.titleBarStyle":"custom","workbench.colorTheme":"Default Dark Modern","security.workspace.trust.enabled":false,"git.enabled":false,"extensions.ignoreRecommendations":true,"workbench.tips.enabled":false,"update.mode":"none","telemetry.telemetryLevel":"off"}' > ${userData}/User/settings.json`);
+
+const scenario = await import(pathToFileURL(resolve(scenarioPath)).href);
+// A scenario can export `settings` to add user settings.
+const userSettings = {
+  'workbench.startupEditor': 'none',
+  'window.titleBarStyle': 'custom',
+  'workbench.colorTheme': 'Default Dark Modern',
+  'security.workspace.trust.enabled': false,
+  'git.enabled': false,
+  'extensions.ignoreRecommendations': true,
+  'workbench.tips.enabled': false,
+  'update.mode': 'none',
+  'telemetry.telemetryLevel': 'off',
+  ...(scenario.settings ?? {}),
+};
+mkdirSync(`${userData}/User`, { recursive: true });
+writeFileSync(`${userData}/User/settings.json`, JSON.stringify(userSettings));
 
 const app = await electron.launch({
   executablePath: code,
@@ -56,7 +72,6 @@ const command = async title => {
   await window.keyboard.press('Enter');
   await sleep(1200);
 };
-const scenario = await import(pathToFileURL(resolve(scenarioPath)).href);
 try {
   await scenario.run({ app, window, shot, command, sleep, workspace });
 } finally {
