@@ -3,3 +3,5 @@ dist
 out
 *.vsix
 out-test
+test/shots
+.vscode-test
