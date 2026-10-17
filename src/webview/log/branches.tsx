@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Ref } from '../../shared/types';
 import { ActionButton, Toolbar, Tree, TreeNode } from '../lib/components';
 import { Icon } from '../lib/icons';
@@ -8,7 +8,7 @@ import { refActions } from './menus';
 import { RefIcon } from './refs';
 import { store, useStore } from './store';
 
-type Node = TreeNode<{ ref?: Ref; group?: string }>;
+type Node = TreeNode<{ ref?: Ref; group?: string; remote?: string; root?: string }>;
 
 function groupByDirectory(refs: Ref[], prefix: string, nameOf: (r: Ref) => string, makeLeaf: (r: Ref, label: string) => Node, enabled: boolean): Node[] {
   if (!enabled) return refs.map(r => makeLeaf(r, nameOf(r)));
@@ -57,7 +57,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
     const leaf = (r: Ref, label: string): Node => {
       const kinds = r.current ? (['head'] as const) : r.type === 'remote' ? (['remote'] as const) : r.type === 'tag' ? (['tag'] as const) : (['local'] as const);
       return {
-        key: `ref:${r.fullName}`,
+        key: `ref:${r.root ?? ''}:${r.fullName}`,
         label,
         text: r.name,
         prefix: (
@@ -66,7 +66,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
             data-tip={r.favorite ? 'Remove from Favorites' : 'Add to Favorites'}
             onClick={e => {
               e.stopPropagation();
-              send('branchAction', { id: 'toggleFavorite', name: r.name, type: r.type });
+              send('branchAction', { id: 'toggleFavorite', name: r.name, type: r.type, root: r.root });
             }}
           >
             {r.favorite ? <Icon name="nodes/star" /> : r.type !== 'tag' ? <RefIcon kinds={[...kinds]} /> : <Icon name="nodes/tag" />}
@@ -88,33 +88,63 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
         tip: r.upstream ? `${r.name} → ${r.upstream}` : r.name,
       };
     };
-    const locals = s.refs.filter(r => r.type === 'local' && match(r)).sort(branchSort);
-    const remotes = s.refs.filter(r => r.type === 'remote' && match(r)).sort(branchSort);
+    // Show My Branches: only local branches whose exclusive commits are all mine.
+    const mine = (r: Ref) => !settings.showMyBranches || !s.myBranches || s.myBranches.has(s.init.multi ? `${r.root}\0${r.fullName}` : r.fullName);
+    const locals = s.refs.filter(r => r.type === 'local' && match(r) && mine(r)).sort(branchSort);
+    const remotes = settings.showMyBranches ? [] : s.refs.filter(r => r.type === 'remote' && match(r)).sort(branchSort);
     const tags = s.refs.filter(r => r.type === 'tag' && match(r)).sort((a, b) => a.name.localeCompare(b.name));
+    const byRepo = s.init.multi && settings.branchesGroupByRepository;
+    // Group by Repository: an extra level with one node per repository under Local / Remote / Tags.
+    const perRepo = (refs: Ref[], prefix: string, build: (list: Ref[], key: string) => Node[]): Node[] =>
+      byRepo
+        ? s.repos
+            .filter(repo => refs.some(r => r.root === repo.root))
+            .map(repo => ({
+              key: `${prefix}@${repo.root}`,
+              label: repo.name,
+              text: repo.name,
+              icon: 'nodes/folder',
+              tip: repo.root,
+              data: { group: `${prefix}@${repo.root}` },
+              children: build(
+                refs.filter(r => r.root === repo.root),
+                `${prefix}@${repo.root}`,
+              ),
+            }))
+        : build(refs, prefix);
     const out: Node[] = [];
     const headLabel = current ? `HEAD (Current Branch)` : `HEAD (detached at ${s.head.hash?.slice(0, 8) ?? ''})`;
     if (!q || 'head'.includes(q)) out.push({ key: 'head', label: headLabel, text: 'HEAD', prefix: <RefIcon kinds={['head']} />, data: {} });
-    out.push({ key: 'local', label: 'Local', text: 'Local', icon: 'nodes/folder', children: groupByDirectory(locals, 'local', r => r.name, leaf, settings.branchesGroupByDirectory), data: { group: 'local' } });
-    const byRemote = new Map<string, Ref[]>();
-    for (const r of remotes) byRemote.set(r.remote ?? '', [...(byRemote.get(r.remote ?? '') ?? []), r]);
-    if (byRemote.size || (!q && s.refs.some(r => r.type === 'remote'))) out.push({
-      key: 'remote',
-      label: 'Remote',
-      text: 'Remote',
+    out.push({
+      key: 'local',
+      label: 'Local',
+      text: 'Local',
       icon: 'nodes/folder',
-      data: { group: 'remote' },
-      children: [...byRemote.entries()].map(([remote, refs]) => ({
-        key: `remote/${remote}`,
+      children: perRepo(locals, 'local', (list, key) => groupByDirectory(list, key, r => r.name, leaf, settings.branchesGroupByDirectory)),
+      data: { group: 'local' },
+    });
+    const remoteNodes = (list: Ref[], key: string): Node[] => {
+      const byRemote = new Map<string, Ref[]>();
+      for (const r of list) byRemote.set(r.remote ?? '', [...(byRemote.get(r.remote ?? '') ?? []), r]);
+      return [...byRemote.entries()].map(([remote, refs]) => ({
+        key: `${key}/${remote}`,
         label: remote,
         text: remote,
         icon: 'nodes/folder',
-        data: { group: remote },
-        children: groupByDirectory(refs, `remote/${remote}`, r => r.name.slice(remote.length + 1), leaf, settings.branchesGroupByDirectory),
-      })),
-    });
-    if (settings.branchesShowTags) out.push({ key: 'tags', label: 'Tags', text: 'Tags', icon: 'nodes/folder', data: { group: 'tags' }, children: tags.map(t => leaf(t, t.name)) });
+        data: { group: remote, remote, root: refs[0]?.root },
+        children: groupByDirectory(refs, `${key}/${remote}`, r => r.name.slice(remote.length + 1), leaf, settings.branchesGroupByDirectory),
+      }));
+    };
+    if (remotes.length || (!q && !settings.showMyBranches && s.refs.some(r => r.type === 'remote')))
+      out.push({ key: 'remote', label: 'Remote', text: 'Remote', icon: 'nodes/folder', data: { group: 'remote' }, children: perRepo(remotes, 'remote', remoteNodes) });
+    if (settings.branchesShowTags)
+      out.push({ key: 'tags', label: 'Tags', text: 'Tags', icon: 'nodes/folder', data: { group: 'tags' }, children: perRepo(tags, 'tags', list => list.map(t => leaf(t, t.name))) });
     return out;
-  }, [s.refs, search, settings.branchesGroupByDirectory, settings.branchesShowTags, current, s.head.hash]);
+  }, [s.refs, search, settings.branchesGroupByDirectory, settings.branchesGroupByRepository, settings.branchesShowTags, settings.showMyBranches, s.myBranches, current, s.head.hash, s.repos]);
+
+  useEffect(() => {
+    if (settings.showMyBranches && !s.myBranches) void store.loadMyBranches();
+  }, [settings.showMyBranches]);
 
   const effectiveExpanded = useMemo(() => {
     if (!search) return expanded;
@@ -161,7 +191,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
     { label: 'Navigate Log to Branch Head', checked: settings.branchesSingleClickNavigate, action: () => store.updateSettings({ branchesSingleClickNavigate: true, branchesSingleClickFilter: false }) },
     { separator: true },
     { label: 'Group by Directory', icon: 'actions/groupByPackage', checked: settings.branchesGroupByDirectory, action: () => store.updateSettings({ branchesGroupByDirectory: !settings.branchesGroupByDirectory }) },
-    { label: 'Group by Repository', checked: false, disabled: store.init.repos.length < 2 },
+    { label: 'Group by Repository', checked: store.init.multi && settings.branchesGroupByRepository, disabled: !store.init.multi, action: () => store.updateSettings({ branchesGroupByRepository: !settings.branchesGroupByRepository }) },
     { label: 'Show Tags', checked: settings.branchesShowTags, action: () => store.updateSettings({ branchesShowTags: !settings.branchesShowTags }) },
   ];
 
@@ -177,12 +207,21 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
           icon="vcs/update"
           tip="Update Selected"
           disabled={!sel.some(r => r.type === 'local')}
-          onClick={() => sel.filter(r => r.type === 'local').forEach(r => send('branchAction', { id: 'update', name: r.name, type: r.type }))}
+          onClick={() => sel.filter(r => r.type === 'local').forEach(r => send('branchAction', { id: 'update', name: r.name, type: r.type, root: r.root }))}
         />
-        <ActionButton icon="general/delete" tip={sel.length > 1 ? 'Delete Branches' : 'Delete Branch'} disabled={!sel.length || sel.some(r => r.current)} onClick={() => sel.forEach(r => send('branchAction', { id: 'delete', name: r.name, type: r.type }))} />
-        <ActionButton icon="vcs/diff" tip="Compare with Current" shortcut="Ctrl+D" disabled={!one || one.current} onClick={() => one && send('branchAction', { id: 'compare', name: one.name, type: one.type })} />
-        <ActionButton icon="vcs/fetch" tip="Fetch" onClick={() => send('command', { id: 'rebased.fetch', args: { root: store.root } })} />
-        <ActionButton icon="nodes/star" tip="Mark/Unmark As Favorite" disabled={!sel.length || sel.some(r => r.type === 'tag')} onClick={() => sel.forEach(r => send('branchAction', { id: 'toggleFavorite', name: r.name, type: r.type }))} />
+        <ActionButton icon="general/delete" tip={sel.length > 1 ? 'Delete Branches' : 'Delete Branch'} disabled={!sel.length || sel.some(r => r.current)} onClick={() => sel.forEach(r => send('branchAction', { id: 'delete', name: r.name, type: r.type, root: r.root }))} />
+        <ActionButton icon="vcs/diff" tip="Compare with Current" shortcut="Ctrl+D" disabled={!one || one.current} onClick={() => one && send('branchAction', { id: 'compare', name: one.name, type: one.type, root: one.root })} />
+        <ActionButton
+          icon="general/search"
+          tip="Show My Branches"
+          toggled={settings.showMyBranches}
+          onClick={() => {
+            if (!settings.showMyBranches) void store.loadMyBranches();
+            store.updateSettings({ showMyBranches: !settings.showMyBranches });
+          }}
+        />
+        <ActionButton icon="vcs/fetch" tip="Fetch" onClick={() => (store.init.multi ? store.repos : [{ root: store.root }]).forEach(r => send('command', { id: 'rebased.fetch', args: { root: r.root } }))} />
+        <ActionButton icon="nodes/star" tip="Mark/Unmark As Favorite" disabled={!sel.length || sel.some(r => r.type === 'tag')} onClick={() => sel.forEach(r => send('branchAction', { id: 'toggleFavorite', name: r.name, type: r.type, root: r.root }))} />
         <ActionButton
           icon="general/locate"
           tip="Navigate Log to Selected Branch Head"
@@ -209,7 +248,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
             <input placeholder="Search" value={search} onInput={e => setSearch((e.currentTarget as HTMLInputElement).value)} onKeyDown={e => e.key === 'Escape' && setSearch('')} />
           </div>
         </div>
-        <Tree<{ ref?: Ref; group?: string }>
+        <Tree<{ ref?: Ref; group?: string; remote?: string; root?: string }>
           nodes={nodes}
           expanded={effectiveExpanded}
           onExpandedChange={e => {
@@ -228,11 +267,11 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
           onKeyDown={(e, selected) => {
             const r = selected[0]?.data?.ref;
             if (e.key === 'Delete' && r) {
-              send('branchAction', { id: 'delete', name: r.name, type: r.type });
+              send('branchAction', { id: 'delete', name: r.name, type: r.type, root: r.root });
               return true;
             }
             if (e.key === 'F2' && r?.type === 'local') {
-              send('branchAction', { id: 'rename', name: r.name, type: r.type });
+              send('branchAction', { id: 'rename', name: r.name, type: r.type, root: r.root });
               return true;
             }
           }}
@@ -243,27 +282,30 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
             } else if (selected.length > 1) {
               const refs = selected.map(n => n.data?.ref).filter((x): x is Ref => !!x);
               const withHead = selected.some(n => n.key === 'head');
-              const pair = withHead && refs.length === 1 ? { ref: refs[0].name, with: current ?? 'HEAD' } : refs.length === 2 ? { ref: refs[0].name, with: refs[1].name } : undefined;
+              const sameRoot = new Set(refs.map(x => x.root ?? store.root)).size <= 1;
+              const pair = !sameRoot ? undefined : withHead && refs.length === 1 ? { ref: refs[0].name, with: current ?? 'HEAD' } : refs.length === 2 ? { ref: refs[0].name, with: refs[1].name } : undefined;
+              const pairRoot = refs[0]?.root ?? store.root;
               showMenu(
                 [
                   { label: 'Update Branch Filter', action: () => void store.setFilters({ ...store.filters, branches: refs.map(x => x.name) }) },
                   { separator: true },
-                  { label: 'Compare Branches', disabled: !pair, action: () => pair && send('command', { id: 'rebased.compareRefs', args: { root: store.root, ...pair } }) },
-                  { label: 'Show Files Diff', disabled: !pair, action: () => pair && send('command', { id: 'rebased.compareRefs.files', args: { root: store.root, ...pair } }) },
-                  { label: 'Update Selected', icon: 'vcs/update', disabled: !refs.some(x => x.type === 'local'), action: () => refs.filter(x => x.type === 'local').forEach(x => send('branchAction', { id: 'update', name: x.name, type: x.type })) },
-                  { label: 'Delete Branches', icon: 'general/delete', action: () => refs.filter(x => !x.current).forEach(x => send('branchAction', { id: 'delete', name: x.name, type: x.type })) },
+                  { label: 'Compare Branches', disabled: !pair, action: () => pair && send('command', { id: 'rebased.compareRefs', args: { root: pairRoot, ...pair } }) },
+                  { label: 'Show Files Diff', disabled: !pair, action: () => pair && send('command', { id: 'rebased.compareRefs.files', args: { root: pairRoot, ...pair } }) },
+                  { label: 'Update Selected', icon: 'vcs/update', disabled: !refs.some(x => x.type === 'local'), action: () => refs.filter(x => x.type === 'local').forEach(x => send('branchAction', { id: 'update', name: x.name, type: x.type, root: x.root })) },
+                  { label: 'Delete Branches', icon: 'general/delete', action: () => refs.filter(x => !x.current).forEach(x => send('branchAction', { id: 'delete', name: x.name, type: x.type, root: x.root })) },
                 ],
                 anchorAt(e),
               );
             } else if (selected[0]?.key === 'remote') {
               showMenu([{ label: 'Manage Remotes…', action: () => send('command', { id: 'rebased.remotes', args: { root: store.root } }) }], anchorAt(e));
-            } else if (selected[0]?.key.startsWith('remote/') && !selected[0].key.slice(7).includes('/')) {
+            } else if (selected[0]?.data?.remote) {
+              const root = selected[0].data.root ?? store.root;
               showMenu(
                 [
                   { label: 'Update Branch Filter', action: () => filterBy(selected[0]) },
                   { separator: true },
-                  { label: 'Edit Remote…', action: () => send('command', { id: 'rebased.remotes', args: { root: store.root } }) },
-                  { label: 'Remove Remote', action: () => send('command', { id: 'rebased.remotes', args: { root: store.root } }) },
+                  { label: 'Edit Remote…', action: () => send('command', { id: 'rebased.remotes', args: { root } }) },
+                  { label: 'Remove Remote', action: () => send('command', { id: 'rebased.remotes', args: { root } }) },
                 ],
                 anchorAt(e),
               );

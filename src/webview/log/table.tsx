@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/ho
 import type { RowData } from '../../shared/logProtocol';
 import { anchorAt } from '../lib/menu';
 import { call } from '../lib/rpc';
+import { Icon, useDark } from '../lib/icons';
 import { GraphCell, graphWidth, ROW_H } from './graph';
 import { commitMenu, runCommitAction } from './menus';
 import { refLabels, RefLabels } from './refs';
@@ -11,6 +12,48 @@ const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 
 
 export function formatDate(sec: number) {
   return fmt.format(new Date(sec * 1000)).replace(/\s?(AM|PM)$/, m => m.toLowerCase());
+}
+
+/** VcsLogColorManagerFactory.NEW_UI_ROOT_COLORS_OPENED_STATE (light, dark). */
+const ROOT_COLORS: [string, string][] = [
+  ['#FFE3EA', '#603239'], ['#E3F7E7', '#375239'], ['#E3E1F7', '#383275'], ['#FFEFE3', '#614438'], ['#D5ECEB', '#1D4D4A'],
+  ['#FFF5DB', '#5E4D33'], ['#FEE4FF', '#562B58'], ['#E8E2DD', '#624E3F'], ['#D5F2E8', '#0D573C'], ['#EFE5FF', '#3B3147'],
+  ['#DAF4F5', '#204145'], ['#ECE0EC', '#503250'], ['#FDF0D7', '#594D36'], ['#EBECF0', '#494B57'],
+];
+
+export function rootColor(index: number, dark: boolean) {
+  const c = ROOT_COLORS[index % ROOT_COLORS.length];
+  return dark ? c[1] : c[0];
+}
+
+const SIGNATURE_TEXT: Record<string, string> = {
+  G: 'Verified signature',
+  U: 'Signature with unknown validity',
+  X: 'Expired signature',
+  Y: 'Signature made by an expired key',
+  R: 'Signature made by a revoked key',
+  E: 'Signature cannot be checked',
+  B: 'Bad signature',
+};
+
+/** GPG Signature column cell (git4idea GitCommitSignatureLogColumn). */
+function SignatureCell({ hash, width }: { hash: string; width: number }) {
+  const sig = store.signatures.get(hash);
+  const text = sig && sig.status !== 'N' ? `${SIGNATURE_TEXT[sig.status] ?? 'Signed'}${sig.signer ? `\n${sig.signer}` : ''}${sig.key ? `\nKey: ${sig.key}` : ''}` : undefined;
+  return (
+    <div class="cell signature" style={{ width: `${width}px` }} data-tip={text}>
+      {sig && sig.status === 'G' && <Icon name="git/verified" />}
+      {sig && sig.status !== 'G' && sig.status !== 'N' && <Icon name="git/signed" />}
+    </div>
+  );
+}
+
+/** Navigates to a commit by hash (long edge arrows). */
+async function jumpTo(hash: string) {
+  const i = store.indexOfHash(hash);
+  if (i >= 0) return store.selectIndex(i);
+  const r = await call<{ index: number; hash: string } | undefined>('find', hash);
+  if (r) await store.selectIndex(r.index, { hash: r.hash });
 }
 
 function isMine(r: RowData) {
@@ -27,6 +70,7 @@ export function LogTable() {
   const [width, setWidth] = useState(800);
   const [sbw, setSbw] = useState(0);
   const settings = s.settings;
+  const dark = useDark();
 
   useLayoutEffect(() => {
     const el = ref.current!;
@@ -59,6 +103,10 @@ export function LogTable() {
 
   const visible: { i: number; r: RowData | undefined }[] = [];
   for (let i = first; i < last; i++) visible.push({ i, r: s.rows.get(i) });
+
+  useEffect(() => {
+    if (settings.columns.signature) void s.loadSignatures(visible.map(v => v.r?.h).filter((h): h is string => !!h));
+  }, [first, last, s.rows.size, s.generation, settings.columns.signature]);
 
   const lanes = useMemo(() => Math.max(1, ...visible.map(v => v.r?.g.width ?? 1)), [first, last, s.rows.size, s.generation]);
   const gw = Math.min(graphWidth(lanes), Math.max(60, width * 0.4));
@@ -147,7 +195,7 @@ export function LogTable() {
 
   // Right edges of the fixed columns, for the invisible resize handles.
   const resizers: { col: 'author' | 'date' | 'hash'; right: number }[] = [];
-  let right = 6;
+  let right = 6 + (cols.signature ? cw.signature : 0);
   if (cols.hash) {
     resizers.push({ col: 'hash', right: right + cw.hash });
     right += cw.hash;
@@ -174,17 +222,19 @@ export function LogTable() {
             if (!r) return <div key={`p${i}`} class="log-row" style={{ top: `${i * ROW_H + 2}px` }} />;
             const labels = refLabels(r.refs, { compact: settings.compactRefs, showTagNames: settings.showTagNames, currentBranch });
             const merge = r.p.length > 1;
-            const dim = merge || (settings.highlightMergeCommits && !merge && false);
+            const picked = !!s.cherryPick?.nonPicked && !s.cherryPick.nonPicked.has(r.h);
+            const dim = merge || picked;
             const bold = (settings.highlightMyCommits && isMine(r)) || (settings.highlightMergeCommits && merge);
             const cls = [
               'log-row',
               s.selection.has(r.h) ? 'selected' : '',
               highlightBranch && r.b ? 'current-branch' : '',
-              dim && !(settings.highlightMergeCommits && merge) ? 'dim' : '',
+              dim && (picked || !(settings.highlightMergeCommits && merge)) ? 'dim' : '',
               bold ? 'bold' : '',
             ].join(' ');
             const author = r.an + (r.an !== r.cn ? '*' : '');
             const date = settings.preferCommitDate ? r.ct : r.at;
+            const repo = s.repoOf(r);
             return (
               <div
                 key={r.h}
@@ -200,8 +250,17 @@ export function LogTable() {
                   void commitMenu(anchorAt(e));
                 }}
               >
+                {repo && (
+                  <div
+                    class={`cell root ${settings.showRootNames ? 'named' : ''}`}
+                    style={{ background: rootColor(repo.color, dark) }}
+                    data-tip={`${repo.name}\n${repo.root}`}
+                  >
+                    {settings.showRootNames ? repo.name : ''}
+                  </div>
+                )}
                 <div class="cell subject">
-                  <GraphCell row={r.g} width={gw} head={r.h === s.head.hash} />
+                  <GraphCell row={r.g} width={gw} head={repo ? r.h === repo.head.hash : r.h === s.head.hash} onJump={h => void jumpTo(h)} />
                   {settings.refsOnLeft && <RefLabels labels={labels} left />}
                   <span class="subject-text" data-tip={r.s.length > 80 ? r.s : undefined}>
                     {r.s}
@@ -223,6 +282,7 @@ export function LogTable() {
                     {r.h.slice(0, 8)}
                   </div>
                 )}
+                {cols.signature && <SignatureCell hash={r.h} width={cw.signature} />}
               </div>
             );
           })}

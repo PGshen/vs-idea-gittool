@@ -45,6 +45,8 @@ export interface Ref {
   /** Commit time of the ref target, used for sorting "Recent" branches. */
   date?: number;
   favorite?: boolean;
+  /** Repository root, set where refs of several repositories are mixed (multi-root log). */
+  root?: string;
 }
 
 export interface Remote {
@@ -136,6 +138,9 @@ export interface GraphRow {
   edges: GraphEdge[];
   /** Total lane count in this row, used for column width. */
   width: number;
+  /** Segment id per lane at the row top / bottom boundary (-1 = free). Used by the long edge pass. */
+  top?: number[];
+  bottom?: number[];
 }
 
 export interface GraphEdge {
@@ -146,4 +151,10 @@ export interface GraphEdge {
   color: number;
   /** Dashed edge, for an edge that goes to a commit not loaded / filtered out. */
   dashed?: boolean;
+  /** Edge segment (child commit -> parent commit) this part belongs to. */
+  seg?: number;
+  /** Long edge stub: arrow at the middle of the row pointing down (to the parent) or up (to the child). */
+  arrow?: 'down' | 'up';
+  /** Hash of the commit at the other end of a long edge stub (click to jump). */
+  jump?: string;
 }

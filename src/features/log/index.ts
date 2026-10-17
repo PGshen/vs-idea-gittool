@@ -35,7 +35,9 @@ class LogTabs {
 
   mainState(repo: Repository): LogTabState {
     const saved = this.ctx.extension.workspaceState.get<{ filters: LogFilters; options: LogOptions }>(`${MAIN_KEY}:${repo.root}`);
-    return { root: repo.root, mode: 'log', filters: { ...EMPTY_FILTERS, ...saved?.filters, follow: undefined, lines: undefined }, options: { ...DEFAULT_OPTIONS, ...saved?.options } };
+    // With several repositories the main log shows all of them, like IntelliJ.
+    const multi = this.ctx.repos.repositories.length > 1;
+    return { root: repo.root, mode: 'log', multi, filters: { ...EMPTY_FILTERS, ...saved?.filters, follow: undefined, lines: undefined }, options: { ...DEFAULT_OPTIONS, ...saved?.options } };
   }
 
   main(): OpenTab | undefined {
@@ -44,13 +46,19 @@ class LogTabs {
 
   /** Opens or reveals the main log. */
   async showMain(repo?: Repository, preserveFocus = false): Promise<OpenTab | undefined> {
+    const existing = this.main();
+    if (!repo && existing?.tab.state.multi) repo = this.ctx.repos.get(existing.tab.root);
+    if (!repo && this.ctx.repos.repositories.length > 1) repo = this.ctx.repos.repositories[0];
     repo ??= await this.ctx.repos.pick();
     if (!repo) return undefined;
-    const existing = this.main();
     if (existing) {
-      if (existing.tab.root !== repo.root) {
-        existing.tab.dispose();
-        this.tabs.splice(this.tabs.indexOf(existing), 1);
+      if (existing.tab.root !== repo.root && !existing.tab.state.multi) {
+        if (existing.panel) existing.panel.dispose();
+        else {
+          existing.tab.dispose();
+          const i = this.tabs.indexOf(existing);
+          if (i >= 0) this.tabs.splice(i, 1);
+        }
       } else {
         existing.panel?.reveal(undefined, preserveFocus);
         if (existing.view) existing.view.show(preserveFocus);
@@ -160,9 +168,9 @@ export function register(ctx: Ctx) {
     } else await tabs.showMain(repo);
   });
 
-  ctx.command('rebased.log.newTab', async (arg?: { root?: string; filters?: LogFilters }) => {
+  ctx.command('rebased.log.newTab', async (arg?: { root?: string; filters?: LogFilters; multi?: boolean }) => {
     const repo = await repoFromArg(ctx, arg);
-    if (repo) await tabs.newTab(repo, { filters: { ...EMPTY_FILTERS, ...arg?.filters } });
+    if (repo) await tabs.newTab(repo, { filters: { ...EMPTY_FILTERS, ...arg?.filters }, multi: arg?.multi ?? ctx.repos.repositories.length > 1 });
   });
 
   ctx.command('rebased.log.selectCommit', async (arg: { root: string; hash: string; newTab?: boolean }) => {

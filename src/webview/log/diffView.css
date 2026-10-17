@@ -1,0 +1,115 @@
+/* Diff preview (SimpleDiffViewer / UnifiedDiffViewer colors: DIFF_INSERTED / DIFF_DELETED / DIFF_MODIFIED). */
+body.ij-dark {
+  --diff-inserted: #294436;
+  --diff-deleted-bg: #484a4a;
+  --diff-modified: #385570;
+}
+body.ij-light {
+  --diff-inserted: #bee6be;
+  --diff-deleted-bg: #d6d6d6;
+  --diff-modified: #cad9fa;
+}
+body.ij-vscode {
+  --diff-inserted: var(--vscode-diffEditor-insertedLineBackground, rgba(155, 185, 85, 0.2));
+  --diff-deleted-bg: var(--vscode-diffEditor-removedLineBackground, rgba(255, 0, 0, 0.2));
+  --diff-modified: var(--vscode-diffEditor-insertedTextBackground, rgba(80, 140, 220, 0.25));
+}
+.diff-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  background: var(--bg-editor);
+}
+.diff-toolbar {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+.diff-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.diff-count {
+  margin-left: 10px;
+  white-space: nowrap;
+}
+.diff-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  font-size: 12.5px;
+  line-height: 19px;
+  outline: none;
+  user-select: text;
+  position: relative;
+}
+.diff-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px minmax(0, 1fr);
+  min-height: 19px;
+}
+.diff-row.unified {
+  grid-template-columns: 44px 44px minmax(0, 1fr);
+}
+.diff-row .ln {
+  color: var(--fg-secondary);
+  text-align: right;
+  padding-right: 8px;
+  background: var(--bg-editor);
+  user-select: none;
+}
+.diff-row .code {
+  white-space: pre;
+  overflow: hidden;
+  padding-left: 6px;
+  tab-size: 4;
+}
+.diff-body.side .diff-row .code.left {
+  border-right: 1px solid var(--border-subtle);
+}
+.diff-row.inserted .code:not(.filler) {
+  background: color-mix(in srgb, var(--diff-inserted) 75%, transparent);
+}
+.diff-row.deleted .code:not(.filler) {
+  background: color-mix(in srgb, var(--diff-deleted-bg) 75%, transparent);
+}
+.diff-row.modified .code:not(.filler) {
+  background: color-mix(in srgb, var(--diff-modified) 55%, transparent);
+}
+.diff-row.modified .code .inner {
+  background: var(--diff-modified);
+  border-radius: 2px;
+}
+.diff-row .code.filler {
+  background: repeating-linear-gradient(135deg, transparent 0 4px, var(--separator) 4px 5px);
+}
+.diff-row.inserted .code.filler {
+  background-color: color-mix(in srgb, var(--diff-inserted) 30%, transparent);
+}
+.diff-row.deleted .code.filler {
+  background-color: color-mix(in srgb, var(--diff-deleted-bg) 30%, transparent);
+}
+.diff-gap {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-secondary);
+  background: var(--bg);
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.diff-gap:hover {
+  color: var(--fg-link);
+}

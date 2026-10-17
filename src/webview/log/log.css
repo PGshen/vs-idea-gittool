@@ -462,3 +462,34 @@ body {
   border-top: 1px solid var(--separator);
   margin-top: 4px;
 }
+
+/* Root color strip of the multi-root log (VcsLogColorManager), with names when "Root Names" is on. */
+.cell.root {
+  width: 6px;
+  align-self: stretch;
+  padding: 0;
+  margin: 3px 4px 3px 0;
+  border-radius: 2px;
+  flex: none;
+}
+.cell.root.named {
+  width: 96px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  color: var(--fg);
+  font-size: 12px;
+}
+.cell.signature {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.graph-arrow {
+  cursor: pointer;
+}
+.graph-arrow:hover path,
+.graph-arrow:hover line {
+  stroke-width: 2.4;
+}

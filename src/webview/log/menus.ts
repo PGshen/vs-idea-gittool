@@ -60,6 +60,7 @@ export async function commitMenu(anchor: Anchor) {
     { label: 'Squash Commits…', disabled: rows.length < 2 || !noMergesEditable, action: a('squash') },
     { label: 'Interactively Rebase from Here…', disabled: !one || !noMergesEditable, action: a('interactiveRebase') },
     { label: 'Push All up to Here…', disabled: !one || !info.inHead || store.head.detached, action: a('pushUpTo') },
+    { label: 'Add Commits to Remote Branch…', disabled: !info.hasRemoteBranches || info.hasMerges || !!info.mixedRoots || info.operation !== 'none', action: a('addToRemote') },
     { separator: true },
     ...branchGroups,
     { label: 'New Branch…', disabled: !one, action: a('newBranch') },
@@ -104,15 +105,17 @@ function historyMenu(info: ContextInfo, count: number): MenuEntry[] {
 
 /** Actions of a branch / tag node (Git.Branch.Backend + branches popup), with IntelliJ texts. */
 export function refActions(r: Ref, current: string | undefined): MenuEntry[] {
+  const root = r.root ?? store.root;
+  if (r.root) current = store.repos.find(x => x.root === r.root)?.head.branch ?? current;
   const cur = current ?? 'HEAD';
-  const act = (id: string) => () => send('branchAction', { id, name: r.name, type: r.type });
+  const act = (id: string) => () => send('branchAction', { id, name: r.name, type: r.type, root });
   if (r.type === 'tag') {
     return [
       { label: 'Checkout', action: act('checkout') },
-      { label: `New Branch from '${r.name}'…`, action: () => send('command', { id: 'rebased.createBranch', args: { root: store.root, startPoint: r.name } }) },
+      { label: `New Branch from '${r.name}'…`, action: () => send('command', { id: 'rebased.createBranch', args: { root, startPoint: r.name } }) },
       { separator: true },
-      { label: `Compare with '${cur}'`, action: () => send('command', { id: 'rebased.compareRefs', args: { root: store.root, ref: r.name, with: cur } }) },
-      { label: 'Show Diff with Working Tree', action: () => send('command', { id: 'rebased.branch.showDiffWithWorkingTree', args: { root: store.root, name: r.name, type: 'tag' } }) },
+      { label: `Compare with '${cur}'`, action: () => send('command', { id: 'rebased.compareRefs', args: { root, ref: r.name, with: cur } }) },
+      { label: 'Show Diff with Working Tree', action: () => send('command', { id: 'rebased.branch.showDiffWithWorkingTree', args: { root, name: r.name, type: 'tag' } }) },
       { separator: true },
       { label: `Merge '${r.name}' into '${cur}'`, action: act('mergeIntoCurrent') },
       { separator: true },
@@ -175,11 +178,15 @@ export function changeAction(id: string, changes: Change[]) {
 }
 
 /** Vcs.Log.ChangesBrowser.Popup */
-export function changesMenu(anchor: Anchor, changes: Change[]) {
+export async function changesMenu(anchor: Anchor, changes: Change[]) {
   const none = changes.length === 0;
   const c = (id: string) => () => changeAction(id, changes);
   const single = store.selection.size === 1;
   const merge = single && (store.selectedRows()[0]?.p.length ?? 0) > 1;
+  // In-memory editing (GitSingleCommitEditingAction): one commit of the current branch, no merges, no operation in progress.
+  const info = single ? await call<ContextInfo>('contextInfo', store.selectedRows().map(r => r.h)) : undefined;
+  const editable = !!info && info.inHead && !info.hasMerges && info.operation === 'none' && !none;
+  const all = changes.length >= (store.details?.changes.length ?? 0);
   showMenu(
     [
       { label: 'Show Diff', icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: none, action: c('diff') },
@@ -190,6 +197,8 @@ export function changesMenu(anchor: Anchor, changes: Change[]) {
       { separator: true },
       { label: 'Revert Selected Changes', icon: 'vcs/revert', disabled: none, action: c('revertSelected') },
       { label: 'Cherry-Pick Selected Changes', disabled: none, action: c('applySelected') },
+      { label: 'Drop Selected Changes', disabled: !editable, action: c('dropSelected') },
+      { label: 'Extract Selected Changes to Separate Commit…', disabled: !editable || all, action: c('extractSelected') },
       { label: 'Create Patch…', icon: 'vcs/patch', disabled: none, action: c('createPatch') },
       { label: 'Get', icon: 'general/download', disabled: none, action: c('get') },
       { label: 'History Up to Here', icon: 'general/history', disabled: changes.length !== 1, action: c('historyUpToHere') },
@@ -215,13 +224,13 @@ export function changesMenu(anchor: Anchor, changes: Change[]) {
 export function viewOptionsMenu(): MenuEntry[] {
   const s = store.settings;
   const t = (key: keyof typeof s) => () => store.updateSettings({ [key]: !s[key] } as any);
-  const col = (key: 'author' | 'date' | 'hash') => () => store.updateSettings({ columns: { ...s.columns, [key]: !s.columns[key] } });
+  const col = (key: 'author' | 'date' | 'hash' | 'signature') => () => store.updateSettings({ columns: { ...s.columns, [key]: !s.columns[key] } });
   return [
     { separator: true, label: 'Show' },
-    ...(store.init.repos.length > 1 ? [{ label: 'Root Names', checked: s.showRootNames, action: t('showRootNames') }] : []),
+    ...(store.init.multi ? [{ label: 'Root Names', checked: s.showRootNames, action: t('showRootNames') }] : []),
     { label: 'Compact References View', checked: s.compactRefs, action: t('compactRefs') },
     { label: 'Tag Names', checked: s.showTagNames, action: t('showTagNames') },
-    { label: 'Long Edges', checked: true, disabled: true },
+    { label: 'Long Edges', checked: s.showLongEdges, action: t('showLongEdges') },
     { label: 'Commit Timestamp', checked: s.preferCommitDate, action: t('preferCommitDate') },
     { label: 'References on the Left', checked: s.refsOnLeft, action: t('refsOnLeft') },
     {
@@ -230,13 +239,71 @@ export function viewOptionsMenu(): MenuEntry[] {
         { label: 'Author', checked: s.columns.author, action: col('author') },
         { label: 'Date', checked: s.columns.date, action: col('date') },
         { label: 'Hash', checked: s.columns.hash, action: col('hash') },
+        { label: 'GPG Signature', checked: s.columns.signature, action: col('signature') },
       ],
     },
     { separator: true, label: 'Highlight' },
     { label: 'My Commits', checked: s.highlightMyCommits, action: t('highlightMyCommits') },
     { label: 'Merge Commits', checked: s.highlightMergeCommits, action: t('highlightMergeCommits') },
     { label: 'Current Branch', checked: s.highlightCurrentBranch, action: t('highlightCurrentBranch') },
+    ...(store.init.mode === 'log'
+      ? [{ label: 'Not Cherry-Picked Commits', checked: !!store.cherryPick, disabled: store.head.detached, action: toggleCherryPicked }]
+      : []),
+    ...(store.init.mode === 'history' ? [{ separator: true } as MenuEntry, layoutMenu()] : []),
   ];
+}
+
+/** Configure Layout ▸ (file history View Options and the changes browser). */
+export function layoutMenu(): MenuEntry {
+  const s = store.settings;
+  return {
+    label: 'Configure Layout',
+    icon: 'general/layout',
+    children: [
+      { separator: true, label: 'Layout' },
+      { label: 'Show Details', checked: s.showDetails, action: () => store.updateSettings({ showDetails: !s.showDetails }) },
+      { label: 'Show Diff Preview', checked: s.showDiffPreview, action: () => store.updateSettings({ showDiffPreview: !s.showDiffPreview }) },
+      {
+        label: 'Diff Preview Location',
+        children: [
+          { label: 'Bottom', checked: s.diffPreviewLocation === 'bottom', action: () => store.updateSettings({ diffPreviewLocation: 'bottom', showDiffPreview: true }) },
+          { label: 'Right', checked: s.diffPreviewLocation === 'right', action: () => store.updateSettings({ diffPreviewLocation: 'right', showDiffPreview: true }) },
+        ],
+      },
+    ],
+  };
+}
+
+/**
+ * HighlightCherryPickedCommitsAction: dims the commits of the filtered branch that are already
+ * cherry-picked to the current branch. Without a single branch filter, asks for the source branch.
+ */
+function toggleCherryPicked() {
+  if (store.cherryPick) {
+    store.cherryPick = undefined;
+    store.emit();
+    return;
+  }
+  const f = store.filters.branches;
+  if (f.length === 1 && f[0] !== 'HEAD' && f[0] !== store.currentBranch && store.refs.some(r => r.name === f[0])) {
+    void store.loadCherryPicked(f[0]);
+    return;
+  }
+  const pick = (name: string) => () => {
+    void store.setFilters({ ...store.filters, branches: [name] }).then(() => store.loadCherryPicked(name));
+  };
+  const seen = new Set<string>();
+  const refs = store.refs.filter(r => r.type !== 'tag' && r.name !== store.currentBranch && !seen.has(r.name) && seen.add(r.name));
+  showMenu(
+    [
+      { separator: true, label: 'Local' },
+      ...refs.filter(r => r.type === 'local').map(r => ({ label: r.name, action: pick(r.name) })),
+      { separator: true, label: 'Remote' },
+      ...refs.filter(r => r.type === 'remote').map(r => ({ label: r.name, action: pick(r.name) })),
+    ],
+    { x: window.innerWidth / 2 - 100, y: 60 },
+    { title: 'Select Source Branch' },
+  );
 }
 
 /** Vcs.Log.GraphOptionsGroup (IntelliSort icon in the filter bar). */
@@ -249,5 +316,13 @@ export function graphOptionsMenu(): MenuEntry[] {
     { separator: true, label: 'Options' },
     { label: 'First Parent', checked: o.firstParent, action: () => void store.setFilters(store.filters, { ...o, firstParent: !o.firstParent }) },
     { label: 'No Merges', checked: !!o.noMerges, action: () => void store.setFilters(store.filters, { ...o, noMerges: !o.noMerges }) },
+    { separator: true, label: 'Branch Actions' },
+    { label: 'Collapse Linear Branches', icon: 'general/collapseAll', disabled: !!o.collapseLinear || structureBroken(), action: () => void store.setFilters(store.filters, { ...o, collapseLinear: true }) },
+    { label: 'Expand Linear Branches', icon: 'general/expandAll', disabled: !o.collapseLinear, action: () => void store.setFilters(store.filters, { ...o, collapseLinear: false }) },
   ];
+}
+
+function structureBroken() {
+  const f = store.filters;
+  return !!(f.text || f.users.length || f.since || f.until);
 }
