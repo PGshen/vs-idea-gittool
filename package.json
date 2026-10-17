@@ -77,6 +77,31 @@
           "default": 1,
           "description": "How deep to look for nested Git repositories below each workspace folder."
         },
+        "rebased.fileStatusColors": {
+          "type": "boolean",
+          "default": true,
+          "description": "Color file names in the Explorer and editor tabs by their Git status, like IntelliJ."
+        },
+        "rebased.commit.gpgSign": {
+          "type": "boolean",
+          "default": false,
+          "description": "Sign commits with GPG key (git commit -S). Like IntelliJ, this is a setting, not a commit option."
+        },
+        "rebased.commit.includeActiveChangelist": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include new changes of the active changelist into the commit automatically (check them in the Commit tool window)."
+        },
+        "rebased.commit.skipHooks": {
+          "type": "boolean",
+          "default": false,
+          "description": "Do not run Git commit hooks (commit always runs with '--no-verify')."
+        },
+        "rebased.intellijShortcuts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable IntelliJ keyboard shortcuts that do not conflict with common VS Code chords (Ctrl+Alt+K Commit and Push, Ctrl+Alt+Z Rollback)."
+        },
         "rebased.log.showInEditor": {
           "type": "boolean",
           "default": true,
@@ -150,6 +175,95 @@
       {
         "command": "rebased.showConsole",
         "title": "Show Git Console",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.commit",
+        "title": "Commit…",
+        "category": "Rebased",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "rebased.commitAndPush",
+        "title": "Commit and Push…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.resolveConflicts",
+        "title": "Resolve Conflicts…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.refreshChanges",
+        "title": "Refresh",
+        "category": "Rebased",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "rebased.rollback",
+        "title": "Rollback…",
+        "category": "Rebased",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "rebased.addToVcs",
+        "title": "Add to VCS",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.addToGitignore",
+        "title": "Add to .gitignore",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.showLocalDiff",
+        "title": "Compare with Same Repository Version",
+        "category": "Rebased",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "rebased.shelve",
+        "title": "Shelve Changes…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.shelveSilently",
+        "title": "Shelve Silently",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.unshelve",
+        "title": "Unshelve…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.showShelf",
+        "title": "Show Shelf",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.showStashes",
+        "title": "Show Stashes",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.stash",
+        "title": "Stash Changes…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.unstash",
+        "title": "Unstash Changes…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.newChangelist",
+        "title": "New Changelist…",
+        "category": "Rebased"
+      },
+      {
+        "command": "rebased.importPatches",
+        "title": "Import Patches…",
         "category": "Rebased"
       },
       {
@@ -252,6 +366,15 @@
       ]
     },
     "views": {
+      "rebased": [
+        {
+          "type": "webview",
+          "id": "rebased.commit",
+          "name": "Commit",
+          "icon": "media/activity/commit.svg",
+          "contextualTitle": "Commit"
+        }
+      ],
       "rebased-panel": [
         {
           "type": "webview",
@@ -265,10 +388,116 @@
       {
         "id": "rebased.git.file",
         "label": "Git"
+      },
+      {
+        "id": "rebased.git.file",
+        "label": "Git"
       }
     ],
     "menus": {
+      "explorer/context": [
+        {
+          "submenu": "rebased.git.file",
+          "group": "7_modification@9",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "submenu": "rebased.git.file",
+          "group": "7_rebased",
+          "when": "rebased.hasRepository"
+        }
+      ],
+      "editor/context": [
+        {
+          "submenu": "rebased.git.file",
+          "group": "1_modification@9",
+          "when": "rebased.hasRepository && resourceScheme == file"
+        },
+        {
+          "submenu": "rebased.git.file",
+          "group": "9_rebased",
+          "when": "rebased.hasRepository && resourceScheme == file"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "submenu": "rebased.git.file",
+          "group": "2_files@9",
+          "when": "rebased.hasRepository && resourceScheme == file"
+        },
+        {
+          "submenu": "rebased.git.file",
+          "group": "9_rebased",
+          "when": "rebased.hasRepository && resourceScheme == file"
+        }
+      ],
+      "rebased.git.file": [
+        {
+          "command": "rebased.commit",
+          "group": "1_file@1"
+        },
+        {
+          "command": "rebased.addToVcs",
+          "group": "1_file@2"
+        },
+        {
+          "command": "rebased.addToGitignore",
+          "group": "1_file@3"
+        },
+        {
+          "command": "rebased.showLocalDiff",
+          "group": "2_compare@2"
+        },
+        {
+          "command": "rebased.rollback",
+          "group": "4_rollback@1"
+        },
+        {
+          "command": "rebased.shelve",
+          "group": "4_rollback@2"
+        },
+        {
+          "command": "rebased.resolveConflicts",
+          "group": "5_conflicts@1",
+          "when": "rebased.hasConflicts"
+        },
+        {
+          "command": "rebased.showFileHistory",
+          "group": "1_history@1"
+        },
+        {
+          "command": "rebased.showHistoryForSelection",
+          "group": "1_history@2",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "rebased.annotate",
+          "group": "1_history@3",
+          "when": "!rebased.annotated"
+        },
+        {
+          "command": "rebased.annotateClose",
+          "group": "1_history@3",
+          "when": "rebased.annotated"
+        },
+        {
+          "command": "rebased.compareWithRevision",
+          "group": "2_compare@1"
+        },
+        {
+          "command": "rebased.compareWithBranch",
+          "group": "2_compare@2"
+        }
+      ],
       "commandPalette": [
+        {
+          "command": "rebased.addToVcs",
+          "when": "rebased.hasRepository"
+        },
+        {
+          "command": "rebased.addToGitignore",
+          "when": "rebased.hasRepository"
+        },
         {
           "command": "rebased.log.selectCommit",
           "when": "false"
@@ -306,56 +535,6 @@
           "when": "editorHasSelection"
         }
       ],
-      "rebased.git.file": [
-        {
-          "command": "rebased.showFileHistory",
-          "group": "1_history@1"
-        },
-        {
-          "command": "rebased.showHistoryForSelection",
-          "group": "1_history@2",
-          "when": "editorHasSelection"
-        },
-        {
-          "command": "rebased.annotate",
-          "group": "1_history@3",
-          "when": "!rebased.annotated"
-        },
-        {
-          "command": "rebased.annotateClose",
-          "group": "1_history@3",
-          "when": "rebased.annotated"
-        },
-        {
-          "command": "rebased.compareWithRevision",
-          "group": "2_compare@1"
-        },
-        {
-          "command": "rebased.compareWithBranch",
-          "group": "2_compare@2"
-        }
-      ],
-      "editor/context": [
-        {
-          "submenu": "rebased.git.file",
-          "group": "9_rebased",
-          "when": "rebased.hasRepository && resourceScheme == file"
-        }
-      ],
-      "explorer/context": [
-        {
-          "submenu": "rebased.git.file",
-          "group": "7_rebased",
-          "when": "rebased.hasRepository"
-        }
-      ],
-      "editor/title/context": [
-        {
-          "submenu": "rebased.git.file",
-          "group": "9_rebased",
-          "when": "rebased.hasRepository && resourceScheme == file"
-        }
-      ],
       "editor/lineNumber/context": [
         {
           "command": "rebased.annotate",
@@ -376,6 +555,29 @@
     },
     "keybindings": [
       {
+        "command": "rebased.commit",
+        "key": "ctrl+k",
+        "mac": "cmd+k",
+        "when": "focusedView == rebased.commit"
+      },
+      {
+        "command": "rebased.commitAndPush",
+        "key": "ctrl+alt+k",
+        "mac": "alt+cmd+k",
+        "when": "config.rebased.intellijShortcuts"
+      },
+      {
+        "command": "rebased.rollback",
+        "key": "ctrl+alt+z",
+        "mac": "alt+cmd+z",
+        "when": "config.rebased.intellijShortcuts && !editorTextFocus"
+      },
+      {
+        "command": "rebased.unshelve",
+        "key": "ctrl+shift+u",
+        "when": "focusedView == rebased.commit"
+      },
+      {
         "command": "rebased.showLog",
         "key": "alt+9",
         "mac": "cmd+9",
@@ -390,6 +592,68 @@
         "command": "rebased.annotateClose",
         "key": "ctrl+alt+shift+a",
         "when": "editorTextFocus && rebased.annotated"
+      }
+    ],
+    "colors": [
+      {
+        "id": "rebased.fileStatus.modified",
+        "description": "Modified file (IntelliJ FILESTATUS_MODIFIED)",
+        "defaults": {
+          "dark": "#70AEFF",
+          "light": "#0033B3",
+          "highContrast": "#70AEFF",
+          "highContrastLight": "#0033B3"
+        }
+      },
+      {
+        "id": "rebased.fileStatus.added",
+        "description": "Added file (FILESTATUS_ADDED)",
+        "defaults": {
+          "dark": "#73BD79",
+          "light": "#067D17",
+          "highContrast": "#73BD79",
+          "highContrastLight": "#067D17"
+        }
+      },
+      {
+        "id": "rebased.fileStatus.deleted",
+        "description": "Deleted file (FILESTATUS_DELETED)",
+        "defaults": {
+          "dark": "#6F737A",
+          "light": "#6C707E",
+          "highContrast": "#6F737A",
+          "highContrastLight": "#6C707E"
+        }
+      },
+      {
+        "id": "rebased.fileStatus.unknown",
+        "description": "Unversioned file (FILESTATUS_UNKNOWN)",
+        "defaults": {
+          "dark": "#E88F89",
+          "light": "#B23247",
+          "highContrast": "#E88F89",
+          "highContrastLight": "#B23247"
+        }
+      },
+      {
+        "id": "rebased.fileStatus.ignored",
+        "description": "Ignored file (FILESTATUS_IDEA_FILESTATUS_IGNORED)",
+        "defaults": {
+          "dark": "#D69A6B",
+          "light": "#8C4F00",
+          "highContrast": "#D69A6B",
+          "highContrastLight": "#8C4F00"
+        }
+      },
+      {
+        "id": "rebased.fileStatus.conflict",
+        "description": "File with merge conflicts (FILESTATUS_MERGED_WITH_CONFLICTS)",
+        "defaults": {
+          "dark": "#DE6A66",
+          "light": "#DE1B2E",
+          "highContrast": "#DE6A66",
+          "highContrastLight": "#DE1B2E"
+        }
       }
     ]
   },
