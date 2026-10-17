@@ -234,6 +234,13 @@
         "type": "boolean",
         "default": false,
         "description": "Resolve Manually\u2026 opens VS Code's merge editor instead of the IntelliJ-style three-pane merge window."
+      },
+      "rebased.merge.contextLines": {
+        "type": "number",
+        "enum": [1, 2, 4, 8, -1],
+        "enumDescriptions": ["1 line", "2 lines", "4 lines", "8 lines", "Do not collapse"],
+        "default": 4,
+        "description": "Diff & Merge: the number of unchanged lines kept around changes by Collapse Unchanged Fragments in the merge window."
       }
     }
   }

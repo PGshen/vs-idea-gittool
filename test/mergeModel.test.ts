@@ -1,93 +1,126 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMergeChunks, rangeText, resolveSimple, sideKind, statusText, unprocessedMessage } from '../src/shared/mergeModel';
+import {
+  buildMergeChanges,
+  iterativeUnprocessedMessage,
+  joinText,
+  MergeModel,
+  splitText,
+  statusText,
+  unprocessedMessage,
+  updateRangeOnModification,
+} from '../src/shared/mergeModel';
 
 const L = (s: string) => (s ? s.split(',') : []);
 
-test('non-conflicting changes on each side', () => {
-  const base = L('a,b,c,d,e');
-  const left = L('a,B,c,d,e');
-  const right = L('a,b,c,d,E,f');
-  const ch = buildMergeChunks(base, left, right);
-  assert.deepEqual(ch.map(c => c.type), ['left', 'right']);
-  assert.deepEqual(ch[0], { base: [1, 2], left: [1, 2], right: [1, 2], type: 'left' });
-  assert.deepEqual(ch[1].base, [4, 5]);
-  assert.deepEqual(ch[1].right, [4, 6]);
-  assert.equal(sideKind(ch[0], 'left'), 'modified');
-  assert.equal(sideKind(ch[0], 'right'), 'none');
+test('change kinds follow MergeRangeUtil.getLineMergeType', () => {
+  const base = L('a,b,c,d,e,f');
+  const left = L('a,B,c,d,e,f,g');
+  const right = L('a,b,c,e,f');
+  const ch = buildMergeChanges(base, left, right);
+  assert.deepEqual(
+    ch.map(c => [c.kind, c.leftChange, c.rightChange]),
+    [
+      ['modified', true, false],
+      ['deleted', false, true],
+      ['inserted', true, false],
+    ],
+  );
+  assert.deepEqual(ch[0].base, [1, 2]);
+  assert.deepEqual(ch[2].left, [6, 7]);
 });
 
-test('conflict when both sides change the same lines', () => {
-  const ch = buildMergeChunks(L('a,b,c'), L('a,X,c'), L('a,Y,c'));
-  assert.equal(ch.length, 1);
-  assert.equal(ch[0].type, 'conflict');
-  assert.deepEqual(ch[0].left, [1, 2]);
-  assert.equal(ch[0].resolved, undefined);
+test('identical changes and conflicts', () => {
+  assert.deepEqual(
+    buildMergeChanges(L('a,b,c'), L('a,X,c'), L('a,X,c')).map(c => [c.kind, c.leftChange, c.rightChange]),
+    [['modified', true, true]],
+  );
+  const conflict = buildMergeChanges(L('a,b,c'), L('a,X,c'), L('a,Y,c'));
+  assert.equal(conflict[0].kind, 'conflict');
+  assert.equal(conflict[0].canResolve, false);
 });
 
-test('identical change on both sides is not a conflict', () => {
-  const ch = buildMergeChunks(L('a,b,c'), L('a,X,c'), L('a,X,c'));
-  assert.deepEqual(ch.map(c => c.type), ['both']);
+test('a conflict of changes in different words of a line can be resolved automatically', () => {
+  const model = MergeModel.create(['const x = 1, y = 2;'], ['const x = 10, y = 2;'], ['const x = 1, y = 20;']);
+  assert.equal(model.changes[0].kind, 'conflict');
+  assert.equal(model.changes[0].canResolve, true);
+  assert.ok(model.resolveChangeAutomatically(0, 'base'));
+  assert.deepEqual(model.lines, ['const x = 10, y = 20;']);
+  assert.deepEqual(model.stats(), { changes: 0, conflicts: 0 });
 });
 
-test('touching changes are a conflict that magic resolve can merge', () => {
-  const base = L('a,b,c,d');
-  const left = L('a,B,c,d');
-  const right = L('a,b,C,d');
-  const ch = buildMergeChunks(base, left, right);
-  assert.equal(ch.length, 1);
-  assert.equal(ch[0].type, 'conflict');
-  assert.deepEqual(ch[0].resolved, ['B', 'C']);
-  assert.deepEqual(ch[0].base, [1, 3]);
+test('apply both sides of a conflict: replace, then append', () => {
+  const model = MergeModel.create(L('a,b,c'), L('a,L,c'), L('a,R,c'));
+  assert.ok(model.replaceChange(0, 'left', false));
+  assert.deepEqual(model.lines, L('a,L,c'));
+  assert.equal(model.states[0].resolvedLeft, true);
+  assert.equal(model.states[0].oneside, true);
+  assert.ok(model.replaceChange(0, 'right', false));
+  assert.deepEqual(model.lines, L('a,L,R,c'));
+  assert.deepEqual([model.states[0].start, model.states[0].end], [1, 3]);
+  assert.deepEqual(model.stats(), { changes: 0, conflicts: 0 });
 });
 
-test('add/add conflict with empty base', () => {
-  const ch = buildMergeChunks([], L('a,from master,c'), L('a,from other,c'));
-  assert.equal(ch.length, 1);
-  assert.equal(ch[0].type, 'conflict');
-  assert.deepEqual(ch[0].left, [0, 3]);
-  assert.deepEqual(ch[0].right, [0, 3]);
-  assert.equal(sideKind(ch[0], 'left'), 'conflict');
+test('ctrl+click accepts one side and resolves the conflict', () => {
+  const model = MergeModel.create(L('a,b,c'), L('a,L,c'), L('a,R,c'));
+  model.replaceChange(0, 'right', true);
+  assert.deepEqual(model.lines, L('a,R,c'));
+  assert.deepEqual(model.stats(), { changes: 0, conflicts: 0 });
 });
 
-test('ranges stay correct after earlier insertions and deletions', () => {
-  const base = L('1,2,3,4,5,6,7,8');
-  const left = L('0,1,2,3,4,5,6,7,8'); // insertion at top
-  const right = L('1,2,4,5,6,7,X'); // deletion of 3, change of 8
-  const ch = buildMergeChunks(base, left, right);
-  assert.deepEqual(ch.map(c => c.type), ['left', 'right', 'right']);
-  const last = ch[2];
-  assert.deepEqual(last.base, [7, 8]);
-  assert.deepEqual(last.left, [8, 9]);
-  assert.deepEqual(last.right, [6, 7]);
-  assert.equal(rangeText(right, last.right), 'X\n');
-  assert.equal(sideKind(ch[1], 'right'), 'deleted');
-  assert.equal(sideKind(ch[0], 'left'), 'inserted');
+test('ranges of later changes move with the edits', () => {
+  const model = MergeModel.create(L('a,b,c,d,e'), L('a,b1,b2,b3,c,d,e'), L('a,b,c,d,E'));
+  assert.deepEqual(model.changes.map(c => c.kind), ['modified', 'modified']);
+  model.applyNonConflictedChanges('left');
+  assert.deepEqual(model.lines, L('a,b1,b2,b3,c,d,e'));
+  assert.deepEqual([model.states[1].start, model.states[1].end], [6, 7]);
+  model.applyNonConflictedChanges('base');
+  assert.deepEqual(model.lines, L('a,b1,b2,b3,c,d,E'));
 });
 
-test('applying all chunks from left reproduces left', () => {
-  const base = L('a,b,c,d,e,f,g');
-  const left = L('a,b2,c,e,f,g,h');
-  const right = L('a,b,c,d,e,F,g');
-  const ch = buildMergeChunks(base, left, right);
-  // Replace each chunk base range with the left content, from the end.
-  const out = base.slice();
-  for (const c of [...ch].reverse()) out.splice(c.base[0], c.base[1] - c.base[0], ...left.slice(c.left[0], c.left[1]));
-  assert.deepEqual(out, left);
-  const outR = base.slice();
-  for (const c of [...ch].reverse()) outR.splice(c.base[0], c.base[1] - c.base[0], ...right.slice(c.right[0], c.right[1]));
-  assert.deepEqual(outR, right);
+test('user edits: IntelliJ range update rules', () => {
+  assert.deepEqual(updateRangeOnModification(5, 8, 1, 2, 2), { start: 7, end: 10, damaged: false });
+  assert.deepEqual(updateRangeOnModification(5, 8, 6, 7, 1), { start: 5, end: 9, damaged: false });
+  assert.deepEqual(updateRangeOnModification(5, 8, 4, 6, -1), { start: 5, end: 7, damaged: true });
+  const model = MergeModel.create(L('a,b,c,d'), L('a,b,c,d'), L('a,x,c'));
+  // right: b -> x, d deleted
+  assert.deepEqual(model.changes.map(c => c.kind), ['modified', 'deleted']);
+  // The user deletes line 3 ("d") by hand: the deleted change becomes resolved.
+  model.lines.splice(3, 1);
+  model.onUserEdit(2, 4, -1);
+  assert.equal(model.states[1].start, model.states[1].end);
+  assert.deepEqual(model.stats(), { changes: 1, conflicts: 0 });
 });
 
-test('resolveSimple refuses intersecting changes and same insertion point', () => {
-  assert.equal(resolveSimple(L('a'), L('x'), L('y')), undefined);
-  assert.equal(resolveSimple([], L('x'), L('y')), undefined);
-  assert.deepEqual(resolveSimple(L('a,b'), L('a2,b'), L('a,b2')), ['a2', 'b2']);
+test('a change edited by hand is no longer applied automatically', () => {
+  const model = MergeModel.create(L('a,b,c'), L('a,B,c'), L('a,b,c'));
+  model.lines[1] = 'edited';
+  model.onUserEdit(1, 2, 0);
+  assert.equal(model.isChangeRangeModified(0), true);
+  assert.equal(model.hasNonConflictedChanges('base'), false);
+});
+
+test('accept a side resets and applies every change of that side', () => {
+  const model = MergeModel.create(L('a,b,c,d'), L('a,L,c,d'), L('a,R,c,D'));
+  model.replaceChange(0, 'right', true);
+  model.acceptRevisionForSide('left');
+  assert.deepEqual(model.lines, L('a,L,c,d'));
+  assert.deepEqual(model.stats(), { changes: 0, conflicts: 0 });
+});
+
+test('document lines keep the final newline and CRLF', () => {
+  const t = splitText('a\r\nb\r\n');
+  assert.deepEqual(t.lines, ['a', 'b', '']);
+  assert.equal(joinText(t.lines, t.crlf), 'a\r\nb\r\n');
+  const model = MergeModel.create(splitText('a\nb\nx\n').lines, splitText('a\nB\nx\n').lines, splitText('a\nb\nx\nc\n').lines);
+  model.applyNonConflictedChanges('base');
+  assert.equal(joinText(model.lines, false), 'a\nB\nx\nc\n');
 });
 
 test('IntelliJ status texts', () => {
   assert.equal(statusText({ changes: 2, conflicts: 1 }), '2 changes, 1 conflict');
   assert.equal(statusText({ changes: 0, conflicts: 0 }), 'No changes, No conflicts');
   assert.equal(unprocessedMessage({ changes: 2, conflicts: 1 }), 'There are 2 changes and one conflict left unprocessed.\nSave changes and mark the conflict resolved anyway?');
-  assert.equal(unprocessedMessage({ changes: 0, conflicts: 1 }), 'There is one conflict left unprocessed.\nSave changes and mark the conflict resolved anyway?');
+  assert.equal(iterativeUnprocessedMessage(1, 2), '1 unresolved conflict and 2 unprocessed changes still remain. The file will be saved exactly as shown in the Result pane.');
+  assert.equal(iterativeUnprocessedMessage(0, 1), '1 unprocessed change still remains. The file will be saved exactly as shown in the Result pane.');
 });

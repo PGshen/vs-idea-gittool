@@ -4,15 +4,17 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
-import { confirmDialog } from '../../host/ui';
 import { getExtensionUri, WebviewConnection } from '../../host/webviewHost';
-import { CompareMode, DEFAULT_MERGE_SETTINGS, MergeInit, MergeSettings, TitleParts } from '../../shared/mergeProtocol';
+import { CompareMode, DEFAULT_MERGE_SETTINGS, MergeFinish, MergeInit, MergeProgress, MergeSettings, TitleParts } from '../../shared/mergeProtocol';
 import { Change } from '../../shared/types';
-import { acceptSide, addFiles } from './gitOps';
 
 const SETTINGS_KEY = 'rebased.merge.settings';
 
-export type MergeOutcome = 'resolved' | 'cancelled';
+export interface MergeRevisions {
+  base: string;
+  left: string;
+  right: string;
+}
 
 /**
  * IntelliJ's merge window (TextMergeViewer / MergeThreesideViewer): Yours on the left, the editable
@@ -21,54 +23,36 @@ export type MergeOutcome = 'resolved' | 'cancelled';
 export class MergeTool {
   constructor(private readonly ctx: Ctx) {}
 
+  settings(): MergeSettings {
+    return { ...DEFAULT_MERGE_SETTINGS, ...this.ctx.extension.globalState.get<Partial<MergeSettings>>(SETTINGS_KEY, {}) };
+  }
+
+  /** "Diff & Merge > Context lines": 1, 2, 4, 8 or -1 (do not collapse). */
+  contextLines(): number {
+    const v = vscode.workspace.getConfiguration('rebased').get<number>('merge.contextLines', 4);
+    return [1, 2, 4, 8, -1].includes(v) ? v : 4;
+  }
+
   /**
-   * Opens the merge window for one conflicted file. `reversed` swaps git's stages (during a rebase
-   * "yours" is git's "theirs"). Resolves when the window is closed.
+   * Shows the merge window for one file and resolves with the result when it is closed. Closing the tab
+   * is "Cancel" ("Save and Close" in the iterative flow, with the last progress of the window).
    */
-  async open(repo: Repository, c: Change, reversed: boolean): Promise<MergeOutcome> {
-    const yoursStage = reversed ? ':3' : ':2';
-    const theirsStage = reversed ? ':2' : ':3';
-    const [base, yours, theirs] = await Promise.all([repo.show(':1', c.path), repo.show(yoursStage, c.path), repo.show(theirsStage, c.path)]);
-    const xy = `${c.index}${c.workTree}`;
-    const oursDeleted = xy === 'DU' || xy === 'DD';
-    const theirsDeleted = xy === 'UD' || xy === 'DD';
-    const yoursDeleted = reversed ? theirsDeleted : oursDeleted;
-    const theirDeleted = reversed ? oursDeleted : theirsDeleted;
+  open(repo: Repository, c: Change, revisions: MergeRevisions, opts: { iterative: boolean; progress?: MergeProgress }): Promise<MergeFinish> {
     const titles = this.titles(repo);
     const plain = (t: TitleParts) => t.map(p => p.text).join('');
-
-    // Deleted on one side, or binary content: IntelliJ shows a simple choice instead of the text merge.
-    if (yoursDeleted || theirDeleted || isBinary(base) || isBinary(yours) || isBinary(theirs)) {
-      const message =
-        yoursDeleted || theirDeleted
-          ? `${c.path}\n\n${plain(titles.left)}: ${yoursDeleted ? 'deleted' : 'modified'}\n${plain(titles.right)}: ${theirDeleted ? 'deleted' : 'modified'}`
-          : `${c.path} is a binary file. Choose the version to keep.`;
-      const r = await confirmDialog({
-        title: `Merge Revisions for ${c.path}`,
-        message,
-        icon: 'question',
-        buttons: [
-          { id: 'left', label: 'Accept Left' },
-          { id: 'right', label: 'Accept Right' },
-          { id: 'cancel', label: 'Cancel', primary: true },
-        ],
-      });
-      if (!r || r.button === 'cancel') return 'cancelled';
-      await this.accept(repo, c, r.button === 'left' ? 'left' : 'right', reversed);
-      return 'resolved';
-    }
-
     const init: MergeInit = {
       path: c.path,
       fileName: path.posix.basename(c.path),
       titles,
-      base: base.toString('utf8'),
-      left: yours.toString('utf8'),
-      right: theirs.toString('utf8'),
-      settings: { ...DEFAULT_MERGE_SETTINGS, ...this.ctx.extension.globalState.get<Partial<MergeSettings>>(SETTINGS_KEY, {}) },
+      base: revisions.base,
+      left: revisions.left,
+      right: revisions.right,
+      settings: this.settings(),
+      contextLines: this.contextLines(),
+      iterative: opts.iterative,
+      progress: opts.progress,
     };
-
-    return new Promise<MergeOutcome>(resolve => {
+    return new Promise<MergeFinish>(resolve => {
       const panel = vscode.window.createWebviewPanel('rebased.merge', `Merge Revisions for ${c.path}`, vscode.ViewColumn.Active, {
         retainContextWhenHidden: true,
       });
@@ -76,41 +60,31 @@ export class MergeTool {
         light: vscode.Uri.joinPath(getExtensionUri(), 'media', 'icons', 'vcs', 'merge.svg'),
         dark: vscode.Uri.joinPath(getExtensionUri(), 'media', 'icons', 'vcs', 'merge_dark.svg'),
       };
-      let outcome: MergeOutcome = 'cancelled';
+      let outcome: MergeFinish | undefined;
+      let last: MergeFinish | undefined = opts.progress ? { result: 'CANCEL', ...opts.progress } : undefined;
       const conn = new WebviewConnection(panel.webview, 'merge', () => init, panel.title);
       const temp: string[] = [];
+      const write = (name: string, text: string) => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rebased-merge-'));
+        const f = path.join(dir, `${name} - ${init.fileName}`);
+        fs.writeFileSync(f, text);
+        temp.push(dir);
+        return vscode.Uri.file(f);
+      };
       conn.handleAll({
-        apply: async (p: { text: string }) => {
-          const file = repo.absPath(c.path);
-          const original = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : init.left;
-          const eol = /\r\n/.test(init.left || original) ? '\r\n' : '\n';
-          let text = p.text;
-          // The webview keeps a newline after every line; restore the file's own ending.
-          const trailing = (init.left || init.right || init.base).endsWith('\n') || (!init.left && !init.right && !init.base);
-          if (!trailing && text.endsWith('\n')) text = text.slice(0, -1);
-          fs.writeFileSync(file, eol === '\n' ? text : text.replace(/\n/g, eol));
-          await repo.batch(() => addFiles(repo, [c.path], true));
-          outcome = 'resolved';
+        finish: (p: MergeFinish) => {
+          outcome = p;
           panel.dispose();
         },
-        accept: async (p: { side: 'left' | 'right' }) => {
-          await this.accept(repo, c, p.side, reversed);
-          outcome = 'resolved';
-          panel.dispose();
+        progress: (p: MergeFinish) => {
+          last = p;
         },
-        close: () => panel.dispose(),
-        ask: async (p: { title: string; message: string; yes: string; no: string }) => {
-          const r = await vscode.window.showWarningMessage(p.title, { modal: true, detail: p.message }, p.yes, p.no);
+        ask: async (p: { title: string; message: string; yes: string; no: string; icon?: string }) => {
+          const show = p.icon === 'question' ? vscode.window.showInformationMessage : vscode.window.showWarningMessage;
+          const r = await show(p.title, { modal: true, detail: p.message }, p.yes, p.no);
           return r === p.yes;
         },
         compare: async (p: { mode: CompareMode; result: string }) => {
-          const write = (name: string, text: string) => {
-            const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rebased-merge-'));
-            const f = path.join(dir, `${name} - ${init.fileName}`);
-            fs.writeFileSync(f, text);
-            temp.push(dir);
-            return vscode.Uri.file(f);
-          };
           const uri = {
             base: () => write('Base', init.base),
             left: () => write(plain(titles.left), init.left),
@@ -118,8 +92,15 @@ export class MergeTool {
             result: () => write('Result', p.result),
           };
           const [a, b] = p.mode.split('-') as (keyof typeof uri)[];
-          const name = (k: string) => (k === 'left' ? 'Left' : k === 'right' ? 'Right' : k === 'base' ? 'Base' : 'Middle');
+          const name = (k: string) => (k === 'left' ? 'Left' : k === 'right' ? 'Right' : k === 'base' ? 'Base' : 'Result');
           await vscode.commands.executeCommand('vscode.diff', uri[a](), uri[b](), `${init.fileName} (${name(a)} ↔ ${name(b)})`, {
+            viewColumn: vscode.ViewColumn.Beside,
+          });
+        },
+        // CompareClipboardWithSelection
+        compareClipboard: async (p: { text: string; fileName: string }) => {
+          const clip = await vscode.env.clipboard.readText();
+          await vscode.commands.executeCommand('vscode.diff', write('Clipboard', clip), write('Selection', p.text), `Clipboard ↔ ${p.fileName}`, {
             viewColumn: vscode.ViewColumn.Beside,
           });
         },
@@ -128,15 +109,9 @@ export class MergeTool {
       panel.onDidDispose(() => {
         conn.dispose();
         for (const d of temp) fs.rmSync(d, { recursive: true, force: true });
-        resolve(outcome);
+        resolve(outcome ?? (opts.iterative && last ? { ...last, result: 'CANCEL' } : { result: 'CANCEL', lines: [], states: [], contentModified: false }));
       });
     });
-  }
-
-  private async accept(repo: Repository, c: Change, side: 'left' | 'right', reversed: boolean) {
-    const yours = side === 'left';
-    const gitSide = yours !== reversed ? 'ours' : 'theirs';
-    await repo.batch(() => acceptSide(repo, [c], gitSide));
   }
 
   /** Column titles of GitDefaultMergeDialogCustomizer. */
@@ -195,6 +170,6 @@ export class MergeTool {
   }
 }
 
-function isBinary(b: Buffer) {
+export function isBinary(b: Buffer) {
   return b.subarray(0, 8000).includes(0);
 }

@@ -41,6 +41,8 @@ const right = base
   .replace("  return 'Log: ' + branch;", "  return 'Log: ' + branch.trim();")
   .replace('  const g = id * 130 + 50;', '  const g = (id * 130 + 50) % 255;');
 
+const many = n => Array.from({ length: n }, (_, i) => `// unchanged line ${i + 1}`).join('\n') + '\n';
+
 export const initial = {
   path: 'src/features/log/model.ts',
   fileName: 'model.ts',
@@ -49,35 +51,58 @@ export const initial = {
     result: [{ text: 'Result' }],
     right: [{ text: 'Changes from ' }, { text: 'feature/log-graph', bold: true }],
   },
-  base,
-  left,
-  right,
-  settings: { highlight: 'words', ignore: 'none', syncScroll: true, autoApply: false },
+  base: base + many(20),
+  left: left + many(20),
+  right: right + many(20),
+  settings: { highlight: 'words', ignore: 'none', syncScroll: true, autoApply: false, collapseUnchanged: process.env.MERGE_COLLAPSE === '1' },
+  contextLines: 4,
+  iterative: true,
 };
 
-export async function handle(method) {
+export async function handle(method, params) {
   if (method === 'ask') return true;
+  if (method === 'finish' || method === 'progress') console.log(method.toUpperCase(), JSON.stringify({ result: params.result, states: params.states.length }));
   return null;
 }
 
+const op = (page, sel) => page.dispatchEvent(sel, 'mousedown', { button: 0 });
+
 export async function act(page) {
-  if (process.env.MERGE_ACT === 'apply') {
-    // Apply the left import, then both sides of the "title" conflict (left, then append right).
-    await page.click('button[data-i="0"][data-action="apply"][data-side="left"]');
+  const act = process.env.MERGE_ACT;
+  if (act === 'apply') {
+    // Apply the left import, then both sides of the "title" conflict (left, then append right), then magic.
+    await op(page, '.mg-left .mg-op[data-i="0"][data-action="apply"]');
     await page.waitForTimeout(150);
-    const title = await page.$$eval('button[data-action="apply"][data-side="left"]', bs => bs.map(b => b.dataset.i));
-    const i = title[title.length - 2];
-    await page.click(`button[data-i="${i}"][data-action="apply"][data-side="left"]`);
+    const ids = await page.$$eval('.mg-left .mg-op[data-action="apply"]', bs => bs.map(b => b.dataset.i));
+    const i = ids[ids.length - 2];
+    await op(page, `.mg-left .mg-op[data-i="${i}"][data-action="apply"]`);
     await page.waitForTimeout(150);
-    await page.click(`button[data-i="${i}"][data-action="apply"][data-side="right"]`);
+    await op(page, `.mg-right .mg-op[data-i="${i}"][data-action="apply"]`);
     await page.waitForTimeout(150);
-    await page.click('button[data-action="magic"]');
+    await op(page, '.mg-result .mg-op[data-action="resolve"]');
     await page.waitForTimeout(150);
+    console.log('STATUS', await page.textContent('.mg-status'));
   }
-  if (process.env.MERGE_ACT === 'undo') {
+  if (act === 'menu') {
+    const line = await page.$('.mg-result .cm-line:nth-child(12)');
+    const box = await line.boundingBox();
+    await page.mouse.click(box.x + 40, box.y + 5, { button: 'right' });
+  }
+  if (act === 'edit') {
+    // Typing in the "color" conflict: the change range grows with the edit and can no longer be resolved by magic.
+    const magic = () => page.$$eval('.mg-result .mg-op[data-action="resolve"]', l => l.length);
+    const before = await magic();
+    await page.click('.mg-result .cm-line:nth-child(24)');
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('const b = 0;');
+    await page.waitForTimeout(150);
+    console.log('EDIT', JSON.stringify({ before, after: await magic(), status: await page.textContent('.mg-status') }));
+  }
+  if (act === 'undo') {
     const status = () => page.textContent('.mg-status');
     const before = await status();
-    await page.click('button[data-i="0"][data-action="apply"][data-side="left"]');
+    await op(page, '.mg-left .mg-op[data-i="0"][data-action="apply"]');
     await page.click('button.mg-text-action:has-text("All")');
     await page.waitForTimeout(150);
     const mid = await status();

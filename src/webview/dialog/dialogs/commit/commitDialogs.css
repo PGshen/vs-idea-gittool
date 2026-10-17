@@ -1,3 +1,95 @@
 .wide-labels .form-label {
   min-width: 118px;
 }
+
+/* Conflicts dialog (IterativeMergeFlowDelegate). */
+.conflicts-description {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 4px;
+}
+.conflicts-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.conflicts-magic {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.conflicts-status {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conflicts-box {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+}
+.conflicts-box.disabled::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--banner-info-bg, rgba(53, 116, 240, 0.1));
+  opacity: 0.4;
+}
+.conflicts-table thead th {
+  color: var(--fg-secondary);
+  font-weight: normal;
+}
+.conflicts-table tbody tr {
+  height: 28px;
+}
+.conflicts-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.conflicts-group .conflicts-node .secondary {
+  margin-left: 4px;
+}
+.conflicts-side {
+  white-space: nowrap;
+  padding-left: 6px;
+}
+.conflicts-side-label {
+  margin-right: 8px;
+}
+.btn.conflicts-accept {
+  height: 20px;
+  min-width: 0;
+  padding: 0 10px;
+  font-size: 12px;
+}
+.conflicts-badge {
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 8px;
+  line-height: 16px;
+  font-size: 12px;
+  color: #5a5d6b;
+  background: rgba(90, 93, 107, 0.16);
+}
+.conflicts-badge.modified {
+  color: #2e55a3;
+  background: rgba(53, 116, 240, 0.16);
+}
+body.ij-dark .conflicts-badge,
+body.ij-vscode.vscode-dark .conflicts-badge,
+body.ij-vscode.vscode-high-contrast .conflicts-badge {
+  color: #b4b8bf;
+  background: rgba(180, 184, 191, 0.2);
+}
+body.ij-dark .conflicts-badge.modified,
+body.ij-vscode.vscode-dark .conflicts-badge.modified,
+body.ij-vscode.vscode-high-contrast .conflicts-badge.modified {
+  color: #d1e0ff;
+  background: rgba(53, 83, 143, 0.8);
+}

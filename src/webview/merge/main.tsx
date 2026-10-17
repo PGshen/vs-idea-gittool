@@ -4,11 +4,11 @@ import '../lib/base.css';
 import './merge.css';
 import { ActionButton, Button, Separator, Toolbar } from '../lib/components';
 import { Icon } from '../lib/icons';
-import { anchorBelow, MenuEntry, showMenu } from '../lib/menu';
+import { anchorAt, anchorBelow, MenuEntry, showMenu } from '../lib/menu';
 import { boot, call, on, send, theme } from '../lib/rpc';
-import { statusText, unprocessedMessage } from '../../shared/mergeModel';
-import { CompareMode, MergeInit, MergeSettings, TitleParts } from '../../shared/mergeProtocol';
-import { MergeController } from './controller';
+import { iterativeUnprocessedMessage, Side, statusText, unprocessedMessage } from '../../shared/mergeModel';
+import { CompareMode, MergeFinish, MergeInit, MergeResult, MergeSettings, TitleParts } from '../../shared/mergeProtocol';
+import { MergeController, Pane } from './controller';
 
 const init = boot.initial as MergeInit;
 
@@ -20,25 +20,44 @@ function Title({ parts }: { parts: TitleParts }) {
   );
 }
 
+interface Ask {
+  title: string;
+  message: string;
+  yes: string;
+  no: string;
+  icon?: 'warning' | 'question';
+}
+
 function App() {
   const ctl = useRef<MergeController>();
   if (!ctl.current) ctl.current = new MergeController(init, init.settings, theme.dark);
   const c = ctl.current;
   const [, setTick] = useState(0);
   const [settings, setSettings] = useState<MergeSettings>(init.settings);
+  const [balloon, setBalloon] = useState(false);
   const hosts = { left: useRef<HTMLDivElement>(null), result: useRef<HTMLDivElement>(null), right: useRef<HTMLDivElement>(null) };
-  const ctrls = { left: useRef<HTMLDivElement>(null), result: useRef<HTMLDivElement>(null), right: useRef<HTMLDivElement>(null) };
   const d1 = useRef<SVGSVGElement>(null);
   const d2 = useRef<SVGSVGElement>(null);
   const compareRef = useRef<HTMLButtonElement>(null);
+  const wasDone = useRef(false);
+  const finished = useRef(false);
 
   useEffect(() => {
-    c.mount(
-      { left: hosts.left.current!, result: hosts.result.current!, right: hosts.right.current! },
-      { left: ctrls.left.current!, result: ctrls.result.current!, right: ctrls.right.current! },
-      [d1.current!, d2.current!],
-    );
-    const off = c.onChange(() => setTick(t => t + 1));
+    c.mount({ left: hosts.left.current!, result: hosts.result.current!, right: hosts.right.current! }, [d1.current!, d2.current!]);
+    wasDone.current = c.stats.changes === 0 && c.stats.conflicts === 0;
+    let progressTimer = 0;
+    const off = c.onChange(() => {
+      setTick(t => t + 1);
+      // The host keeps the latest progress: closing the tab acts as "Cancel" / "Save and Close".
+      clearTimeout(progressTimer);
+      progressTimer = window.setTimeout(() => send('progress', { result: 'CANCEL', lines: c.resultLines(), states: c.states, contentModified: c.contentModified } satisfies MergeFinish), 150);
+      // MergeThreesideViewer.onChangeResolved: "All changes have been processed" balloon.
+      const s = c.stats;
+      const done = s.changes === 0 && s.conflicts === 0;
+      if (done && !wasDone.current) setBalloon(true);
+      if (!done) setBalloon(false);
+      wasDone.current = done;
+    });
     const offTheme = on('themeChanged', (d: { dark: boolean }) => c.setDark(d.dark));
     return () => {
       off();
@@ -46,61 +65,70 @@ function App() {
     };
   }, []);
 
-  // Clicks on the gutter controls (rendered as HTML by the controller).
-  const onCtrlClick = (e: MouseEvent) => {
-    const b = (e.target as Element).closest('.mg-ctrl-btn') as HTMLElement | null;
-    if (!b) return;
-    const i = +b.dataset.i!;
-    const side = b.dataset.side as 'left' | 'right';
-    const action = b.dataset.action;
-    if (action === 'apply') c.apply(i, side);
-    else if (action === 'ignore') c.ignore(i, side);
-    else if (action === 'magic') c.magic(i);
-    c.views.result.focus();
-  };
-
   const s = c.views ? c.stats : { changes: 0, conflicts: 0 };
   const done = s.changes === 0 && s.conflicts === 0;
 
   const saveSettings = (next: MergeSettings) => {
     setSettings(next);
+    c.settings = next;
     send('saveSettings', next);
   };
 
-  const finish = async () => {
-    if (!done) {
-      const ok = await call<boolean>('ask', { title: 'Apply Changes', message: unprocessedMessage(s), yes: 'Apply Changes and Mark Resolved', no: 'Continue Merge' });
+  const ask = (a: Ask) => call<boolean>('ask', a);
+
+  const finish = async (result: MergeResult) => {
+    if (finished.current) return;
+    const payload = (): MergeFinish => ({ result, lines: c.resultLines(), states: c.states, contentModified: c.contentModified });
+    if (result === 'RESOLVED') {
+      const st = c.stats;
+      if (st.changes > 0 || st.conflicts > 0) {
+        const ok = init.iterative
+          ? await ask({ title: 'Unprocessed Changes', message: iterativeUnprocessedMessage(st.conflicts, st.changes), yes: 'Save Current Result', no: 'Back to Resolving', icon: 'warning' })
+          : await ask({ title: 'Apply Changes', message: unprocessedMessage(st), yes: 'Apply Changes and Mark Resolved', no: 'Continue Merge' });
+        if (!ok) return;
+        c.markAllResolved();
+      }
+    } else if (result === 'LEFT' || result === 'RIGHT') {
+      const action = result === 'LEFT' ? 'Accept Left' : 'Accept Right';
+      if (c.contentModified) {
+        const ok = await ask({
+          title: action,
+          message: `There are unsaved changes in the result file. Discard changes and ${action.toLowerCase()} anyway?`,
+          yes: `Discard Changes and ${action}`,
+          no: 'Continue Merge',
+        });
+        if (!ok) return;
+      }
+      c.acceptSide(result === 'LEFT' ? 'left' : 'right');
+    } else if (!init.iterative && c.contentModified) {
+      const ok = await ask({
+        title: 'Cancel Merge',
+        message: 'There are unsaved changes in the result file. Discard changes and cancel merge anyway?',
+        yes: 'Discard Changes and Cancel Merge',
+        no: 'Continue Merge',
+      });
       if (!ok) return;
     }
-    await call('apply', { text: c.resultText() });
+    finished.current = true;
+    await call('finish', payload());
   };
-
-  const cancel = async () => {
-    if (c.modified) {
-      const ok = await call<boolean>('ask', { title: 'Cancel File Merge', message: 'Are you sure you want to exit without applying changes?', yes: 'Yes', no: 'No' });
-      if (!ok) return;
-    }
-    send('close');
-  };
-
-  const accept = (side: 'left' | 'right') => call('accept', { side });
 
   const compare = (mode: CompareMode) => send('compare', { mode, result: c.views.result.state.doc.toString() });
 
   const compareMenu = (): MenuEntry[] => [
     { separator: true, label: 'Compare Contents' },
     { label: 'Left and Middle', icon: 'diff/compare4LeftMiddle', action: () => compare('left-result') },
-    { label: 'Middle and Right', icon: 'diff/compare4MiddleRight', action: () => compare('result-right') },
+    { label: 'Right and Middle', icon: 'diff/compare4MiddleRight', action: () => compare('result-right') },
     { label: 'Left and Right', icon: 'diff/compare4LeftRight', action: () => compare('left-right') },
     { label: 'Base and Left', icon: 'diff/compare4LeftBottom', action: () => compare('base-left') },
-    { label: 'Base and Middle', icon: 'diff/compare4MiddleBottom', action: () => compare('base-result') },
+    { label: 'Base and Result', icon: 'diff/compare4MiddleBottom', action: () => compare('base-result') },
     { label: 'Base and Right', icon: 'diff/compare4RightBottom', action: () => compare('base-right') },
   ];
 
   const changeIgnore = async (ignore: MergeSettings['ignore']) => {
     if (ignore === settings.ignore) return;
-    if (c.modified) {
-      const ok = await call<boolean>('ask', {
+    if (c.contentModified) {
+      const ok = await ask({
         title: 'Restart Merge',
         message: 'Changing highlighting requires the file merge restart. Discard unsaved changes and restart merge anyway?',
         yes: 'Discard Changes and Restart Merge',
@@ -114,13 +142,34 @@ function App() {
     setTick(t => t + 1);
   };
 
+  const toggleCollapse = () => {
+    const next = { ...settings, collapseUnchanged: !settings.collapseUnchanged };
+    saveSettings(next);
+    c.setCollapse(next.collapseUnchanged);
+  };
+  const toggleSync = () => saveSettings({ ...settings, syncScroll: !settings.syncScroll });
+
+  /** The gear: editor settings and the diff settings (ignore / highlighting policy). */
   const settingsMenu = (): MenuEntry[] => [
-    { label: 'Synchronize Scrolling', checked: settings.syncScroll, action: () => saveSettings((c.settings = { ...settings, syncScroll: !settings.syncScroll })) },
+    { label: 'Synchronize Scrolling', icon: 'actions/synchronizeScrolling', checked: settings.syncScroll, action: toggleSync },
+    {
+      label: 'Automatically Apply Non-Conflicting Changes',
+      checked: settings.autoApply,
+      action: () => saveSettings({ ...settings, autoApply: !settings.autoApply }),
+    },
+    { separator: true, label: 'Ignore' },
+    ...(
+      [
+        ['none', 'Do Not Ignore'],
+        ['trim', 'Trim Whitespaces'],
+        ['whitespace', 'Ignore Whitespaces'],
+      ] as const
+    ).map(([p, label]) => ({ label, checked: settings.ignore === p, action: () => void changeIgnore(p) })),
     { separator: true, label: 'Highlighting' },
     ...(
       [
-        ['words', 'Highlight Words'],
         ['lines', 'Highlight Lines'],
+        ['words', 'Highlight Words'],
         ['none', 'Do Not Highlight'],
       ] as const
     ).map(([h, label]) => ({
@@ -131,31 +180,68 @@ function App() {
         c.setHighlight(h);
       },
     })),
-    { separator: true, label: 'Ignore' },
-    ...(
-      [
-        ['none', 'Do Not Ignore'],
-        ['trim', 'Trim Whitespaces'],
-        ['whitespace', 'Ignore Whitespaces'],
-      ] as const
-    ).map(([p, label]) => ({ label, checked: settings.ignore === p, action: () => void changeIgnore(p) })),
-    { separator: true },
-    {
-      label: 'Automatically Apply Non-Conflicting Changes',
-      checked: settings.autoApply,
-      action: () => saveSettings((c.settings = { ...settings, autoApply: !settings.autoApply })),
-    },
   ];
 
   const revert = async () => {
-    const ok = await call<boolean>('ask', {
+    const ok = await ask({
       title: 'Confirm Revert',
       message: 'All changes will be reverted. The file will return to its original conflicted state.',
       yes: 'Revert',
       no: 'Cancel',
+      icon: 'question',
     });
     if (ok) c.revertAll();
   };
+
+  // Gutter operations, folded fragments and the editor context menus.
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Element;
+      const op = t.closest('.mg-op') as HTMLElement | null;
+      if (op) {
+        e.preventDefault();
+        e.stopPropagation();
+        const i = +op.dataset.i!;
+        const action = op.dataset.action;
+        const side = op.dataset.side as Side;
+        const resolve = e.ctrlKey || e.metaKey;
+        if (action === 'apply') c.apply(i, side, resolve);
+        else if (action === 'ignore') c.ignore(i, side, resolve);
+        else if (action === 'resolve') c.resolve(i);
+        return;
+      }
+      const fold = t.closest('.mg-fold') as HTMLElement | null;
+      if (fold) {
+        e.preventDefault();
+        c.expandFold(+fold.dataset.group!);
+      }
+    };
+    const onContext = (e: MouseEvent) => {
+      const host = (e.target as Element).closest('[data-pane]') as HTMLElement | null;
+      if (!host) return;
+      e.preventDefault();
+      const pane = host.dataset.pane as Pane;
+      const v = c.views[pane];
+      // Like IntelliJ, a right click outside the selection moves the caret first.
+      const pos = v.posAtCoords({ x: e.clientX, y: e.clientY });
+      if (pos !== null && !v.state.selection.ranges.some(r => pos >= r.from && pos <= r.to)) v.dispatch({ selection: { anchor: pos } });
+      showMenu(
+        c.contextMenu(pane, {
+          compareClipboard: () => send('compareClipboard', { text: c.selectionText(pane), fileName: init.fileName }),
+          toggleCollapse,
+          toggleSync,
+        }),
+        anchorAt(e),
+      );
+    };
+    const root = document.querySelector('.mg-panes')!;
+    root.addEventListener('mousedown', onDown as EventListener, true);
+    root.addEventListener('contextmenu', onContext as EventListener);
+    return () => {
+      root.removeEventListener('mousedown', onDown as EventListener, true);
+      root.removeEventListener('contextmenu', onContext as EventListener);
+    };
+  });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -165,7 +251,10 @@ function App() {
         c.navigate(e.shiftKey ? -1 : 1);
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        void finish();
+        void finish('RESOLVED');
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        void finish('CANCEL');
       }
     };
     document.addEventListener('keydown', onKey);
@@ -178,17 +267,19 @@ function App() {
       <Toolbar class="mg-toolbar">
         <ActionButton icon="general/up" tip="Previous Difference" shortcut="Shift+F7" disabled={!ready || done} onClick={() => c.navigate(-1)} />
         <ActionButton icon="general/down" tip="Next Difference" shortcut="F7" disabled={!ready || done} onClick={() => c.navigate(1)} />
+        <Separator />
         <button ref={compareRef} class="action-button" data-tip="Compare Contents" onClick={() => showMenu(compareMenu(), anchorBelow(compareRef.current!))}>
           <Icon name="vcs/diff" />
           <span class="dropdown-mark" />
         </button>
+        {init.contextLines !== -1 && <ActionButton icon="general/collapseAll" tip="Collapse Unchanged Fragments" toggled={settings.collapseUnchanged} onClick={toggleCollapse} />}
         <Separator />
         <span class="mg-toolbar-label">Apply non-conflicting changes:</span>
         <button class="mg-text-action" disabled={!ready || !c.hasNonConflicting('left')} data-tip="Apply Non-Conflicting Changes from the Left Side" onClick={() => c.applyNonConflicting('left')}>
           <Icon name="diff/applyNotConflictsLeft" />
           Left
         </button>
-        <button class="mg-text-action" disabled={!ready || !c.hasNonConflicting('all')} data-tip="Apply All Non-Conflicting Changes" onClick={() => c.applyNonConflicting('all')}>
+        <button class="mg-text-action" disabled={!ready || !c.hasNonConflicting('base')} data-tip="Apply All Non-Conflicting Changes" onClick={() => c.applyNonConflicting('base')}>
           <Icon name="diff/applyNotConflicts" />
           All
         </button>
@@ -198,19 +289,11 @@ function App() {
         </button>
         <Separator />
         <ActionButton icon="diff/magicResolveToolbar" tip="Resolve Simple Conflicts" disabled={!ready || !c.hasResolvable()} onClick={() => c.resolveSimpleConflicts()} />
-        <ActionButton icon="diff/revert@14x14" tip="Revert Conflict Resolution" disabled={!ready || !c.modified} onClick={() => void revert()} />
+        <ActionButton icon="diff/revert@14x14" tip="Revert Conflict Resolution" disabled={!ready || !c.contentModified} onClick={() => void revert()} />
         <span class="spacer" />
         <span class={`mg-status ${done ? 'done' : ''}`}>
-          {done ? (
-            <>
-              All changes have been processed.{' '}
-              <a class="link" onClick={() => void finish()}>
-                Save changes and finish merging
-              </a>
-            </>
-          ) : (
-            statusText(s)
-          )}
+          {done && <Icon name="general/greenCheckmark" />}
+          {statusText(s)}
         </span>
         <ActionButton icon="general/settings" tip="Settings" menu={settingsMenu} />
       </Toolbar>
@@ -227,28 +310,39 @@ function App() {
           <Title parts={init.titles.right} />
         </div>
       </div>
-      <div class="mg-panes" onClick={onCtrlClick}>
-        <div class="mg-pane mg-left">
+      <div class="mg-panes">
+        {balloon && (
+          <div class="mg-balloon" role="status">
+            <Icon name="general/greenCheckmark" />
+            <div>
+              <div class="mg-balloon-title">All changes have been processed</div>
+              <a class="link" onClick={() => void finish('RESOLVED')}>
+                Apply Changes
+              </a>
+            </div>
+            <button class="action-button" data-tip="Close" onClick={() => setBalloon(false)}>
+              <Icon name="general/closeSmall" />
+            </button>
+          </div>
+        )}
+        <div class="mg-pane mg-left" data-pane="left">
           <div class="mg-host" ref={hosts.left} />
-          <div class="mg-ctrl mg-ctrl-left" ref={ctrls.left} />
         </div>
         <svg class="mg-divider" ref={d1} />
-        <div class="mg-pane mg-result">
-          <div class="mg-ctrl mg-ctrl-result" ref={ctrls.result} />
+        <div class="mg-pane mg-result" data-pane="result">
           <div class="mg-host" ref={hosts.result} />
         </div>
         <svg class="mg-divider" ref={d2} />
-        <div class="mg-pane mg-right">
-          <div class="mg-ctrl mg-ctrl-right" ref={ctrls.right} />
+        <div class="mg-pane mg-right" data-pane="right">
           <div class="mg-host" ref={hosts.right} />
         </div>
       </div>
       <div class="mg-south">
-        <Button onClick={() => void accept('left')}>Accept Left</Button>
-        <Button onClick={() => void accept('right')}>Accept Right</Button>
+        <Button onClick={() => void finish('LEFT')}>Accept Left</Button>
+        <Button onClick={() => void finish('RIGHT')}>Accept Right</Button>
         <span class="spacer" />
-        <Button onClick={() => void cancel()}>Cancel</Button>
-        <Button primary onClick={() => void finish()}>
+        <Button onClick={() => void finish('CANCEL')}>{init.iterative ? 'Save and Close' : 'Cancel'}</Button>
+        <Button primary onClick={() => void finish('RESOLVED')}>
           Apply Changes
         </Button>
       </div>

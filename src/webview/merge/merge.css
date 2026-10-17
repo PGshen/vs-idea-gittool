@@ -21,6 +21,10 @@ body.ij-vscode.vscode-dark {
   --mg-deleted-border: #656e76;
   --mg-conflict-border: #8f5247;
   --mg-divider-bg: #2b2d30;
+  --mg-fold-bg: #2b2d30;
+  --mg-fold-line: #4b5059;
+  --mg-balloon-bg: #253627;
+  --mg-balloon-border: #375239;
 }
 body.ij-light,
 body.ij-vscode.vscode-light {
@@ -44,6 +48,10 @@ body.ij-vscode.vscode-light {
   --mg-deleted-border: #c8c8c8;
   --mg-conflict-border: #ffc8bd;
   --mg-divider-bg: #f7f8fa;
+  --mg-fold-bg: #f0f1f2;
+  --mg-fold-line: #c9ccd6;
+  --mg-balloon-bg: #f2fcf3;
+  --mg-balloon-border: #c5e5cc;
 }
 body.ij-vscode {
   --mg-editor-bg: var(--vscode-editor-background);
@@ -90,7 +98,10 @@ body.ij-vscode {
   opacity: 0.45;
 }
 .mg-status {
-  color: var(--fg-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--fg);
   margin-right: 8px;
   white-space: nowrap;
   font-size: 12px;
@@ -124,6 +135,7 @@ body.ij-vscode {
 }
 
 .mg-panes {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -152,72 +164,141 @@ body.ij-vscode {
   background: var(--mg-editor-bg);
 }
 
-/* Apply / ignore controls next to the dividers. */
-.mg-ctrl {
-  width: 36px;
-  flex: none;
-  position: relative;
-  overflow: hidden;
-  background: var(--mg-editor-bg);
-}
-.mg-ctrl-result {
-  width: 20px;
-}
-.mg-ctrl-row {
-  position: absolute;
-  left: 0;
-  right: 0;
+/* Gutter operations (DiffGutterOperation): icons between the line numbers and the text. */
+.mg-ops-gutter .cm-gutterElement {
   display: flex;
-  justify-content: center;
-  gap: 2px;
+  align-items: center;
 }
-.mg-ctrl-btn {
+.mg-ops {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+  padding: 0 2px;
+}
+.mg-op {
   width: 16px;
   height: 16px;
-  padding: 1px;
-  border: none;
   border-radius: 3px;
-  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
-.mg-ctrl-btn:hover {
+.mg-op:hover {
   background: var(--bg-action-hover);
 }
-.mg-ctrl-btn img {
+.mg-op img {
   pointer-events: none;
 }
 
-/* Change blocks. */
-.cm-line.mg-modified { background: var(--mg-modified); }
-.cm-line.mg-inserted { background: var(--mg-inserted); }
-.cm-line.mg-deleted { background: var(--mg-deleted); }
-.cm-line.mg-conflict { background: var(--mg-conflict); }
-.cm-line.mg-empty-before { background: none; box-shadow: inset 0 1px 0 0 var(--mg-line-color); }
-.cm-line.mg-empty-after { background: none; box-shadow: inset 0 -1px 0 0 var(--mg-line-color); }
-.cm-line.mg-modified.mg-empty-before, .cm-line.mg-modified.mg-empty-after { --mg-line-color: var(--mg-modified-border); }
-.cm-line.mg-inserted.mg-empty-before, .cm-line.mg-inserted.mg-empty-after { --mg-line-color: var(--mg-inserted-border); }
-.cm-line.mg-deleted.mg-empty-before, .cm-line.mg-deleted.mg-empty-after { --mg-line-color: var(--mg-deleted-border); }
-.cm-line.mg-conflict.mg-empty-before, .cm-line.mg-conflict.mg-empty-after { --mg-line-color: var(--mg-conflict-border); }
-.mg-inner-modified { background: var(--mg-modified-inner); }
-.mg-inner-inserted { background: var(--mg-inserted-inner); }
-.mg-inner-deleted { background: var(--mg-deleted-inner); }
-.mg-inner-conflict { background: var(--mg-conflict-inner); }
-
-/* Divider connectors. */
-.mg-conn {
-  stroke-width: 1;
+/*
+ * The left editor is mirrored like IntelliJ's (vertical scrollbar on the left): text, operations,
+ * line numbers, then the divider.
+ */
+.mg-left .cm-scroller {
+  direction: rtl;
 }
-.mg-conn.mg-modified { fill: var(--mg-modified); stroke: var(--mg-modified-border); }
-.mg-conn.mg-inserted { fill: var(--mg-inserted); stroke: var(--mg-inserted-border); }
-.mg-conn.mg-deleted { fill: var(--mg-deleted); stroke: var(--mg-deleted-border); }
-.mg-conn.mg-conflict { fill: var(--mg-conflict); stroke: var(--mg-conflict-border); }
-.mg-conn-line { fill: none; stroke-width: 1.5; }
-.mg-conn-line.mg-modified { stroke: var(--mg-modified-border); }
-.mg-conn-line.mg-inserted { stroke: var(--mg-inserted-border); }
-.mg-conn-line.mg-deleted { stroke: var(--mg-deleted-border); }
-.mg-conn-line.mg-conflict { stroke: var(--mg-conflict-border); }
+.mg-left .cm-scroller > .cm-content,
+.mg-left .cm-gutter {
+  direction: ltr;
+}
+.mg-left .cm-gutters {
+  left: auto !important;
+  right: 0;
+}
+.mg-left .mg-ops {
+  flex-direction: row-reverse;
+}
+
+/* Change blocks (DiffDrawUtil.LineHighlighterBuilder). */
+.cm-line.mg-modified { --mg-c: var(--mg-modified); background: var(--mg-modified); }
+.cm-line.mg-inserted { --mg-c: var(--mg-inserted); background: var(--mg-inserted); }
+.cm-line.mg-deleted { --mg-c: var(--mg-deleted); background: var(--mg-deleted); }
+.cm-line.mg-conflict { --mg-c: var(--mg-conflict); background: var(--mg-conflict); }
+/* With word highlighting the lines use the "ignored" color: 40% of the diff color over the editor background. */
+.cm-line.mg-ignored.mg-modified { background: color-mix(in srgb, var(--mg-modified) 40%, var(--mg-editor-bg)); }
+.cm-line.mg-ignored.mg-inserted { background: color-mix(in srgb, var(--mg-inserted) 40%, var(--mg-editor-bg)); }
+.cm-line.mg-ignored.mg-deleted { background: color-mix(in srgb, var(--mg-deleted) 40%, var(--mg-editor-bg)); }
+.cm-line.mg-ignored.mg-conflict { background: color-mix(in srgb, var(--mg-conflict) 40%, var(--mg-editor-bg)); }
+.mg-inner-modified { background: var(--mg-modified); }
+.mg-inner-inserted { background: var(--mg-inserted); }
+.mg-inner-deleted { background: var(--mg-deleted); }
+.mg-inner-conflict { background: var(--mg-conflict); }
+/* Resolved: no background, a bold dotted frame at the top and the bottom of the range. */
+.cm-line.mg-resolved,
+.cm-line.mg-sep-top,
+.cm-line.mg-sep-bottom {
+  background: none;
+  --mg-dots: repeating-linear-gradient(90deg, var(--mg-c) 0 2px, transparent 2px 4px);
+  --mg-solid: linear-gradient(var(--mg-c), var(--mg-c));
+  background-repeat: no-repeat;
+}
+.cm-line.mg-resolved.mg-first { background-image: var(--mg-dots); background-size: 100% 2px; background-position: top; }
+.cm-line.mg-resolved.mg-last { background-image: var(--mg-dots); background-size: 100% 2px; background-position: bottom; }
+.cm-line.mg-resolved.mg-first.mg-last { background-image: var(--mg-dots), var(--mg-dots); background-size: 100% 2px, 100% 2px; background-position: top, bottom; }
+/* Empty ranges: a double line between the lines (dotted when resolved). */
+.cm-line.mg-sep-top { background-image: var(--mg-solid); background-size: 100% 2px; background-position: top; }
+.cm-line.mg-sep-bottom { background-image: var(--mg-solid); background-size: 100% 2px; background-position: bottom; }
+.cm-line.mg-sep-top.mg-resolved { background-image: var(--mg-dots); }
+.cm-line.mg-sep-bottom.mg-resolved { background-image: var(--mg-dots); }
+/* Gutter of changed lines (DiffLineMarkerRenderer). */
+.cm-gutterElement.mg-g-modified { background: var(--mg-modified); }
+.cm-gutterElement.mg-g-inserted { background: var(--mg-inserted); }
+.cm-gutterElement.mg-g-deleted { background: var(--mg-deleted); }
+.cm-gutterElement.mg-g-conflict { background: var(--mg-conflict); }
+
+/* Collapsed unchanged fragment (FoldingModelSupport / DiffLineSeparatorRenderer). */
+.mg-fold {
+  height: 12px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  background: var(--mg-fold-bg);
+}
+.mg-fold-line {
+  flex: 1;
+  height: 6px;
+  background:
+    linear-gradient(135deg, transparent 33%, var(--mg-fold-line) 33% 50%, transparent 50% 83%, var(--mg-fold-line) 83%) 0 0 / 8px 6px repeat-x,
+    linear-gradient(45deg, transparent 33%, var(--mg-fold-line) 33% 50%, transparent 50% 83%, var(--mg-fold-line) 83%) 0 0 / 8px 6px repeat-x;
+}
+.mg-fold:hover {
+  filter: brightness(1.2);
+}
+
+/* Divider connectors (DiffDividerDrawUtil). */
+.mg-conn.mg-modified { fill: var(--mg-modified); }
+.mg-conn.mg-inserted { fill: var(--mg-inserted); }
+.mg-conn.mg-deleted { fill: var(--mg-deleted); }
+.mg-conn.mg-conflict { fill: var(--mg-conflict); }
+.mg-conn-line { fill: none; stroke-width: 2; }
+.mg-conn-line.mg-resolved { stroke-dasharray: 2 2; }
+.mg-conn-line.mg-modified { stroke: var(--mg-modified); }
+.mg-conn-line.mg-inserted { stroke: var(--mg-inserted); }
+.mg-conn-line.mg-deleted { stroke: var(--mg-deleted); }
+.mg-conn-line.mg-conflict { stroke: var(--mg-conflict); }
+
+/* "All changes have been processed" (DiffBalloons.showSuccessPopup). */
+.mg-balloon {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 8px 10px 12px;
+  border-radius: 8px;
+  background: var(--mg-balloon-bg);
+  border: 1px solid var(--mg-balloon-border);
+  box-shadow: var(--shadow);
+}
+.mg-balloon-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
 
 .mg-south {
   display: flex;

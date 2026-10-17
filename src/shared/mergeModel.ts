@@ -1,178 +1,485 @@
 // Three-way merge model shared by the host, the merge webview and tests. Keep it free of non-shared imports.
-// Port of the ideas in IntelliJ's ComparisonMergeUtil / MergeLineFragment: base -> left and base -> right
-// line diffs are combined into merge chunks; a chunk changed on both sides differently is a conflict.
+// Port of IntelliJ's MergeConflictModel / MergeModelBase / TextMergeChange (platform/diff-impl/.../merge)
+// and MergeRangeUtil.getLineMergeType (platform/util/diff).
 
-import { diffLines, DiffBlock } from './lineDiff';
-
-/**
- * - left / right: changed on one side only (non-conflicting change)
- * - both: changed identically on both sides (non-conflicting)
- * - conflict: changed differently on both sides
- */
-export type ChunkType = 'left' | 'right' | 'both' | 'conflict';
-
-/** Line ranges [x0, x1) in the base, left and right texts. */
-export interface MergeChunk {
-  base: [number, number];
-  left: [number, number];
-  right: [number, number];
-  type: ChunkType;
-  /** Conflict that the "Resolve Simple Conflicts" magic wand can resolve; the resolved lines. */
-  resolved?: string[];
-}
+import { buildChanges } from './intellijDiff';
+import { tryResolve } from './mergeResolve';
 
 /** IntelliJ's "Ignore" diff setting. */
 export type IgnorePolicy = 'none' | 'trim' | 'whitespace';
 
 export function normalizer(p: IgnorePolicy): (s: string) => string {
   if (p === 'trim') return s => s.trim();
-  if (p === 'whitespace') return s => s.replace(/\s+/g, '');
+  if (p === 'whitespace') return s => s.replace(/[ \t\r\n]+/g, '');
   return s => s;
 }
 
-/** Kind of change of one side relative to the base, for coloring (IntelliJ TextDiffType). */
-export type SideKind = 'inserted' | 'deleted' | 'modified' | 'conflict' | 'none';
+/** MergeConflictType.Type */
+export type ChangeKind = 'inserted' | 'deleted' | 'modified' | 'conflict';
 
-export function sideKind(c: MergeChunk, side: 'left' | 'right'): SideKind {
-  if (c.type === 'conflict') return 'conflict';
-  if (c.type !== 'both' && c.type !== side) return 'none';
-  const [b0, b1] = c.base;
-  const [s0, s1] = c[side];
-  if (b0 === b1) return 'inserted';
-  if (s0 === s1) return 'deleted';
-  return 'modified';
+export type Side = 'left' | 'right';
+export type ThreeSide = 'left' | 'base' | 'right';
+
+/** A merge change (TextMergeChange + MergeLineFragment): line ranges [x0, x1) in the three revisions. */
+export interface MergeChange {
+  index: number;
+  base: [number, number];
+  left: [number, number];
+  right: [number, number];
+  kind: ChangeKind;
+  /** MergeConflictType.isChange(LEFT / RIGHT) */
+  leftChange: boolean;
+  rightChange: boolean;
+  /** Conflict with the TEXT resolution strategy: "Resolve Automatically" can merge it. */
+  canResolve: boolean;
 }
 
-interface Tagged extends DiffBlock {
-  side: 'left' | 'right';
+/** Per change state (TextMergeChange.State): result line range and resolved flags. */
+export interface ChangeState {
+  start: number;
+  end: number;
+  resolvedLeft: boolean;
+  resolvedRight: boolean;
+  /** One side of a conflict was applied; applying the other side appends ("isOnesideAppliedConflict"). */
+  oneside: boolean;
 }
+
+// ---------------------------------------------------------------- text
 
 /**
- * Builds merge chunks. Changes of the two sides whose base ranges intersect or touch form one chunk
- * (like git, touching changes are a conflict unless they are identical or the magic resolve can merge them).
+ * Splits text into lines like an IntelliJ document: a trailing newline gives a last empty line,
+ * CR LF separators are normalized (and restored on write with `joinText`).
  */
-export function buildMergeChunks(base: string[], left: string[], right: string[], ignore: IgnorePolicy = 'none'): MergeChunk[] {
-  const n = normalizer(ignore);
-  const nb = base.map(n);
-  const nl = left.map(n);
-  const nr = right.map(n);
-  const lb = diffLines(nb, nl).map(b => ({ ...b, side: 'left' as const }));
-  const rb = diffLines(nb, nr).map(b => ({ ...b, side: 'right' as const }));
-  const all: Tagged[] = [...lb, ...rb].sort((x, y) => x.a0 - y.a0 || x.a1 - y.a1);
-  const groups: Tagged[][] = [];
-  let cur: Tagged[] = [];
-  let curEnd = -1;
-  for (const b of all) {
-    if (cur.length && overlaps(b, cur, curEnd)) {
-      cur.push(b);
-      curEnd = Math.max(curEnd, b.a1);
-    } else {
-      if (cur.length) groups.push(cur);
-      cur = [b];
-      curEnd = b.a1;
-    }
-  }
-  if (cur.length) groups.push(cur);
-
-  const chunks: MergeChunk[] = [];
-  for (const g of groups) {
-    const b0 = Math.min(...g.map(b => b.a0));
-    const b1 = Math.max(...g.map(b => b.a1));
-    const l = sideRange(lb, g, b0, b1);
-    const r = sideRange(rb, g, b0, b1);
-    const hasL = g.some(b => b.side === 'left');
-    const hasR = g.some(b => b.side === 'right');
-    let type: ChunkType;
-    if (hasL && hasR) {
-      const lt = nl.slice(l[0], l[1]);
-      const rt = nr.slice(r[0], r[1]);
-      type = lt.length === rt.length && lt.every((s, i) => s === rt[i]) ? 'both' : 'conflict';
-    } else type = hasL ? 'left' : 'right';
-    const chunk: MergeChunk = { base: [b0, b1], left: l, right: r, type };
-    if (type === 'conflict') {
-      const resolved = resolveSimple(base.slice(b0, b1), left.slice(l[0], l[1]), right.slice(r[0], r[1]), n);
-      if (resolved) chunk.resolved = resolved;
-    }
-    chunks.push(chunk);
-  }
-  return chunks;
+export function splitText(text: string): { lines: string[]; crlf: boolean } {
+  const crlf = /\r\n/.test(text);
+  return { lines: text.replace(/\r\n?/g, '\n').split('\n'), crlf };
 }
 
-/** Touching or intersecting base ranges. Two insertions at the same base line also overlap. */
-function overlaps(b: Tagged, cur: Tagged[], curEnd: number): boolean {
-  if (b.a0 < curEnd) return true;
-  if (b.a0 === curEnd) {
-    // Touching ranges are grouped only when the other side is involved (same-side blocks never touch).
-    return cur.some(c => c.side !== b.side);
-  }
-  return false;
+export function joinText(lines: string[], crlf: boolean): string {
+  const text = lines.join('\n');
+  return crlf ? text.replace(/\n/g, '\r\n') : text;
 }
 
-/** Maps a group's base range to the side's range: shift by the blocks before it, extend by the blocks inside. */
-function sideRange(blocks: DiffBlock[], group: DiffBlock[], b0: number, b1: number): [number, number] {
-  let before = 0;
-  let inside = 0;
-  for (const b of blocks) {
-    const d = b.b1 - b.b0 - (b.a1 - b.a0);
-    if (group.includes(b)) inside += d;
-    else if (b.a1 <= b0) before += d;
-  }
-  return [b0 + before, b1 + before + inside];
+/** DiffUtil.getLinesContent: the lines of a range joined by newlines, without a trailing newline. */
+export function linesContent(lines: string[], range: [number, number]): string {
+  return lines.slice(range[0], range[1]).join('\n');
 }
 
-/**
- * IntelliJ's "Resolve Simple Conflicts": the conflict is resolvable when the line changes of the two
- * sides inside the chunk do not intersect (they only touch). Returns the merged lines, or undefined.
- */
-export function resolveSimple(base: string[], left: string[], right: string[], n: (s: string) => string = s => s): string[] | undefined {
-  const lb = diffLines(base.map(n), left.map(n));
-  const rb = diffLines(base.map(n), right.map(n));
-  for (const x of lb) {
-    for (const y of rb) {
-      const intersect = x.a0 < y.a1 && y.a0 < x.a1;
-      const sameInsertPoint = x.a0 === x.a1 && y.a0 === y.a1 && x.a0 === y.a0;
-      const insertInside = (x.a0 === x.a1 && x.a0 > y.a0 && x.a0 < y.a1) || (y.a0 === y.a1 && y.a0 > x.a0 && y.a0 < x.a1);
-      if (intersect || sameInsertPoint || insertInside) return undefined;
-    }
+// ---------------------------------------------------------------- building changes
+
+interface Unchanged {
+  s1: number;
+  e1: number;
+  s2: number;
+  e2: number;
+}
+
+function unchangedRanges(a: string[], b: string[]): Unchanged[] {
+  const out: Unchanged[] = [];
+  let p1 = 0;
+  let p2 = 0;
+  for (const c of buildChanges(a, b)) {
+    if (c.line0 > p1) out.push({ s1: p1, e1: c.line0, s2: p2, e2: c.line1 });
+    p1 = c.line0 + c.deleted;
+    p2 = c.line1 + c.inserted;
   }
-  // Apply both block lists to the base, from the end so indexes stay valid.
-  const edits = [...lb.map(b => ({ b, src: left })), ...rb.map(b => ({ b, src: right }))].sort((p, q) => q.b.a0 - p.b.a0 || q.b.a1 - p.b.a1);
-  const out = base.slice();
-  for (const { b, src } of edits) out.splice(b.a0, b.a1 - b.a0, ...src.slice(b.b0, b.b1));
+  if (p1 < a.length) out.push({ s1: p1, e1: a.length, s2: p2, e2: b.length });
   return out;
 }
 
-/** Text of a line range, with a trailing newline per line (empty string for an empty range). */
-export function rangeText(lines: string[], range: [number, number]): string {
-  const [a, b] = range;
-  return a === b ? '' : lines.slice(a, b).join('\n') + '\n';
+/**
+ * ComparisonMergeUtil.buildSimple on lines: base ranges unchanged on both sides split the texts,
+ * everything else forms merge fragments (touching changes of the two sides form one fragment).
+ */
+function mergeFragments(base: string[], left: string[], right: string[]): { base: [number, number]; left: [number, number]; right: [number, number] }[] {
+  const u1 = unchangedRanges(base, left);
+  const u2 = unchangedRanges(base, right);
+  const out: { base: [number, number]; left: [number, number]; right: [number, number] }[] = [];
+  let iL = 0;
+  let iB = 0;
+  let iR = 0;
+  const add = (l: number, b: number, r: number) => {
+    if (iL === l && iB === b && iR === r) return;
+    out.push({ base: [iB, b], left: [iL, l], right: [iR, r] });
+  };
+  let a = 0;
+  let c = 0;
+  while (a < u1.length && c < u2.length) {
+    const r1 = u1[a];
+    const r2 = u2[c];
+    if (r1.e1 <= r2.s1) {
+      a++;
+      continue;
+    }
+    if (r2.e1 <= r1.s1) {
+      c++;
+      continue;
+    }
+    const sb = Math.max(r1.s1, r2.s1);
+    const eb = Math.min(r1.e1, r2.e1);
+    const sl = r1.s2 + (sb - r1.s1);
+    const sr = r2.s2 + (sb - r2.s1);
+    add(sl, sb, sr);
+    iL = sl + (eb - sb);
+    iB = eb;
+    iR = sr + (eb - sb);
+    if (r1.e1 <= r2.e1) a++;
+    else c++;
+  }
+  add(left.length, base.length, right.length);
+  return out;
 }
 
-/** Splits text into lines keeping track of whether it ends with a newline. */
-export function toLines(text: string): { lines: string[]; eol: string; trailingNewline: boolean } {
-  const eol = text.includes('\r\n') ? '\r\n' : '\n';
-  const trailingNewline = text === '' || /\r?\n$/.test(text);
-  const lines = text === '' ? [] : text.replace(/\r?\n$/, '').split(/\r?\n/);
-  return { lines, eol, trailingNewline };
+/** MergeRangeUtil.getLineMergeType */
+function mergeType(
+  f: { base: [number, number]; left: [number, number]; right: [number, number] },
+  texts: { base: string[]; left: string[]; right: string[] },
+  n: (s: string) => string,
+): Omit<MergeChange, 'index' | 'base' | 'left' | 'right'> {
+  const empty = (s: ThreeSide) => f[s][0] === f[s][1];
+  const eq = (a: ThreeSide, b: ThreeSide, norm: (s: string) => string) => {
+    const [a0, a1] = f[a];
+    const [b0, b1] = f[b];
+    if (a1 - a0 !== b1 - b0) return false;
+    for (let i = 0; i < a1 - a0; i++) if (norm(texts[a][a0 + i]) !== norm(texts[b][b0 + i])) return false;
+    return true;
+  };
+  const id = (s: string) => s;
+  const leftEmpty = empty('left');
+  const baseEmpty = empty('base');
+  const rightEmpty = empty('right');
+  const t = (kind: ChangeKind, leftChange: boolean, rightChange: boolean, canResolve = false) => ({ kind, leftChange, rightChange, canResolve });
+  if (baseEmpty) {
+    if (leftEmpty) return t('inserted', false, true);
+    if (rightEmpty) return t('inserted', true, false);
+    return eq('left', 'right', n) ? t('inserted', true, true) : t('conflict', true, true);
+  }
+  if (leftEmpty && rightEmpty) return t('deleted', true, true);
+  const unchangedLeft = eq('base', 'left', n);
+  const unchangedRight = eq('base', 'right', n);
+  if (unchangedLeft && unchangedRight) return t('modified', !eq('base', 'left', id), !eq('base', 'right', id));
+  if (unchangedLeft) return t(rightEmpty ? 'deleted' : 'modified', false, true);
+  if (unchangedRight) return t(leftEmpty ? 'deleted' : 'modified', true, false);
+  if (eq('left', 'right', n)) return t('modified', true, true);
+  const canResolve = !leftEmpty && !rightEmpty && tryResolve(linesContent(texts.left, f.left), linesContent(texts.base, f.base), linesContent(texts.right, f.right)) !== undefined;
+  return t('conflict', true, true, canResolve);
 }
 
-export interface MergeStats {
-  changes: number;
-  conflicts: number;
+/** Builds the merge changes (ComparisonManager.mergeLines + getLineMergeType). */
+export function buildMergeChanges(base: string[], left: string[], right: string[], ignore: IgnorePolicy = 'none'): MergeChange[] {
+  const n = normalizer(ignore);
+  const fragments = mergeFragments(base.map(n), left.map(n), right.map(n));
+  const texts = { base, left, right };
+  return fragments
+    .map(f => ({ ...f, ...mergeType(f, texts, n) }))
+    .filter(c => c.leftChange || c.rightChange)
+    .map((c, index) => ({ ...c, index }));
 }
 
-/** IntelliJ's status text: "2 changes, 1 conflict" / "No changes, No conflicts". */
-export function statusText(s: MergeStats): string {
+export function initialStates(changes: MergeChange[]): ChangeState[] {
+  return changes.map(c => ({ start: c.base[0], end: c.base[1], resolvedLeft: false, resolvedRight: false, oneside: false }));
+}
+
+export const isResolved = (s: ChangeState) => s.resolvedLeft && s.resolvedRight;
+export const isSideResolved = (s: ChangeState, side: Side) => (side === 'left' ? s.resolvedLeft : s.resolvedRight);
+export const isChange = (c: MergeChange, side: Side) => (side === 'left' ? c.leftChange : c.rightChange);
+
+/** A line edit of the result: lines [start, end) replaced by `lines`, applied in order. */
+export interface LineEdit {
+  start: number;
+  end: number;
+  lines: string[];
+}
+
+// ---------------------------------------------------------------- DiffUtil.updateRangeOnModification
+
+export function updateRangeOnModification(start: number, end: number, changeStart: number, changeEnd: number, shift: number): { start: number; end: number; damaged: boolean } {
+  if (end <= changeStart) return { start, end, damaged: false };
+  if (start >= changeEnd) return { start: start + shift, end: end + shift, damaged: false };
+  if (start <= changeStart && end >= changeEnd) return { start, end: end + shift, damaged: false };
+  const newChangeEnd = changeEnd + shift;
+  if (start >= changeStart && end <= changeEnd) return { start: newChangeEnd, end: newChangeEnd, damaged: true };
+  if (start < changeStart) return { start, end: changeStart, damaged: true };
+  return { start: newChangeEnd, end: end + shift, damaged: true };
+}
+
+// ---------------------------------------------------------------- the model
+
+/**
+ * MergeConflictModel over a line array. Operations change `lines` and `states` and record the
+ * line edits in `edits`, so that an editor can replay them.
+ */
+export class MergeModel {
+  edits: LineEdit[] = [];
+  /** Set by merge commands (MergeConflictModel.contentModified). */
+  contentModified = false;
+
+  constructor(
+    readonly changes: MergeChange[],
+    readonly sides: { base: string[]; left: string[]; right: string[] },
+    public lines: string[],
+    public states: ChangeState[],
+  ) {}
+
+  static create(base: string[], left: string[], right: string[], ignore: IgnorePolicy = 'none'): MergeModel {
+    const changes = buildMergeChanges(base, left, right, ignore);
+    return new MergeModel(changes, { base, left, right }, base.slice(), initialStates(changes));
+  }
+
+  clone(): MergeModel {
+    const m = new MergeModel(
+      this.changes,
+      this.sides,
+      this.lines.slice(),
+      this.states.map(s => ({ ...s })),
+    );
+    m.contentModified = this.contentModified;
+    return m;
+  }
+
+  // ------------------------------------------------ queries
+
+  get unresolved(): MergeChange[] {
+    return this.changes.filter(c => !isResolved(this.states[c.index]));
+  }
+
+  stats(): { changes: number; conflicts: number } {
+    let changes = 0;
+    let conflicts = 0;
+    for (const c of this.unresolved) {
+      if (c.kind === 'conflict') conflicts++;
+      else changes++;
+    }
+    return { changes, conflicts };
+  }
+
+  resolvedCount(): number {
+    return this.changes.length - this.unresolved.length;
+  }
+
+  /** The result text of the change differs from the base (it was edited). */
+  isChangeRangeModified(i: number): boolean {
+    const c = this.changes[i];
+    const s = this.states[i];
+    return linesContent(this.sides.base, c.base) !== linesContent(this.lines, [s.start, s.end]) || c.base[1] - c.base[0] !== s.end - s.start;
+  }
+
+  /** MergeConflictModel.canResolveChangeAutomatically */
+  canResolveAutomatically(i: number, side: ThreeSide): boolean {
+    const c = this.changes[i];
+    const s = this.states[i];
+    if (c.kind === 'conflict') return side === 'base' && c.canResolve && !s.resolvedLeft && !s.resolvedRight && !this.isChangeRangeModified(i);
+    const isChangeSide = side === 'base' ? true : isChange(c, side);
+    return !isResolved(s) && isChangeSide && !this.isChangeRangeModified(i);
+  }
+
+  hasNonConflictedChanges(side: ThreeSide): boolean {
+    return this.changes.some(c => c.kind !== 'conflict' && this.canResolveAutomatically(c.index, side));
+  }
+
+  hasAutoResolvableChanges(): boolean {
+    return this.changes.some(c => this.canResolveAutomatically(c.index, 'base'));
+  }
+
+  // ------------------------------------------------ document edits
+
+  /**
+   * Replaces result lines [start, end) of change `index` and keeps the other change ranges in sync
+   * (MergeModelBase.replaceChange / appendChange / moveChangesAfterInsertion).
+   */
+  private applyLines(index: number, start: number, end: number, newLines: string[], keepStart = start) {
+    const shift = newLines.length - (end - start);
+    this.lines.splice(start, end - start, ...newLines);
+    if (this.lines.length === 0) this.lines.push('');
+    this.edits.push({ start, end, lines: newLines });
+    this.states.forEach((s, j) => {
+      if (j === index) return;
+      if (j < index) {
+        // Changes before stay before the edit.
+        s.start = Math.min(s.start, start);
+        s.end = Math.min(s.end, start);
+      } else if (s.start >= end) {
+        s.start += shift;
+        s.end += shift;
+      } else {
+        s.start = Math.max(s.start + shift, start + newLines.length);
+        s.end = Math.max(s.end + shift, s.start);
+      }
+    });
+    const st = this.states[index];
+    st.start = keepStart;
+    st.end = end + shift;
+  }
+
+  /** MergeModelBase.replaceChange */
+  private replaceContent(i: number, newLines: string[]) {
+    const s = this.states[i];
+    this.applyLines(i, s.start, s.end, newLines);
+  }
+
+  /** MergeModelBase.appendChange */
+  private appendContent(i: number, newLines: string[]) {
+    const s = this.states[i];
+    this.applyLines(i, s.end, s.end, newLines, s.start);
+  }
+
+  /**
+   * Updates the change ranges after an edit of the result made by the user (MergeModelBase.DocumentListener):
+   * `line1`..`line2` is the affected line range of the old document, `shift` the change of the line count.
+   */
+  onUserEdit(line1: number, line2: number, shift: number) {
+    this.states.forEach((s, i) => {
+      const r = updateRangeOnModification(s.start, s.end, line1, line2, shift);
+      s.start = r.start;
+      s.end = r.end;
+      const c = this.changes[i];
+      // MergeConflictModel.MergeModelImpl.processDocumentChange
+      if (s.start === s.end && c.kind === 'deleted' && !isResolved(s)) {
+        s.resolvedLeft = true;
+        s.resolvedRight = true;
+      }
+    });
+  }
+
+  // ------------------------------------------------ resolving
+
+  markResolved(i: number) {
+    const s = this.states[i];
+    s.resolvedLeft = true;
+    s.resolvedRight = true;
+  }
+
+  private markSideResolved(i: number, side: Side) {
+    const s = this.states[i];
+    if (isResolved(s)) return;
+    if (side === 'left') s.resolvedLeft = true;
+    else s.resolvedRight = true;
+  }
+
+  /** MergeConflictModel.ignoreChange */
+  ignoreChange(i: number, side: Side, resolveChange: boolean) {
+    const c = this.changes[i];
+    this.contentModified = true;
+    if (c.kind !== 'conflict' || resolveChange) this.markResolved(i);
+    else this.markSideResolved(i, side);
+  }
+
+  /** MergeConflictModel.replaceChange: applies a side; returns false when nothing was done. */
+  replaceChange(i: number, side: Side, resolveChange: boolean): boolean {
+    const c = this.changes[i];
+    const s = this.states[i];
+    if (isSideResolved(s, side)) return false;
+    this.contentModified = true;
+    if (!isChange(c, side)) {
+      this.markResolved(i);
+      return false;
+    }
+    const content = this.sides[side].slice(c[side][0], c[side][1]);
+    if (c.kind === 'conflict') {
+      if (s.oneside) this.appendContent(i, content);
+      else this.replaceContent(i, content);
+      const opposite: Side = side === 'left' ? 'right' : 'left';
+      if (resolveChange || c[opposite][0] === c[opposite][1]) this.markResolved(i);
+      else {
+        this.states[i].oneside = true;
+        this.markSideResolved(i, side);
+      }
+    } else {
+      this.replaceContent(i, content);
+      this.markResolved(i);
+    }
+    return true;
+  }
+
+  /** MergeConflictModel.resolveChangeAutomatically */
+  resolveChangeAutomatically(i: number, side: ThreeSide): boolean {
+    if (!this.canResolveAutomatically(i, side)) return false;
+    const c = this.changes[i];
+    const s = this.states[i];
+    if (c.kind === 'conflict') {
+      const resolved = tryResolve(linesContent(this.sides.left, c.left), linesContent(this.lines, [s.start, s.end]), linesContent(this.sides.right, c.right));
+      if (resolved === undefined) return false;
+      this.contentModified = true;
+      this.replaceContent(i, resolved.split('\n'));
+      this.markResolved(i);
+      return true;
+    }
+    const master: Side = side === 'left' ? 'left' : side === 'right' ? 'right' : c.leftChange ? 'left' : 'right';
+    return this.replaceChange(i, master, false);
+  }
+
+  /** MergeThreesideViewer.applyNonConflictedChanges */
+  applyNonConflictedChanges(side: ThreeSide) {
+    for (const c of this.changes) if (c.kind !== 'conflict') this.resolveChangeAutomatically(c.index, side);
+  }
+
+  /** MergeConflictModel.resolveAllChangesAutomatically / MergeThreesideViewer.applyResolvableConflictedChanges */
+  resolveAllChangesAutomatically(): boolean {
+    let any = false;
+    for (const c of this.changes) if (this.resolveChangeAutomatically(c.index, 'base')) any = true;
+    return any;
+  }
+
+  /** MergeConflictModel.resetResolvedChange */
+  resetResolvedChange(i: number, force = false) {
+    const s = this.states[i];
+    if (!force && !isResolved(s)) return;
+    const c = this.changes[i];
+    this.replaceContent(i, this.sides.base.slice(c.base[0], c.base[1]));
+    const st = this.states[i];
+    st.resolvedLeft = st.resolvedRight = st.oneside = false;
+  }
+
+  /** MergeConflictModel.resetAllChanges: back to the base text with every change unresolved. */
+  resetAllChanges() {
+    this.contentModified = true;
+    this.edits.push({ start: 0, end: this.lines.length, lines: this.sides.base.slice() });
+    this.lines = this.sides.base.slice();
+    this.states = initialStates(this.changes);
+  }
+
+  /** MergeConflictModel.acceptRevisionForSide ("Accept Left" / "Accept Right") */
+  acceptRevisionForSide(side: Side) {
+    this.resetAllChanges();
+    for (const c of this.changes) this.replaceChange(c.index, side, true);
+  }
+
+  markAllChangesResolved() {
+    this.contentModified = true;
+    for (const c of this.changes) this.markResolved(c.index);
+  }
+
+  takeEdits(): LineEdit[] {
+    const e = this.edits;
+    this.edits = [];
+    return e;
+  }
+}
+
+// ---------------------------------------------------------------- texts (DiffBundle)
+
+/** merge.differences.status.text: "2 changes, 1 conflict" / "No changes, No conflicts". */
+export function statusText(s: { changes: number; conflicts: number }): string {
   const ch = s.changes === 0 ? 'No changes' : s.changes === 1 ? '1 change' : `${s.changes} changes`;
   const co = s.conflicts === 0 ? 'No conflicts' : s.conflicts === 1 ? '1 conflict' : `${s.conflicts} conflicts`;
   return `${ch}, ${co}`;
 }
 
-/** IntelliJ's "There are 2 changes and one conflict left unprocessed.\nSave changes and mark the conflict resolved anyway?" */
-export function unprocessedMessage(s: MergeStats): string {
-  const verb = s.changes === 1 || (s.changes === 0 && s.conflicts === 1) ? 'is' : 'are';
-  const ch = s.changes === 0 ? '' : s.changes === 1 ? 'one change' : `${s.changes} changes`;
-  const and = s.changes > 0 && s.conflicts > 0 ? ' and ' : '';
-  const co = s.conflicts === 0 ? '' : s.conflicts === 1 ? 'one conflict' : `${s.conflicts} conflicts`;
+/** merge.dialog.apply.partially.resolved.changes.confirmation.message */
+export function unprocessedMessage(s: { changes: number; conflicts: number }): string {
+  const { changes, conflicts } = s;
+  const verb = changes === 0 ? (conflicts === 1 ? 'is' : 'are') : changes === 1 ? 'is' : 'are';
+  const ch = changes === 0 ? '' : changes === 1 ? 'one change' : `${changes} changes`;
+  const and = changes === 0 ? '' : conflicts === 0 ? '' : ' and ';
+  const co = conflicts === 0 ? '' : conflicts === 1 ? 'one conflict' : `${conflicts} conflicts`;
   return `There ${verb} ${ch}${and}${co} left unprocessed.\nSave changes and mark the conflict resolved anyway?`;
+}
+
+/** iterative.merge.dialog.apply.partially.resolved.changes.confirmation.message */
+export function iterativeUnprocessedMessage(conflicts: number, changes: number): string {
+  const co = conflicts === 0 ? '' : conflicts === 1 ? '1 unresolved conflict' : `${conflicts} unresolved conflicts`;
+  const and = conflicts === 0 ? '' : changes === 0 ? '' : ' and ';
+  const ch = changes === 0 ? '' : changes === 1 ? '1 unprocessed change' : `${changes} unprocessed changes`;
+  const verb = conflicts === 0 ? (changes <= 1 ? 'remains' : 'remain') : changes === 0 ? 'remains' : 'remain';
+  return `${co}${and}${ch} still ${verb}. The file will be saved exactly as shown in the Result pane.`;
 }

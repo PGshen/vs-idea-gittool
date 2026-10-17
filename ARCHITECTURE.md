@@ -10,6 +10,10 @@ src/
   extension.ts          activation: repository manager, content provider, features
   context.ts            Ctx: services passed to every feature
   shared/types.ts       types shared by host and webviews (no imports)
+  shared/mergeModel.ts  MergeModel: IntelliJ's MergeConflictModel / MergeModelBase (change states, range updates on
+                        edits, apply / append / ignore / magic, acceptRevisionForSide), used by the host and the merge webview
+  shared/mergeResolve.ts  MergeResolveUtil (magic resolve) and ByWord 3-way inner differences
+  shared/intellijDiff.ts  Diff.buildChanges (Reindexer + MyersLCS), so line and word diffs match IntelliJ
   git/
     exec.ts             runs git, mirrors every command into the "Rebased: Git Console" output
     repository.ts       Repository: cached status / refs / remotes / stashes, file watching, onDidChange
@@ -45,6 +49,11 @@ media/icons/            IntelliJ New UI (expui) icons, Apache 2.0. `<dir>/<name>
 - Use `repo.batch(fn)` for multi-step operations, then the UI refreshes once.
 - UI text follows IntelliJ's GitBundle / VcsBundle wording exactly.
 - Icons: `<Icon name="vcs/push" />`. Mappings from AllIcons names are in media/icons/PlatformIconMappings.json.
+- Merge: the Conflicts dialog (features/commit/conflicts.ts) keeps one MergeModel per file for the dialog session
+  (MergeConflictIterativeDataHolder). The merge window (mergeTool.ts + webview/merge) gets the model state as
+  `progress` and returns the result lines and change states on Save and Close / Apply / Accept; the dialog writes
+  the work tree file and stages only on Accept and Finish / Close. The webview drives CodeMirror with the model's
+  line edits; user edits update change ranges with `updateRangeOnModification` (engine.ts `modelExtension`).
 - Visual check: `node scripts/preview.mjs <bundle> test/fixtures/<x>.mjs out.png [--light]` renders a bundle with a mocked host.
 
 ## Command ownership
