@@ -81,15 +81,11 @@
   color: #2e55a3;
   background: rgba(53, 116, 240, 0.16);
 }
-body.ij-dark .conflicts-badge,
-body.ij-vscode.vscode-dark .conflicts-badge,
-body.ij-vscode.vscode-high-contrast .conflicts-badge {
+body.ij-dark .conflicts-badge {
   color: #b4b8bf;
   background: rgba(180, 184, 191, 0.2);
 }
-body.ij-dark .conflicts-badge.modified,
-body.ij-vscode.vscode-dark .conflicts-badge.modified,
-body.ij-vscode.vscode-high-contrast .conflicts-badge.modified {
+body.ij-dark .conflicts-badge.modified {
   color: #d1e0ff;
   background: rgba(53, 83, 143, 0.8);
 }

@@ -1,8 +1,9 @@
 /*
  * Shared styles for all Rebased webviews. Colors follow the IntelliJ New UI (Int UI) themes:
  * expUI_dark.theme.json / expUI_light.theme.json and the matching editor color schemes.
- * body.ij-dark / body.ij-light use the IntelliJ palette, body.ij-vscode maps the same tokens to the VS Code theme.
+ * body.ij-dark / body.ij-light use the IntelliJ palette. body.ij-vscode (the default "vscode" appearance) is in vscode.css.
  */
+@import './vscode.css';
 
 body.ij-dark {
   --bg: #2b2d30;            /* Gray2: panels */
@@ -112,61 +113,6 @@ body.ij-light {
   --scrollbar-hover: #00000033;
   --shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
   color-scheme: light;
-}
-
-/* Follow the current VS Code color theme, keeping the IntelliJ layout. */
-body.ij-vscode {
-  --bg: var(--vscode-sideBar-background, var(--vscode-editor-background));
-  --bg-editor: var(--vscode-editor-background);
-  --bg-input: var(--vscode-input-background);
-  --bg-hover: var(--vscode-toolbar-hoverBackground);
-  --bg-row-hover: var(--vscode-list-hoverBackground);
-  --bg-selection: var(--vscode-list-activeSelectionBackground);
-  --bg-selection-inactive: var(--vscode-list-inactiveSelectionBackground);
-  --bg-current-branch: var(--vscode-editor-lineHighlightBackground, transparent);
-  --bg-popup: var(--vscode-menu-background, var(--vscode-editorWidget-background));
-  --bg-tooltip: var(--vscode-editorHoverWidget-background);
-  --bg-action-hover: var(--vscode-toolbar-hoverBackground);
-  --bg-action-pressed: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
-  --bg-tag: var(--vscode-badge-background);
-  --bg-banner-info: var(--vscode-editorInfo-background, var(--vscode-editorWidget-background));
-  --bg-banner-warning: var(--vscode-inputValidation-warningBackground);
-  --bg-banner-error: var(--vscode-inputValidation-errorBackground);
-  --border: var(--vscode-panel-border, transparent);
-  --border-subtle: var(--vscode-widget-border, var(--vscode-panel-border, transparent));
-  --border-control: var(--vscode-input-border, var(--vscode-widget-border, #8888));
-  --border-popup: var(--vscode-menu-border, var(--vscode-widget-border, #8888));
-  --separator: var(--vscode-menu-separatorBackground, var(--vscode-panel-border, #8884));
-  --fg: var(--vscode-foreground);
-  --fg-strong: var(--vscode-foreground);
-  --fg-secondary: var(--vscode-descriptionForeground);
-  --fg-info: var(--vscode-descriptionForeground);
-  --fg-disabled: var(--vscode-disabledForeground);
-  --fg-link: var(--vscode-textLink-foreground);
-  --fg-error: var(--vscode-errorForeground);
-  --fg-warning: var(--vscode-editorWarning-foreground);
-  --fg-success: var(--vscode-testing-iconPassed, #57965c);
-  --accent: var(--vscode-button-background);
-  --accent-fg: var(--vscode-button-foreground);
-  --focus: var(--vscode-focusBorder);
-  --status-modified: var(--vscode-gitDecoration-modifiedResourceForeground);
-  --status-added: var(--vscode-gitDecoration-addedResourceForeground);
-  --status-deleted: var(--vscode-gitDecoration-deletedResourceForeground);
-  --status-unknown: var(--vscode-gitDecoration-untrackedResourceForeground);
-  --status-ignored: var(--vscode-gitDecoration-ignoredResourceForeground);
-  --status-conflict: var(--vscode-gitDecoration-conflictingResourceForeground);
-  --status-merged: var(--vscode-gitDecoration-submoduleResourceForeground);
-  --ref-head: var(--vscode-charts-yellow);
-  --ref-local: var(--vscode-charts-green);
-  --ref-remote: var(--vscode-charts-purple);
-  --ref-tag: var(--vscode-descriptionForeground);
-  --diff-added: var(--vscode-gitDecoration-addedResourceForeground);
-  --diff-deleted: var(--vscode-gitDecoration-deletedResourceForeground);
-  --graph-saturation: 0.6;
-  --graph-brightness: 0.65;
-  --scrollbar: var(--vscode-scrollbarSlider-background);
-  --scrollbar-hover: var(--vscode-scrollbarSlider-hoverBackground);
-  --shadow: 0 4px 14px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.3));
 }
 
 * {

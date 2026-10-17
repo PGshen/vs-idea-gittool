@@ -39,7 +39,7 @@ IntelliJ platform. It keeps the IntelliJ git workflow, menu wording, keyboard sh
 
 ## Settings
 
-- `rebased.appearance`: `intellij` (IntelliJ New UI light/dark palette, the default) or `vscode` (IntelliJ layout with the colors of your VS Code theme).
+- `rebased.appearance`: `vscode` (the default) draws every view and dialog like native VS Code: buttons, inputs, checkboxes, lists, menus, hovers, scrollbars, fonts and colors come from your VS Code theme, and monochrome icons take the theme's icon color. `intellij` keeps the IntelliJ New UI look (IntelliJ light/dark palette and widget shapes). The layout and the features are the same in both; `scripts/layout-check.mjs` verifies that no element moves.
 - `rebased.log.showInEditor`, `rebased.log.openOnStartup`, `rebased.commit.gpgSign`, `rebased.commit.skipHooks`, `rebased.updateMethod`, `rebased.push.*`, `rebased.annotate.*`, `rebased.statusBar.enabled`. Open the Settings editor and search for "rebased" to see all of them.
 - `rebased.intellijShortcuts` (default on): Ctrl+T Update Project, Ctrl+Shift+K Push, Ctrl+Shift+` Branches, Alt+` VCS Operations Popup, Ctrl+Alt+N New Branch, Alt+9 Git log, Ctrl+K Commit (only while the Commit view has focus). These replace the VS Code defaults on the same keys (for example Ctrl+T *Go to Symbol in Workspace* and Ctrl+Shift+` *New Terminal*). Turn the setting off to keep the VS Code shortcuts.
 
@@ -64,7 +64,9 @@ npm run build        # merges contrib/*.json into package.json and bundles dist/
 npm test             # node:test, incl. real git operations on temporary repositories
 npm run typecheck
 npm run package      # builds rebased-vscode-<version>.vsix
-node scripts/preview.mjs <bundle> test/fixtures/<x>.mjs out.png [--light]   # render a webview with a mocked host
+node scripts/preview.mjs <bundle> test/fixtures/<x>.mjs out.png [--light | --vscode=dark|light]   # render a webview with a mocked host
+node scripts/layout-check.mjs [--base=<ref>]                                # element boxes must not move against <ref>
+sh scripts/preview-vscode.sh <dir> dark|light                              # screenshots of the main views in the VS Code look
 xvfb-run -a node scripts/e2e.mjs test/e2e-log.mjs                          # run a scenario in real VS Code
 ```
 

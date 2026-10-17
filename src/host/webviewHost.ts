@@ -7,7 +7,7 @@ export type Handler = (params: any) => unknown | Promise<unknown>;
 export function themeData() {
   const kind = vscode.window.activeColorTheme.kind;
   const dark = kind === vscode.ColorThemeKind.Dark || kind === vscode.ColorThemeKind.HighContrast;
-  const appearance = vscode.workspace.getConfiguration('rebased').get<string>('appearance', 'intellij');
+  const appearance = vscode.workspace.getConfiguration('rebased').get<string>('appearance', 'vscode');
   const themeClass = appearance === 'vscode' ? 'ij-vscode' : dark ? 'ij-dark' : 'ij-light';
   return { themeClass, dark };
 }

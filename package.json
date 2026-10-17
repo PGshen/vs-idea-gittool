@@ -47,15 +47,15 @@
         "rebased.appearance": {
           "type": "string",
           "enum": [
-            "intellij",
-            "vscode"
+            "vscode",
+            "intellij"
           ],
           "enumDescriptions": [
-            "Use the IntelliJ New UI light/dark palette (picked by the VS Code theme kind).",
-            "Keep the IntelliJ layout and icons but use the colors of the current VS Code theme."
+            "Native VS Code look: buttons, inputs, lists, menus, colors and fonts of the current VS Code theme, with the IntelliJ layout.",
+            "IntelliJ New UI look: the IntelliJ light/dark palette (picked by the VS Code theme kind) and IntelliJ widget shapes."
           ],
-          "default": "intellij",
-          "description": "Color palette of the Rebased views and dialogs."
+          "default": "vscode",
+          "description": "Look of the Rebased views and dialogs. The layout and the features are the same in both."
         },
         "rebased.untrackedFiles": {
           "type": "string",

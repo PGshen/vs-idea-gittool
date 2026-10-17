@@ -14,10 +14,10 @@ body.ij-light {
   --diff-filler: #0000000a;
 }
 body.ij-vscode {
-  --diff-mod-bg: var(--vscode-diffEditor-insertedLineBackground, #3070f020);
-  --diff-ins-bg: var(--vscode-diffEditor-insertedLineBackground, #30a04020);
-  --diff-del-bg: var(--vscode-diffEditor-removedLineBackground, #a0303020);
-  --diff-filler: var(--vscode-diffEditor-diagonalFill, #8882);
+  --diff-mod-bg: var(--vscode-diffEditor-insertedLineBackground);
+  --diff-ins-bg: var(--vscode-diffEditor-insertedLineBackground);
+  --diff-del-bg: var(--vscode-diffEditor-removedLineBackground);
+  --diff-filler: var(--vscode-diffEditor-diagonalFill);
 }
 .lh-left,
 .lh-right {

@@ -10,9 +10,9 @@ body.ij-light {
   --diff-modified: #cad9fa;
 }
 body.ij-vscode {
-  --diff-inserted: var(--vscode-diffEditor-insertedLineBackground, rgba(155, 185, 85, 0.2));
-  --diff-deleted-bg: var(--vscode-diffEditor-removedLineBackground, rgba(255, 0, 0, 0.2));
-  --diff-modified: var(--vscode-diffEditor-insertedTextBackground, rgba(80, 140, 220, 0.25));
+  --diff-inserted: var(--vscode-diffEditor-insertedLineBackground);
+  --diff-deleted-bg: var(--vscode-diffEditor-removedLineBackground);
+  --diff-modified: var(--vscode-diffEditor-insertedTextBackground);
 }
 .diff-preview {
   display: flex;

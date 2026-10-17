@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { MONO_ICONS } from './monoIcons';
 import { boot, on, theme } from './rpc';
 
 /**
@@ -8,9 +9,12 @@ import { boot, on, theme } from './rpc';
 export function Icon({ name, size = 16, class: cls, title }: { name: string; size?: 12 | 14 | 16 | 20; class?: string; title?: string }) {
   const dark = useDark();
   const src = iconUrl(name, dark);
+  // Monochrome icons carry their shape as a mask: the "vscode" appearance paints them in --vscode-icon-foreground.
+  const mono = MONO_ICONS.has(name);
   return (
     <img
-      class={`icon s${size} ${cls ?? ''}`}
+      class={`icon s${size} ${mono ? 'mono ' : ''}${cls ?? ''}`}
+      style={mono ? { '--icon-mask': `url("${iconUrl(name, false)}")` } : undefined}
       src={src}
       title={title}
       draggable={false}

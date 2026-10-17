@@ -13,7 +13,7 @@ export const vscode: VsCodeApi = acquireVsCodeApi();
 /** Bootstrap data the host embeds in the page. */
 export interface BootData {
   iconsBase: string;
-  /** 'ij-dark' | 'ij-light' | 'ij-vscode' */
+  /** 'ij-vscode' ("vscode" appearance, default) | 'ij-dark' | 'ij-light' ("intellij" appearance) */
   themeClass: string;
   dark: boolean;
   initial: any;

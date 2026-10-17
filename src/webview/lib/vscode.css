@@ -1,0 +1,594 @@
+/*
+ * "vscode" appearance (setting rebased.appearance): the IntelliJ layout drawn with the look of native VS Code
+ * widgets, using the --vscode-* theme variables of the webview.
+ *
+ * Rules here change only colors, borders colors, radii, shadows, outlines and fonts. They never change sizes,
+ * paddings, margins or border widths, so every element keeps its box (checked by scripts/layout-check.mjs).
+ * Selection highlights that must reach the full row width use box-shadow, which paints outside the box.
+ */
+
+body.ij-vscode {
+  /* Tokens used by the shared and feature stylesheets. */
+  --bg: var(--vscode-sideBar-background, var(--vscode-editor-background));
+  --bg-editor: var(--vscode-editor-background);
+  --bg-input: var(--vscode-input-background);
+  --bg-hover: var(--vscode-toolbar-hoverBackground);
+  --bg-row-hover: var(--vscode-list-hoverBackground);
+  --bg-selection: var(--vscode-list-activeSelectionBackground);
+  --bg-selection-inactive: var(--vscode-list-inactiveSelectionBackground);
+  --bg-current-branch: var(--vscode-editor-lineHighlightBackground, color-mix(in srgb, var(--vscode-list-inactiveSelectionBackground) 35%, transparent));
+  --bg-popup: var(--vscode-menu-background);
+  --bg-tooltip: var(--vscode-editorHoverWidget-background);
+  --bg-action-hover: var(--vscode-toolbar-hoverBackground);
+  --bg-action-pressed: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
+  --bg-tag: var(--vscode-badge-background);
+  --bg-banner-info: var(--vscode-editorWidget-background);
+  --bg-banner-warning: var(--vscode-inputValidation-warningBackground);
+  --bg-banner-error: var(--vscode-inputValidation-errorBackground);
+  --border: var(--vscode-panel-border, var(--vscode-widget-border, transparent));
+  --border-subtle: var(--vscode-widget-border, var(--vscode-panel-border, transparent));
+  --border-control: var(--vscode-input-border, var(--vscode-widget-border, transparent));
+  --border-popup: var(--vscode-menu-border, var(--vscode-widget-border, transparent));
+  --separator: var(--vscode-menu-separatorBackground, var(--vscode-widget-border));
+  --fg: var(--vscode-foreground);
+  --fg-strong: var(--vscode-foreground);
+  --fg-secondary: var(--vscode-descriptionForeground);
+  --fg-info: var(--vscode-descriptionForeground);
+  --fg-disabled: var(--vscode-disabledForeground);
+  --fg-link: var(--vscode-textLink-foreground);
+  --fg-error: var(--vscode-errorForeground);
+  --fg-warning: var(--vscode-editorWarning-foreground);
+  --fg-success: var(--vscode-testing-iconPassed);
+  --accent: var(--vscode-button-background);
+  --accent-fg: var(--vscode-button-foreground);
+  --focus: var(--vscode-focusBorder);
+  --status-modified: var(--vscode-gitDecoration-modifiedResourceForeground);
+  --status-added: var(--vscode-gitDecoration-addedResourceForeground);
+  --status-deleted: var(--vscode-gitDecoration-deletedResourceForeground);
+  --status-unknown: var(--vscode-gitDecoration-untrackedResourceForeground);
+  --status-ignored: var(--vscode-gitDecoration-ignoredResourceForeground);
+  --status-conflict: var(--vscode-gitDecoration-conflictingResourceForeground);
+  --status-merged: var(--vscode-gitDecoration-submoduleResourceForeground);
+  --ref-head: var(--vscode-gitDecoration-modifiedResourceForeground);
+  --ref-local: var(--vscode-gitDecoration-addedResourceForeground);
+  --ref-remote: var(--vscode-charts-purple);
+  --ref-tag: var(--vscode-descriptionForeground);
+  --diff-added: var(--vscode-gitDecoration-addedResourceForeground);
+  --diff-deleted: var(--vscode-gitDecoration-deletedResourceForeground);
+  --scrollbar: var(--vscode-scrollbarSlider-background);
+  --scrollbar-hover: var(--vscode-scrollbarSlider-hoverBackground);
+  --shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.36));
+  --icon-color: var(--vscode-icon-foreground);
+
+  font-family: var(--vscode-font-family);
+  font-weight: var(--vscode-font-weight, normal);
+}
+body.ij-vscode .mono,
+body.ij-vscode .cell.hash,
+body.ij-vscode .details .subject-line,
+body.ij-vscode .details .body,
+body.ij-vscode .chip,
+body.ij-vscode .mono-text,
+body.ij-vscode .message-box textarea {
+  font-family: var(--vscode-editor-font-family);
+}
+body.ij-vscode ::selection {
+  background: var(--vscode-editor-selectionBackground);
+}
+
+/* ---------- Scrollbars: square sliders like VS Code's ---------- */
+body.ij-vscode ::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background);
+  border: none;
+  border-radius: 0;
+}
+body.ij-vscode ::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground);
+}
+body.ij-vscode ::-webkit-scrollbar-thumb:active {
+  background: var(--vscode-scrollbarSlider-activeBackground);
+}
+
+/* ---------- Icons: monochrome IntelliJ icons take the VS Code icon color ---------- */
+body.ij-vscode img.icon.mono {
+  object-position: -9999px 0;
+  background-color: var(--icon-color);
+  -webkit-mask: var(--icon-mask) center / contain no-repeat;
+  mask: var(--icon-mask) center / contain no-repeat;
+}
+
+/* ---------- Links ---------- */
+body.ij-vscode a,
+body.ij-vscode .link {
+  color: var(--vscode-textLink-foreground);
+}
+body.ij-vscode a:hover,
+body.ij-vscode .link:hover {
+  color: var(--vscode-textLink-activeForeground);
+}
+
+/* ---------- Toolbar actions (monaco action bar) ---------- */
+body.ij-vscode .action-button {
+  border-radius: 5px;
+  color: var(--vscode-icon-foreground);
+}
+body.ij-vscode .action-button:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+body.ij-vscode .action-button:active:not(:disabled),
+body.ij-vscode .action-button.pressed {
+  background: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
+}
+body.ij-vscode .action-button.toggled {
+  background: var(--vscode-inputOption-activeBackground);
+  box-shadow: inset 0 0 0 1px var(--vscode-inputOption-activeBorder, transparent);
+  --icon-color: var(--vscode-inputOption-activeForeground, var(--vscode-icon-foreground));
+}
+body.ij-vscode .action-button:disabled {
+  opacity: 0.4;
+}
+body.ij-vscode .action-button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+body.ij-vscode .action-button .dropdown-mark {
+  border-top-color: var(--vscode-icon-foreground);
+}
+body.ij-vscode .toolbar-separator {
+  background: var(--vscode-widget-border, var(--vscode-panel-border));
+}
+
+/* ---------- Buttons (monaco-button: primary and secondary, 2px radius) ---------- */
+body.ij-vscode .btn {
+  border-radius: 2px;
+  border-color: var(--vscode-button-border, transparent);
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+body.ij-vscode .btn:hover:not(:disabled) {
+  filter: none;
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+body.ij-vscode .btn.primary {
+  background: var(--vscode-button-background);
+  border-color: var(--vscode-button-border, transparent);
+  color: var(--vscode-button-foreground);
+}
+body.ij-vscode .btn.primary:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+}
+body.ij-vscode .btn:disabled,
+body.ij-vscode .btn.primary:disabled {
+  opacity: 0.4;
+  color: var(--vscode-button-secondaryForeground);
+  background: var(--vscode-button-secondaryBackground);
+  border-color: var(--vscode-button-border, transparent);
+}
+body.ij-vscode .btn.primary:disabled {
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+body.ij-vscode .btn:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+body.ij-vscode .btn-split .btn.arrow {
+  border-left-color: var(--vscode-button-separator, transparent);
+}
+body.ij-vscode .btn-split .btn.arrow:not(.primary) {
+  border-left-color: var(--vscode-button-secondaryForeground);
+}
+body.ij-vscode .btn.primary img.icon.mono,
+body.ij-vscode .btn.arrow.primary img.icon.mono {
+  --icon-color: var(--vscode-button-foreground);
+}
+body.ij-vscode .btn:not(.primary) img.icon.mono {
+  --icon-color: var(--vscode-button-secondaryForeground);
+}
+
+/* ---------- Inputs (monaco-inputbox / select-box) ---------- */
+body.ij-vscode .text-field,
+body.ij-vscode textarea.text-area,
+body.ij-vscode select.combo {
+  border-radius: 2px;
+  border-color: var(--vscode-input-border, transparent);
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+}
+body.ij-vscode select.combo {
+  border-color: var(--vscode-dropdown-border, transparent);
+  background: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+}
+body.ij-vscode select.combo option {
+  background: var(--vscode-dropdown-listBackground, var(--vscode-dropdown-background));
+}
+body.ij-vscode .text-field:focus,
+body.ij-vscode textarea.text-area:focus,
+body.ij-vscode select.combo:focus {
+  border-color: var(--vscode-input-border, transparent);
+  box-shadow: none;
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+body.ij-vscode .text-field.error {
+  border-color: var(--vscode-inputValidation-errorBorder);
+}
+body.ij-vscode ::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+}
+
+/* ---------- Checkboxes (monaco-custom-toggle) and radios ---------- */
+body.ij-vscode .checkbox input,
+body.ij-vscode .tree-check {
+  border-radius: 3px;
+  border-color: var(--vscode-checkbox-border);
+  background: var(--vscode-checkbox-background);
+}
+body.ij-vscode .checkbox input:checked,
+body.ij-vscode .tree-check:checked,
+body.ij-vscode .tree-check.indeterminate {
+  border-color: var(--vscode-checkbox-border);
+  background: var(--vscode-checkbox-background);
+}
+body.ij-vscode .checkbox input:checked::after,
+body.ij-vscode .tree-check:checked::after {
+  border-color: var(--vscode-checkbox-foreground);
+}
+body.ij-vscode .tree-check.indeterminate::after {
+  background: var(--vscode-checkbox-foreground);
+}
+body.ij-vscode .checkbox input:focus-visible,
+body.ij-vscode .tree-check:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+body.ij-vscode .radio input {
+  accent-color: var(--vscode-checkbox-selectBackground, var(--vscode-button-background));
+}
+body.ij-vscode .checkbox.disabled {
+  color: var(--vscode-disabledForeground);
+}
+
+/* ---------- Lists and trees (monaco-list rows span the full width) ---------- */
+body.ij-vscode .tree-row,
+body.ij-vscode .log-row,
+body.ij-vscode .push-row,
+body.ij-vscode .lh-item {
+  border-radius: 0;
+}
+body.ij-vscode .tree-row:hover,
+body.ij-vscode .log-row:hover,
+body.ij-vscode .push-row:hover,
+body.ij-vscode .lh-item:hover {
+  background: var(--vscode-list-hoverBackground);
+  box-shadow:
+    -6px 0 0 var(--vscode-list-hoverBackground),
+    6px 0 0 var(--vscode-list-hoverBackground);
+}
+body.ij-vscode .tree-row.selected,
+body.ij-vscode .log-row.selected,
+body.ij-vscode .push-row.selected,
+body.ij-vscode .lh-item.selected {
+  background: var(--vscode-list-inactiveSelectionBackground);
+  color: var(--vscode-list-inactiveSelectionForeground, inherit);
+  box-shadow:
+    -6px 0 0 var(--vscode-list-inactiveSelectionBackground),
+    6px 0 0 var(--vscode-list-inactiveSelectionBackground);
+}
+body.ij-vscode .tree:focus .tree-row.selected,
+body.ij-vscode .tree:focus-within .tree-row.selected,
+body.ij-vscode .log-table:focus .log-row.selected,
+body.ij-vscode .push-left:focus-within .push-row.selected,
+body.ij-vscode .lh-list:focus .lh-item.selected {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground, inherit);
+  box-shadow:
+    -6px 0 0 var(--vscode-list-activeSelectionBackground),
+    6px 0 0 var(--vscode-list-activeSelectionBackground);
+  --icon-color: var(--vscode-list-activeSelectionIconForeground, var(--vscode-icon-foreground));
+}
+body.ij-vscode .tree:focus .tree-row.selected .hint,
+body.ij-vscode .tree:focus-within .tree-row.selected .hint {
+  color: inherit;
+  opacity: 0.8;
+}
+body.ij-vscode .log-row.current-branch:not(.selected):not(:hover) {
+  background: var(--bg-current-branch);
+  box-shadow:
+    -6px 0 0 var(--bg-current-branch),
+    6px 0 0 var(--bg-current-branch);
+}
+body.ij-vscode .tree-row.drop-target {
+  box-shadow: inset 0 0 0 1px var(--vscode-list-dropBackground, var(--vscode-focusBorder));
+}
+body.ij-vscode .irebase-row:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+body.ij-vscode .irebase-row.selected {
+  background: var(--vscode-list-inactiveSelectionBackground);
+}
+body.ij-vscode .irebase-table:focus .irebase-row.selected {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground, inherit);
+}
+body.ij-vscode .table th {
+  color: var(--vscode-descriptionForeground);
+  border-bottom-color: var(--vscode-widget-border, var(--vscode-panel-border));
+}
+body.ij-vscode .table tr.selected td {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground, inherit);
+}
+body.ij-vscode .table tbody tr:hover:not(.selected) td {
+  background: var(--vscode-list-hoverBackground);
+}
+body.ij-vscode .speed-search {
+  background: var(--vscode-editorWidget-background);
+  border-color: var(--vscode-focusBorder);
+  border-radius: 2px;
+  box-shadow: 0 0 8px 2px var(--vscode-widget-shadow);
+}
+
+/* ---------- Context menus and popups (monaco-menu) ---------- */
+body.ij-vscode .popup {
+  background: var(--vscode-menu-background);
+  color: var(--vscode-menu-foreground);
+  border-color: var(--vscode-menu-border, var(--vscode-widget-border, transparent));
+  border-radius: 5px;
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow);
+}
+body.ij-vscode .menu-item {
+  border-radius: 3px;
+}
+body.ij-vscode .menu-item.active:not(.disabled) {
+  background: var(--vscode-menu-selectionBackground);
+  color: var(--vscode-menu-selectionForeground);
+  --icon-color: var(--vscode-menu-selectionForeground);
+}
+body.ij-vscode .menu-item.active:not(.disabled) .menu-shortcut {
+  color: inherit;
+}
+body.ij-vscode .menu-item .menu-shortcut {
+  color: var(--vscode-menu-foreground);
+  opacity: 0.7;
+}
+body.ij-vscode .menu-item.disabled {
+  color: var(--vscode-disabledForeground);
+}
+body.ij-vscode .menu-separator {
+  background: var(--vscode-menu-separatorBackground);
+}
+body.ij-vscode .menu-separator-text {
+  color: var(--vscode-pickerGroup-foreground, var(--vscode-descriptionForeground));
+}
+body.ij-vscode .menu-separator-text::after {
+  background: var(--vscode-pickerGroup-border, var(--vscode-menu-separatorBackground));
+}
+body.ij-vscode .go-to {
+  background: var(--vscode-quickInput-background);
+  color: var(--vscode-quickInput-foreground);
+  border-color: var(--vscode-widget-border, transparent);
+  border-radius: 6px;
+  box-shadow: 0 0 8px 2px var(--vscode-widget-shadow);
+}
+
+/* ---------- Hovers ---------- */
+body.ij-vscode .tooltip {
+  background: var(--vscode-editorHoverWidget-background);
+  color: var(--vscode-editorHoverWidget-foreground);
+  border-color: var(--vscode-editorHoverWidget-border);
+  border-radius: 3px;
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow);
+}
+body.ij-vscode .tooltip .shortcut {
+  color: var(--vscode-descriptionForeground);
+}
+
+/* ---------- View tabs (Commit / Shelf / Stash): panel title look ---------- */
+body.ij-vscode .tw-tab {
+  border-radius: 0;
+  color: var(--vscode-panelTitle-inactiveForeground);
+}
+body.ij-vscode .tw-tab:hover {
+  background: transparent;
+  color: var(--vscode-panelTitle-activeForeground);
+}
+body.ij-vscode .tw-tab.selected {
+  background: transparent;
+  color: var(--vscode-panelTitle-activeForeground);
+  box-shadow: inset 0 -1px 0 var(--vscode-panelTitle-activeBorder);
+}
+
+/* ---------- Splitters, banners, misc ---------- */
+body.ij-vscode .splitter {
+  background: var(--vscode-panel-border, var(--vscode-widget-border));
+}
+body.ij-vscode .banner {
+  background: var(--vscode-editorWidget-background);
+  border-bottom-color: var(--vscode-widget-border, var(--vscode-panel-border));
+}
+body.ij-vscode .banner.warning {
+  background: var(--vscode-inputValidation-warningBackground);
+  border-bottom-color: var(--vscode-inputValidation-warningBorder);
+}
+body.ij-vscode .banner.error {
+  background: var(--vscode-inputValidation-errorBackground);
+  border-bottom-color: var(--vscode-inputValidation-errorBorder);
+}
+body.ij-vscode .spinner {
+  border-color: var(--vscode-progressBar-background);
+  border-top-color: transparent;
+}
+body.ij-vscode .ref-label {
+  color: var(--vscode-descriptionForeground);
+}
+
+/* ---------- Dialog frame (monaco dialog / editor widget) ---------- */
+body.ij-vscode .dialog {
+  background: var(--vscode-editorWidget-background);
+  color: var(--vscode-editorWidget-foreground);
+  border-color: var(--vscode-editorWidget-border, var(--vscode-widget-border, transparent));
+  border-radius: 4px;
+  box-shadow: 0 0 8px 2px var(--vscode-widget-shadow);
+}
+body.ij-vscode .dialog-error {
+  border-radius: 2px;
+  background: var(--vscode-inputValidation-errorBackground);
+  color: var(--vscode-errorForeground);
+  box-shadow: inset 0 0 0 1px var(--vscode-inputValidation-errorBorder);
+}
+body.ij-vscode .panel-box {
+  border-color: var(--vscode-widget-border, var(--vscode-panel-border));
+  border-radius: 2px;
+  background: var(--vscode-editor-background);
+}
+body.ij-vscode .form-group-title::after {
+  background: var(--vscode-widget-border, var(--vscode-panel-border));
+}
+
+/* ---------- Search and combo fields (monaco-inputbox with inline toggles) ---------- */
+body.ij-vscode .search-field,
+body.ij-vscode .combo-field,
+body.ij-vscode .lh-search {
+  border-radius: 2px;
+  border-color: var(--vscode-input-border, transparent);
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+}
+body.ij-vscode .search-field:focus-within,
+body.ij-vscode .combo-field:focus-within,
+body.ij-vscode .lh-search:focus-within {
+  box-shadow: none;
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+body.ij-vscode .combo-field.error {
+  box-shadow: none;
+  outline: 1px solid var(--vscode-inputValidation-errorBorder);
+  outline-offset: -1px;
+}
+body.ij-vscode .search-field input,
+body.ij-vscode .combo-input,
+body.ij-vscode .lh-search-input {
+  color: var(--vscode-input-foreground);
+}
+body.ij-vscode .push-target input,
+body.ij-vscode .irebase-row input.reword {
+  border-radius: 2px;
+  border-color: var(--vscode-focusBorder);
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+}
+body.ij-vscode .inline-toggle {
+  border-radius: 3px;
+  color: var(--vscode-icon-foreground);
+}
+body.ij-vscode .inline-toggle:hover {
+  background: var(--vscode-inputOption-hoverBackground, var(--vscode-toolbar-hoverBackground));
+}
+body.ij-vscode .inline-toggle.on {
+  background: var(--vscode-inputOption-activeBackground);
+  color: var(--vscode-inputOption-activeForeground);
+  box-shadow: inset 0 0 0 1px var(--vscode-inputOption-activeBorder, transparent);
+  --icon-color: var(--vscode-inputOption-activeForeground);
+}
+body.ij-vscode .combo-arrow:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  border-radius: 0 2px 2px 0;
+}
+
+/* ---------- Text actions in toolbars (filter chips, "Reword", "Left / All / Right") ---------- */
+body.ij-vscode .filter-chip,
+body.ij-vscode .toolbar-button-text,
+body.ij-vscode .mg-text-action,
+body.ij-vscode .amend-target,
+body.ij-vscode .branches-stripe .stripe-label,
+body.ij-vscode .branches-stripe .stripe-toggle {
+  border-radius: 5px;
+}
+body.ij-vscode .filter-chip:hover,
+body.ij-vscode .toolbar-button-text:hover:not(:disabled),
+body.ij-vscode .mg-text-action:hover:not(:disabled),
+body.ij-vscode .amend-target:hover,
+body.ij-vscode .branches-stripe .stripe-toggle:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+body.ij-vscode .filter-chip .clear {
+  border-radius: 3px;
+}
+body.ij-vscode .filter-chip .clear:hover {
+  background: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
+}
+
+/* ---------- Badges and chips ---------- */
+body.ij-vscode .chip,
+body.ij-vscode .push-tag {
+  border-radius: 2px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+body.ij-vscode .chip-close {
+  border-radius: 3px;
+}
+body.ij-vscode .chip-close:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+body.ij-vscode .conflicts-badge {
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+body.ij-vscode .conflicts-badge.modified {
+  background: var(--vscode-activityBarBadge-background, var(--vscode-button-background));
+  color: var(--vscode-activityBarBadge-foreground, var(--vscode-button-foreground));
+}
+
+/* ---------- Bordered panels inside dialogs ---------- */
+body.ij-vscode .push-body {
+  border-radius: 2px;
+  border-color: var(--vscode-widget-border, var(--vscode-panel-border));
+  background: var(--vscode-editor-background);
+}
+body.ij-vscode .push-right,
+body.ij-vscode .details-pane,
+body.ij-vscode .irebase-toolbar {
+  border-color: var(--vscode-widget-border, var(--vscode-panel-border));
+}
+
+/* ---------- Commit message editor ---------- */
+body.ij-vscode .message-box textarea {
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+}
+
+/* ---------- Diff viewers: VS Code colors (old side removed, new side inserted) ---------- */
+body.ij-vscode .diff-row.mod > .code:nth-child(2):not(.filler),
+body.ij-vscode .diff-row.del > .code:nth-child(2):not(.filler) {
+  background: var(--vscode-diffEditor-removedLineBackground);
+}
+body.ij-vscode .diff-row.mod > .code:nth-child(5):not(.filler),
+body.ij-vscode .diff-row.ins > .code:nth-child(5):not(.filler) {
+  background: var(--vscode-diffEditor-insertedLineBackground);
+}
+body.ij-vscode .diff-row .code.filler {
+  background: repeating-linear-gradient(-45deg, transparent 0 4px, var(--vscode-diffEditor-diagonalFill) 4px 8px);
+}
+body.ij-vscode .diff-row.modified .code.left:not(.filler) {
+  background: var(--vscode-diffEditor-removedLineBackground);
+}
+body.ij-vscode .diff-row.modified .code:not(.left):not(.filler) {
+  background: var(--vscode-diffEditor-insertedLineBackground);
+}
+body.ij-vscode .diff-row.modified .code.left .inner {
+  background: var(--vscode-diffEditor-removedTextBackground);
+}
+body.ij-vscode .diff-row.modified .code:not(.left) .inner {
+  background: var(--vscode-diffEditor-insertedTextBackground);
+}
+body.ij-vscode .diff-gap {
+  font-family: var(--vscode-font-family);
+  background: var(--vscode-editorWidget-background);
+}
+body.ij-vscode .diff-gap:hover {
+  color: var(--vscode-textLink-foreground);
+}

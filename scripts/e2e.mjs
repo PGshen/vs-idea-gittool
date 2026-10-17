@@ -53,6 +53,29 @@ await window.setViewportSize?.({ width: 1600, height: 1000 }).catch(() => {});
 window.on('console', m => m.type() === 'error' && console.log('[console]', m.text()));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 await sleep(4000);
+// The workbench.colorTheme setting is not applied on the first start of a fresh profile, so pick the theme
+// with the color theme picker. E2E_THEME: label in the picker (default "Dark Modern"), "none" to skip.
+const theme = process.env.E2E_THEME ?? scenario.theme ?? 'Dark Modern';
+if (theme !== 'none') {
+  // Wait until the log tab (opened on startup) has rendered, so that it does not take the focus mid-way.
+  for (let i = 0; i < 40; i++) {
+    let found = false;
+    for (const f of window.frames()) if (await f.$('.log-row').catch(() => null)) found = true;
+    if (found) break;
+    await sleep(250);
+  }
+  await sleep(500);
+  // The log webview opens on startup and takes the keyboard focus; give it back to the workbench.
+  await window.click('.part.sidebar .composite.title').catch(() => undefined);
+  await sleep(200);
+  await window.keyboard.press('Control+K');
+  await window.keyboard.press('Control+T');
+  await sleep(1200);
+  await window.keyboard.type(theme);
+  await sleep(500);
+  await window.keyboard.press('Enter');
+  await sleep(1500);
+}
 const shot = async name => {
   const p = `${outDir}/${name}.png`;
   await window.screenshot({ path: p });

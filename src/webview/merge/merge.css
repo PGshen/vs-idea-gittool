@@ -1,6 +1,5 @@
 /* IntelliJ merge window. Diff colors: DIFF_* of the Darcula / Default editor color schemes. */
-body.ij-dark,
-body.ij-vscode.vscode-dark {
+body.ij-dark {
   --mg-editor-bg: #1e1f22;
   --mg-editor-fg: #bcbec4;
   --mg-line-number: #4b5059;
@@ -26,8 +25,7 @@ body.ij-vscode.vscode-dark {
   --mg-balloon-bg: #253627;
   --mg-balloon-border: #375239;
 }
-body.ij-light,
-body.ij-vscode.vscode-light {
+body.ij-light {
   --mg-editor-bg: #ffffff;
   --mg-editor-fg: #080808;
   --mg-line-number: #aeb3c2;
@@ -53,13 +51,46 @@ body.ij-vscode.vscode-light {
   --mg-balloon-bg: #f2fcf3;
   --mg-balloon-border: #c5e5cc;
 }
+/* VS Code look: editor colors of the theme, VS Code diff / merge editor change colors. */
 body.ij-vscode {
   --mg-editor-bg: var(--vscode-editor-background);
   --mg-editor-fg: var(--vscode-editor-foreground);
   --mg-line-number: var(--vscode-editorLineNumber-foreground);
   --mg-line-number-active: var(--vscode-editorLineNumber-activeForeground);
   --mg-caret: var(--vscode-editorCursor-foreground);
+  --mg-caret-row: var(--vscode-editor-lineHighlightBackground, transparent);
   --mg-selection: var(--vscode-editor-selectionBackground);
+  --mg-modified: var(--vscode-merge-incomingContentBackground);
+  --mg-modified-inner: var(--vscode-merge-incomingHeaderBackground);
+  --mg-inserted: var(--vscode-diffEditor-insertedLineBackground);
+  --mg-inserted-inner: var(--vscode-diffEditor-insertedTextBackground);
+  --mg-deleted: var(--vscode-merge-commonContentBackground);
+  --mg-deleted-inner: var(--vscode-merge-commonHeaderBackground);
+  --mg-conflict: var(--vscode-mergeEditor-conflictingLines\.background);
+  --mg-conflict-inner: var(--vscode-mergeEditor-conflict\.unhandledUnfocused\.border);
+  --mg-modified-border: var(--vscode-merge-incomingHeaderBackground);
+  --mg-inserted-border: var(--vscode-gitDecoration-addedResourceForeground);
+  --mg-deleted-border: var(--vscode-merge-commonHeaderBackground);
+  --mg-conflict-border: var(--vscode-mergeEditor-conflict\.unhandledUnfocused\.border);
+  --mg-divider-bg: var(--vscode-editor-background);
+  --mg-fold-bg: var(--vscode-editorWidget-background);
+  --mg-fold-line: var(--vscode-widget-border, var(--vscode-editorLineNumber-foreground));
+  --mg-balloon-bg: var(--vscode-editorHoverWidget-background);
+  --mg-balloon-border: var(--vscode-editorHoverWidget-border);
+}
+body.ij-vscode .cm-scroller {
+  font-family: var(--vscode-editor-font-family) !important;
+}
+body.ij-vscode .mg-op {
+  border-radius: 3px;
+}
+body.ij-vscode .mg-op:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+body.ij-vscode .mg-balloon {
+  border-radius: 3px;
+  color: var(--vscode-editorHoverWidget-foreground);
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow);
 }
 
 .mg-root {

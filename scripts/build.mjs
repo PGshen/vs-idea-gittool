@@ -1,5 +1,8 @@
 import * as esbuild from 'esbuild';
+import { execFileSync } from 'node:child_process';
 import { readdirSync, existsSync } from 'node:fs';
+
+execFileSync(process.execPath, ['scripts/gen-mono-icons.mjs'], { stdio: 'inherit' });
 
 const watch = process.argv.includes('--watch');
 const prod = process.argv.includes('--production');
