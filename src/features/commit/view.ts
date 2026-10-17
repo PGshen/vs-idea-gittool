@@ -24,6 +24,7 @@ import {
   stashFiles,
   StashFile,
 } from './gitOps';
+import { createPatchDialog, rebasePatchPaths, reversePatch } from './patchDialog';
 import { Shelf } from './shelf';
 
 const SETTINGS_KEY = 'rebased.commitView.settings';
@@ -249,7 +250,15 @@ export class CommitView implements vscode.WebviewViewProvider {
       shelveSilently: (p: { keys: string[] }) => this.shelveSilently(p.keys),
       createPatch: (p: { keys: string[] }) => this.createPatchFile(this.changes(p.keys)),
       copyPatch: (p: { keys: string[] }) => this.copyPatch(this.changes(p.keys)),
-      copyPath: (p: { keys: string[]; kind: 'absolute' | 'name' | 'repo' }) => this.copyPath(p.keys, p.kind),
+      copyPath: (p: { keys: string[]; kind: CopyPathKind }) => this.copyPath(p.keys, p.kind),
+      removeFromVcs: (p: { keys: string[] }) => this.removeFromVcs(p.keys),
+      revertResolved: (p: { keys?: string[] }) => this.revertResolved(p.keys),
+      localHistory: (p: { key: string; action: 'show' | 'selection' | 'project' | 'label' | 'recent' }) => {
+        const c = this.changeByKey.get(p.key);
+        const uri = c ? vscode.Uri.file(path.join(c.root, c.path)) : undefined;
+        const cmd = { show: 'showHistory', selection: 'showSelectionHistory', project: 'showProjectHistory', label: 'putLabel', recent: 'recentChanges' }[p.action];
+        return vscode.commands.executeCommand(`rebased.localHistory.${cmd}`, uri);
+      },
       showHistory: (p: { key: string }) => {
         const c = this.changeByKey.get(p.key);
         if (c) return vscode.commands.executeCommand('rebased.showFileHistory', { root: c.root, path: c.path });
@@ -294,7 +303,7 @@ export class CommitView implements vscode.WebviewViewProvider {
         const a = await ask('Delete all already unshelved changelists?', 'Applied shelved changes in "Recently Deleted" are removed permanently.', 'Delete');
         if (a) this.shelf.cleanDeleted();
       },
-      shelfCreatePatch: (p: { id: string; paths?: string[] }) => this.savePatchText(this.shelf.patchFor(p.id, p.paths), this.shelf.get(p.id)?.name),
+      shelfCreatePatch: (p: { id: string; paths?: string[] }) => this.shelfCreatePatch(p.id, p.paths),
       shelfCopyPatch: async (p: { id: string; paths?: string[] }) => {
         await vscode.env.clipboard.writeText(this.shelf.patchFor(p.id, p.paths));
         void notifySuccess('Patch copied to clipboard');
@@ -657,23 +666,46 @@ export class CommitView implements vscode.WebviewViewProvider {
     void notifySuccess('Patch copied to clipboard');
   }
 
+  /**
+   * Create Patch from Local Changes…: the Create Patch dialog with all local changes, the given ones checked.
+   */
   async createPatchFile(changes: Change[]) {
-    if (!changes.length) return;
-    let text = '';
-    for (const [repo, list] of this.byRepo(changes)) text += (await createPatch(repo, list)).patch;
-    await this.savePatchText(text, 'Local_Changes');
+    const st = this.lastState ?? this.buildState();
+    const all = [...st.changelists.flatMap(l => l.changes), ...st.unversioned];
+    if (!all.length) {
+      void vscode.window.showInformationMessage('No changes to create a patch from');
+      return;
+    }
+    const basePath = this.ctx.repos.repositories.length === 1 ? this.ctx.repos.repositories[0].root : (vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? all[0].root);
+    await createPatchDialog({
+      files: all.map(c => ({ ...c, key: changeKey(c) })),
+      selected: (changes.length ? changes : this.changes(st.included)).map(changeKey),
+      name: this.changelists.active.name === 'Changes' ? 'Local_Changes' : this.changelists.active.name,
+      basePath,
+      produce: async (keys, opts) => {
+        let text = '';
+        for (const [repo, list] of this.byRepo(this.changes(keys))) text += rebasePatchPaths((await createPatch(repo, list, { reverse: opts.reverse })).patch, repo.root, opts.basePath);
+        return text;
+      },
+    });
   }
 
-  private async savePatchText(text: string, name = 'changes') {
-    const root = this.ctx.repos.repositories[0]?.root ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
-    const uri = await vscode.window.showSaveDialog({
-      title: 'Create Patch',
-      defaultUri: vscode.Uri.file(path.join(root, `${name.replace(/[^\w.-]+/g, '_')}.patch`)),
-      filters: { Patch: ['patch', 'diff'] },
+  /** Create Patch… of a shelved changelist. */
+  async shelfCreatePatch(id: string, paths?: string[]) {
+    const s = this.shelf.list().find(x => x.id === id);
+    if (!s) return;
+    await createPatchDialog({
+      files: s.files.map(f => ({ ...f, key: f.path })),
+      selected: paths,
+      name: s.name,
+      basePath: s.root,
+      rootLabel: s.name,
+      produce: async (keys, opts) => {
+        let text = rebasePatchPaths(this.shelf.patchFor(id, keys), s.root, opts.basePath);
+        if (opts.reverse) text = reversePatch(text);
+        return text;
+      },
     });
-    if (!uri) return;
-    await vscode.workspace.fs.writeFile(uri, Buffer.from(text));
-    void notifySuccess('Patch file created', path.basename(uri.fsPath), { label: 'Open', run: () => vscode.window.showTextDocument(uri) });
   }
 
   async importPatches() {
@@ -684,11 +716,114 @@ export class CommitView implements vscode.WebviewViewProvider {
     for (const u of uris) this.shelf.importPatch(repo.root, path.basename(u.fsPath).replace(/\.(patch|diff)$/, ''), Buffer.from(await vscode.workspace.fs.readFile(u)).toString('utf8'));
   }
 
-  async copyPath(keys: string[], kind: 'absolute' | 'name' | 'repo') {
-    const text = this.changes(keys)
-      .map(c => (kind === 'absolute' ? path.join(c.root, c.path) : kind === 'name' ? path.posix.basename(c.path) : c.path))
-      .join('\n');
-    await vscode.env.clipboard.writeText(text);
+  async copyPath(keys: string[], kind: CopyPathKind) {
+    await copyPaths(
+      this.changes(keys).map(c => path.join(c.root, c.path)),
+      kind,
+      this.ctx,
+    );
   }
+
+  /** Remove from VCS: `git rm --cached`, the files stay on disk (deleted files are removed from the index). */
+  async removeFromVcs(keys: string[]) {
+    // Unchanged tracked files are not in the changes map: build them from the key (root \0 path).
+    const changes = keys
+      .map(k => this.changeByKey.get(k) ?? ({ root: k.split('\0')[0], path: k.split('\0')[1], status: 'M' } as Change))
+      .filter(c => c.status !== '?' && c.status !== '!');
+    if (!changes.length) return;
+    const names = changes.length === 1 ? `'${path.posix.basename(changes[0].path)}'` : `${changes.length} files`;
+    const a = await ask(`Remove ${names} from version control?`, 'The files are kept on disk and become unversioned.', 'Remove');
+    if (!a) return;
+    for (const [repo, list] of this.byRepo(changes)) {
+      await repo.batch(() => repo.exec(['rm', '--cached', '-r', '-q', '--ignore-unmatch', '--', ...list.map(c => c.path)]));
+    }
+  }
+
+  /**
+   * Revert Resolved: brings back the merge conflict of files that were resolved during the ongoing
+   * merge, rebase, cherry-pick or revert (`git checkout -m`, uses the resolve-undo information).
+   */
+  async revertResolved(keys?: string[]) {
+    const selected = keys ? this.changes(keys) : [];
+    let done = 0;
+    for (const repo of this.ctx.repos.repositories) {
+      if (repo.info.operation === 'none') continue;
+      const undo = await revertableResolvedFiles(repo);
+      const paths = selected.length ? selected.filter(c => c.root === repo.root && undo.includes(c.path)).map(c => c.path) : undo;
+      if (!paths.length) continue;
+      await repo.batch(() => repo.exec(['checkout', '-m', '--', ...paths]));
+      done += paths.length;
+    }
+    if (!done) void vscode.window.showInformationMessage('There are no resolved files to revert');
+  }
+
+  /** Shelves all local changes of one repository (Update Project with "Shelve"). Returns the shelf id. */
+  async shelveAll(root: string, name: string): Promise<string | undefined> {
+    const repo = this.ctx.repos.get(root);
+    if (!repo) throw new Error(`Repository ${root} is not available`);
+    await repo.refresh();
+    const changes = [...repo.status.changes.filter(c => c.status !== 'U'), ...repo.status.unversioned];
+    if (!changes.length) return undefined;
+    const item = await this.shelf.shelve(repo, changes, name);
+    return item.id;
+  }
+
+  /** Applies a whole shelf silently and removes it (moves to Recently Deleted). */
+  async unshelveAll(id: string): Promise<{ ok: boolean; conflicts: string[] }> {
+    const s = this.shelf.get(id);
+    if (!s) return { ok: false, conflicts: [] };
+    const repo = this.ctx.repos.get(s.root) ?? (await this.ctx.repos.open(s.root));
+    if (!repo) return { ok: false, conflicts: [] };
+    const { conflicts } = await this.shelf.unshelve(repo, id, undefined, true);
+    await repo.refresh();
+    const conflicted = conflicts ? repo.status.conflicts.map(c => c.path) : [];
+    return { ok: !conflicts, conflicts: conflicted };
+  }
+}
+
+export type CopyPathKind = 'absolute' | 'name' | 'lineNumber' | 'contentRoot' | 'repo' | 'reference';
+
+/** Copy Path/Reference… actions. `line` is 1-based, used by "Path with Line Number" and "Copy Reference". */
+export async function copyPaths(files: string[], kind: CopyPathKind, ctx: Ctx, line?: number) {
+  const contentRoot = (f: string) => {
+    const folder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(f));
+    return folder ? path.relative(folder.uri.fsPath, f).replace(/\\/g, '/') : f;
+  };
+  const repoRel = (f: string) => {
+    const repo = ctx.repos.getForFile(f);
+    return repo ? repo.relPath(f) : contentRoot(f);
+  };
+  const text = files
+    .map(f => {
+      switch (kind) {
+        case 'absolute':
+          return f;
+        case 'name':
+          return path.basename(f);
+        case 'lineNumber':
+          return line ? `${contentRoot(f)}:${line}` : contentRoot(f);
+        case 'contentRoot':
+          return contentRoot(f);
+        case 'repo':
+          return repoRel(f);
+        case 'reference':
+          return line ? `${repoRel(f)}:${line}` : repoRel(f);
+      }
+    })
+    .join('\n');
+  await vscode.env.clipboard.writeText(text);
+  void vscode.window.setStatusBarMessage(`Copied: ${text.split('\n')[0]}${files.length > 1 ? ` (+${files.length - 1})` : ''}`, 3000);
+}
+
+/** Files resolved during the ongoing operation that still have resolve-undo information. */
+export async function revertableResolvedFiles(repo: Repository): Promise<string[]> {
+  const out = await repo.execText(['ls-files', '--resolve-undo', '-z'], { quiet: true, allowFailure: true });
+  const unresolved = new Set(repo.status.conflicts.map(c => c.path));
+  const paths = new Set<string>();
+  for (const rec of out.split('\0')) {
+    const tab = rec.indexOf('\t');
+    if (tab > 0) paths.add(rec.slice(tab + 1));
+  }
+  return [...paths].filter(p => !unresolved.has(p));
 }
 

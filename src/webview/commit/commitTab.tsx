@@ -167,6 +167,20 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
     const listNode = sel.find(n => n.data?.kind === 'changelist');
     const single = files.length === 1 ? files[0] : undefined;
     const entries: MenuEntry[] = [];
+    const inOperation = state.repos.some(r => r.operation !== 'none');
+    const revertResolved: MenuEntry = { label: 'Revert Resolved', icon: 'vcs/revert', disabled: !inOperation || !tracked.length, action: () => send('revertResolved', { keys: keysOf(tracked) }) };
+    const rollbackFile: MenuEntry = { label: 'Rollback File…', disabled: !tracked.length, action: () => send('rollback', { keys: keysOf(tracked) }) };
+    const localHistory: MenuEntry = {
+      label: 'Local History',
+      children: [
+        { label: 'Show History…', disabled: !single, action: () => send('localHistory', { key: changeKey(single!), action: 'show' }) },
+        { label: 'Show History for Selection…', disabled: true },
+        { separator: true },
+        { label: 'Show Project History…', action: () => send('localHistory', { key: '', action: 'project' }) },
+        { label: 'Recent Changes', shortcut: 'Alt+Shift+C', action: () => send('localHistory', { key: '', action: 'recent' }) },
+        { label: 'Put Label…', action: () => send('localHistory', { key: '', action: 'label' }) },
+      ],
+    };
     if (conflicts.length) {
       entries.push(
         { label: 'Merge…', icon: 'vcs/merge', disabled: conflicts.length !== 1, action: () => send('mergeConflict', { key: changeKey(conflicts[0]) }) },
@@ -176,8 +190,10 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
       );
     }
     entries.push(
+      revertResolved,
       { label: files.length > 1 ? 'Commit Files…' : 'Commit File…', disabled: !files.length, action: () => commitSelected(files) },
       { label: 'Rollback…', icon: 'vcs/revert', shortcut: 'Ctrl+Alt+Z', disabled: !tracked.length, action: () => send('rollback', { keys: keysOf(tracked) }) },
+      rollbackFile,
       { label: 'Move to Another Changelist…', shortcut: 'Alt+Shift+M', disabled: !tracked.length, action: () => send('moveToChangelist', { keys: keysOf(tracked) }) },
       { label: 'Show Diff', icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: !files.length, action: () => showDiff(files) },
       { label: 'Jump to Source', shortcut: 'F4', disabled: !files.some(f => f.status !== 'D'), action: () => openSource(files) },
@@ -188,13 +204,18 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
           { label: 'Absolute Path', shortcut: 'Ctrl+Shift+C', action: () => send('copyPath', { keys, kind: 'absolute' }) },
           { label: 'File Name', action: () => send('copyPath', { keys, kind: 'name' }) },
           { separator: true },
+          { label: 'Path with Line Number', action: () => send('copyPath', { keys, kind: 'lineNumber' }) },
+          { label: 'Path from Content Root', action: () => send('copyPath', { keys, kind: 'contentRoot' }) },
           { label: 'Path From Repository Root', action: () => send('copyPath', { keys, kind: 'repo' }) },
+          { separator: true },
+          { label: 'Copy Reference', shortcut: 'Ctrl+Alt+Shift+C', action: () => send('copyPath', { keys, kind: 'reference' }) },
         ],
       },
       { separator: true },
       { label: 'Delete', shortcut: 'Delete', disabled: !files.some(f => f.status !== 'D'), action: () => send('deleteFiles', { keys }) },
       { label: 'Add to VCS', shortcut: 'Ctrl+Alt+A', disabled: !unversioned.length, action: () => send('addToVcs', { keys: keysOf(unversioned) }) },
       { label: 'Add to .gitignore', disabled: !unversioned.length, action: () => send('ignore', { keys: keysOf(unversioned) }) },
+      { label: 'Remove from VCS', icon: 'general/remove', disabled: !tracked.length, action: () => send('removeFromVcs', { keys: keysOf(tracked) }) },
       { separator: true },
       { label: 'New Changelist…', icon: 'general/add', action: () => send('newChangelist', { keys: keysOf(tracked) }) },
       {
@@ -211,6 +232,7 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
       { separator: true },
       { label: 'Refresh', icon: 'general/refresh', action: () => send('refresh') },
       { separator: true },
+      localHistory,
       {
         label: 'Git',
         children: [
@@ -233,8 +255,10 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
           { label: 'Show History', icon: 'general/history', disabled: !single || single.status === '?', action: () => send('showHistory', { key: changeKey(single!) }) },
           { separator: true },
           { label: 'Rollback…', icon: 'vcs/revert', shortcut: 'Ctrl+Alt+Z', disabled: !tracked.length, action: () => send('rollback', { keys: keysOf(tracked) }) },
+          rollbackFile,
           { separator: true },
           { label: 'Resolve Conflicts…', disabled: !state.conflicts.length, action: () => send('resolveConflicts', {}) },
+          revertResolved,
         ],
       },
     );
