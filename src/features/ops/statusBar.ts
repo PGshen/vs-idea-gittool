@@ -108,8 +108,8 @@ export class StatusBarWidgets implements vscode.Disposable {
     else if (info.detached) text = `$(warning) ${name}`;
     else text = `$(git-branch) ${name}`;
     const counts: string[] = [];
-    if (info.behind) counts.push(`↙${info.behind}`);
-    if (info.ahead) counts.push(`↗${info.ahead}`);
+    if (info.behind) counts.push(`↓${info.behind}`);
+    if (info.ahead) counts.push(`↑${info.ahead}`);
     this.branch.text = counts.length ? `${text} ${counts.join(' ')}` : text;
     const tip: string[] = [info.detached ? "Git: Detached HEAD doesn't point to any branch" : `Git Branch: ${name}`];
     if (multi) tip.push(`Root: ${repo.name}`);

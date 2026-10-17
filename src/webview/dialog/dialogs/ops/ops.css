@@ -334,3 +334,7 @@
   overflow: auto;
   padding: 4px 0;
 }
+.combo-input:focus,
+.combo-input:focus-visible {
+  outline: none !important;
+}

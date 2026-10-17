@@ -128,6 +128,15 @@ export async function pushCommand(ctx: Ctx, arg?: RootArg & { upTo?: string; bra
     },
   );
   if (!result) return;
+  if (result.force) {
+    const targets = result.repos.map(x => `${x.remote}/${x.target}`).join(', ');
+    const a = await vscode.window.showWarningMessage(
+      'Force Push',
+      { modal: true, detail: `You're going to force push to ${targets}. It may overwrite commits at the remote. Are you sure you want to proceed?` },
+      'Force Push',
+    );
+    if (a !== 'Force Push') return;
+  }
   await settings().update('push.tags', result.tags, vscode.ConfigurationTarget.Global);
   await settings().update('push.runHooks', result.runHooks, vscode.ConfigurationTarget.Global);
   for (const r of result.repos) {

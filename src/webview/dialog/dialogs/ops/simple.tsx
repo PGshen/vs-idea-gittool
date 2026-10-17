@@ -139,9 +139,9 @@ registerDialog<NewBranchProps>('ops.newBranch', ({ props, submit, cancel }) => {
           }}
         />
       </Row>
-      {error && (touched || name !== props.initial) && <div class="error-text" style={{ marginLeft: '98px', marginTop: '-2px' }}>{exists && props.showOverwrite ? 'Change the name or overwrite existing branch' : error}</div>}
+      {error && (touched || name !== props.initial) && <div class="error-text" style={{ marginLeft: '124px', marginTop: '-2px' }}>{exists && props.showOverwrite ? 'Change the name or overwrite existing branch' : error}</div>}
       {(props.showCheckout || props.showOverwrite) && (
-        <div style={{ display: 'flex', gap: '16px', marginLeft: '98px' }}>
+        <div style={{ display: 'flex', gap: '16px', marginLeft: '124px' }}>
           {props.showCheckout && <Checkbox checked={checkout} onChange={setCheckout} label="Checkout branch" />}
           {props.showOverwrite && <Checkbox checked={overwrite} onChange={setOverwrite} label="Overwrite existing branch" disabled={!exists && !overwrite} />}
         </div>
@@ -366,10 +366,6 @@ registerDialog<{ method: string; saveChanges: string; repos: string[] }>('ops.up
       <Group title="Update Type">
         <Radio name="method" checked={method === 'merge'} onChange={() => setMethod('merge')} label="Merge incoming changes into the current branch" />
         <Radio name="method" checked={method === 'rebase'} onChange={() => setMethod('rebase')} label="Rebase the current branch on top of incoming changes" />
-      </Group>
-      <Group title="Clean working tree before update">
-        <Radio name="save" checked={save === 'stash'} onChange={() => setSave('stash')} label="Using Stash" />
-        <Radio name="save" checked={save === 'shelve'} onChange={() => setSave('shelve')} label="Using Shelve" />
       </Group>
     </DialogFrame>
   );
