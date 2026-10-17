@@ -4,7 +4,7 @@ import { ActionButton, buildDirectoryTree, Split, Spacer, Toolbar, Tree, TreeNod
 import { fileIconName } from '../lib/icons';
 import { anchorAt, MenuEntry } from '../lib/menu';
 import { call, persisted, send } from '../lib/rpc';
-import { changeAction, changesMenu } from './menus';
+import { changeAction, changesMenu, layoutMenu } from './menus';
 import { refLabels, RefLabels } from './refs';
 import { store, useStore } from './store';
 
@@ -60,6 +60,23 @@ function ChangesTree() {
       }));
     }
     const n = changes.length;
+    const roots = [...new Set(changes.map(c => c.root))];
+    const byRepo = s.init.multi && s.settings.changesGroupByRepository && roots.length > 0;
+    const children: CNode[] = byRepo
+      ? roots.map(root => {
+          const repo = s.repos.find(r => r.root === root);
+          const list = changes.filter(c => c.root === root);
+          return {
+            key: `repo:${root}`,
+            label: repo?.name ?? root,
+            text: repo?.name ?? root,
+            icon: 'nodes/folder',
+            hint: `${list.length} ${list.length === 1 ? 'file' : 'files'}`,
+            tip: root,
+            children: buildDirectoryTree(list, c => fileNode(c, !grouped), `${root}:`, { flat: !grouped }) as CNode[],
+          };
+        })
+      : (buildDirectoryTree(changes, c => fileNode(c, !grouped), '', { flat: !grouped }) as CNode[]);
     return [
       {
         key: 'root',
@@ -67,10 +84,10 @@ function ChangesTree() {
         text: '',
         icon: 'nodes/folder',
         labelClass: 'secondary',
-        children: buildDirectoryTree(changes, c => fileNode(c, !grouped), '', { flat: !grouped }) as CNode[],
+        children,
       },
     ];
-  }, [changes, grouped, d]);
+  }, [changes, grouped, d, s.settings.changesGroupByRepository, s.repos]);
 
   const expanded = useMemo(() => {
     const all = new Set<string>();
@@ -89,7 +106,10 @@ function ChangesTree() {
   }, [nodes]);
 
   // Reset the selection when the commit changes.
-  useEffect(() => setSelection(new Set()), [d]);
+  useEffect(() => {
+    setSelection(new Set());
+    store.previewChange = undefined;
+  }, [d]);
 
   const selectedChanges = (sel = selection): Change[] => {
     const out: Change[] = [];
@@ -142,7 +162,14 @@ function ChangesTree() {
         setCollapsed(c);
       }}
       selection={selection}
-      onSelectionChange={setSelection}
+      onSelectionChange={(sel, lead) => {
+        setSelection(sel);
+        // The diff preview follows the selected file.
+        if (lead?.data?.change && store.previewChange !== lead.data.change) {
+          store.previewChange = lead.data.change;
+          store.emit();
+        }
+      }}
       onOpen={n => n.data?.change && changeAction('diff', [n.data.change])}
       onKeyDown={(e, sel) => {
         const ch = selectedChanges(new Set(sel.map(n => n.key)));
@@ -277,17 +304,10 @@ export function RightPanel() {
       children: [
         { separator: true, label: 'Group By' },
         { label: 'Directory', shortcut: 'Ctrl+Alt+P', checked: s.settings.changesGroupByDirectory, action: () => store.updateSettings({ changesGroupByDirectory: !s.settings.changesGroupByDirectory }) },
-        { label: 'Repository', checked: false, disabled: s.init.repos.length < 2 },
+        { label: 'Repository', checked: s.init.multi && s.settings.changesGroupByRepository, disabled: !s.init.multi, action: () => store.updateSettings({ changesGroupByRepository: !s.settings.changesGroupByRepository }) },
       ],
     },
-    {
-      label: 'Configure Layout',
-      icon: 'general/layout',
-      children: [
-        { separator: true, label: 'Layout' },
-        { label: 'Show Details', checked: s.settings.showDetails, action: () => store.updateSettings({ showDetails: !s.settings.showDetails }) },
-      ],
-    },
+    layoutMenu(),
   ];
   const allChanges = s.details?.changes ?? [];
   const tree = (

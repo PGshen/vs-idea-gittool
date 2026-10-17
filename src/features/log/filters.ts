@@ -17,12 +17,16 @@ export interface LogFilters {
   follow?: boolean;
   /** "Show History for Selection": `git log -L start,end:path`. */
   lines?: { path: string; start: number; end: number };
+  /** Multi-repository log: roots to show. Empty or missing = all roots (IntelliJ "Roots" in the Paths filter). */
+  roots?: string[];
 }
 
 export interface LogOptions {
   sort: 'topo' | 'date';
   firstParent: boolean;
   noMerges?: boolean;
+  /** Graph Options > Collapse Linear Branches. */
+  collapseLinear?: boolean;
 }
 
 export const EMPTY_FILTERS: LogFilters = { branches: [], users: [], paths: [], text: '', regex: false, matchCase: false };
@@ -59,6 +63,45 @@ export function logArgs(f: LogFilters, o: LogOptions): string[] {
   args.push('--');
   if (!f.lines) args.push(...f.paths);
   return args;
+}
+
+/** Minimal view of a repository needed to translate filters. */
+export interface RepoLike {
+  root: string;
+  refs: { name: string; fullName: string }[];
+}
+
+/**
+ * Filters for one repository of a multi-repository log, or undefined when the repository shows nothing.
+ * Branch items that do not exist in the repository are dropped (IntelliJ applies the branch filter per root).
+ * Absolute paths are made relative to the repository; relative paths belong to `primaryRoot`.
+ */
+export function filtersForRepo(f: LogFilters, repo: RepoLike, primaryRoot: string): LogFilters | undefined {
+  if (f.roots?.length && !f.roots.includes(repo.root)) return undefined;
+  let branches = f.branches;
+  if (branches.length) {
+    branches = branches.filter(b => b === 'HEAD' || /\.\.|[\^~]/.test(b) || HASH_RE.test(b) || repo.refs.some(r => r.name === b || r.fullName === b));
+    if (!branches.length) return undefined;
+  }
+  let paths = f.paths;
+  if (paths.length) {
+    const norm = (p: string) => p.replace(/\\/g, '/').replace(/\/$/, '');
+    const root = norm(repo.root);
+    paths = paths
+      .map(p => {
+        const abs = isAbsolute(p) ? norm(p) : repo.root === primaryRoot ? `${root}/${p}` : undefined;
+        if (!abs) return undefined;
+        if (abs === root) return '.';
+        return abs.startsWith(root + '/') ? abs.slice(root.length + 1) : undefined;
+      })
+      .filter((p): p is string => p !== undefined);
+    if (!paths.length) return undefined;
+  }
+  return { ...f, branches, paths };
+}
+
+function isAbsolute(p: string) {
+  return p.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(p);
 }
 
 /** Short description used in the tab title ("Log: master"). */

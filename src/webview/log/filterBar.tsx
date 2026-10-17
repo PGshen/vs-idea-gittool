@@ -200,7 +200,33 @@ function pathsMenu(): MenuEntry[] {
     entries.push({ separator: true, label: 'Recent' });
     for (const r of rec) entries.push({ label: r.join(', '), action: () => setFilter({ paths: r }) });
   }
+  if (store.init.multi) {
+    // Roots of the multi-root log (VcsLogStructureFilter roots). Shown roots are checked.
+    const all = store.repos.map(r => r.root);
+    const shown = store.filters.roots?.length ? store.filters.roots : all;
+    entries.push({ separator: true, label: 'Roots' });
+    for (const r of store.repos) {
+      const on = shown.includes(r.root);
+      entries.push({
+        label: r.name,
+        checked: on,
+        hint: r.root,
+        action: () => {
+          const next = on ? shown.filter(x => x !== r.root) : [...shown, r.root];
+          if (!next.length) return;
+          setFilter({ roots: next.length === all.length ? [] : next });
+        },
+      });
+    }
+  }
   return entries;
+}
+
+function pathsText(f: LogFiltersDto): string | undefined {
+  const names = (f.roots ?? []).map(root => store.repos.find(r => r.root === root)?.name ?? root);
+  const paths = f.paths.map(p => (p.startsWith('/') || /^[a-zA-Z]:/.test(p) ? p.slice(p.replace(/\\/g, '/').lastIndexOf('/') + 1) : p));
+  const all = [...names, ...paths];
+  return all.length ? all.join(', ') : undefined;
 }
 
 function dateText(f: LogFiltersDto) {
@@ -237,11 +263,11 @@ export function FilterBar({ onGoTo }: { onGoTo: () => void }) {
         {!history && <FilterChip name="User" tip="Filter by User" value={f.users.length ? f.users.join(', ') : undefined} onOpen={async el => showMenu(await userMenu(), anchorBelow(el))} onClear={() => setFilter({ users: [] })} />}
         {!history && <FilterChip name="Date" tip="Filter by Date" value={dateText(f)} onOpen={el => showMenu(dateMenu(), anchorBelow(el))} onClear={() => setFilter({ since: undefined, until: undefined })} />}
         {!history && (
-          <FilterChip name="Paths" tip="Filter by Paths" value={f.paths.length ? f.paths.join(', ') : undefined} onOpen={el => showMenu(pathsMenu(), anchorBelow(el))} onClear={() => setFilter({ paths: [] })} />
+          <FilterChip name="Paths" tip="Filter by Paths" value={pathsText(f)} onOpen={el => showMenu(pathsMenu(), anchorBelow(el))} onClear={() => setFilter({ paths: [], roots: [] })} />
         )}
         {!history && (
           <span ref={graphRef}>
-            <ActionButton icon="vcslog/intelliSort" tip="Graph Options" toggled={s.options.sort !== 'date' || s.options.firstParent || !!s.options.noMerges} menu={graphOptionsMenu} />
+            <ActionButton icon="vcslog/intelliSort" tip="Graph Options" toggled={s.options.sort !== 'date' || s.options.firstParent || !!s.options.noMerges || !!s.options.collapseLinear} menu={graphOptionsMenu} />
           </span>
         )}
         {!history && <span class="toolbar-separator" />}

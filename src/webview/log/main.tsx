@@ -7,6 +7,7 @@ import { Icon } from '../lib/icons';
 import { call, on, send } from '../lib/rpc';
 import { BranchesPanel } from './branches';
 import { RightPanel } from './changes';
+import { DiffPreview } from './diffView';
 import { FilterBar } from './filterBar';
 import { updateGraphTheme } from './graph';
 import { REF_MASK } from './refs';
@@ -87,31 +88,40 @@ function CompareBanner() {
 
 function OperationBanner() {
   const s = useStore();
-  const op = s.head.operation;
-  if (op === 'none' || s.init.mode !== 'log') return null;
+  if (s.init.mode !== 'log') return null;
+  // In a multi-root log every repository with an ongoing operation gets a banner.
+  const repos = s.init.multi ? s.repos.filter(r => r.head.operation !== 'none') : s.head.operation !== 'none' ? [{ root: s.root, name: '', head: s.head }] : [];
   const names: Record<string, string> = { rebase: 'Rebasing', merge: 'Merging', 'cherry-pick': 'Cherry-picking', revert: 'Reverting', bisect: 'Bisecting', am: 'Applying patches' };
   return (
-    <div class="banner warning">
-      <span>
-        {names[op] ?? op} {s.currentBranch ? `'${s.currentBranch}'` : ''} is in progress
-      </span>
-      <span class="spacer" />
-      {op !== 'bisect' && (
-        <>
-          <span class="link" onClick={() => send('command', { id: 'rebased.continueOperation', args: { root: s.root } })}>
-            Continue
-          </span>
-          {op === 'rebase' && (
-            <span class="link" onClick={() => send('command', { id: 'rebased.skipCommit', args: { root: s.root } })}>
-              Skip
+    <>
+      {repos.map(r => {
+        const op = r.head.operation;
+        const branch = r.head.detached ? undefined : r.head.branch;
+        return (
+          <div class="banner warning" key={r.root}>
+            <span>
+              {names[op] ?? op} {branch ? `'${branch}'` : ''} is in progress{s.init.multi ? ` in ${r.name}` : ''}
             </span>
-          )}
-          <span class="link" onClick={() => send('command', { id: 'rebased.abortOperation', args: { root: s.root } })}>
-            Abort
-          </span>
-        </>
-      )}
-    </div>
+            <span class="spacer" />
+            {op !== 'bisect' && (
+              <>
+                <span class="link" onClick={() => send('command', { id: 'rebased.continueOperation', args: { root: r.root } })}>
+                  Continue
+                </span>
+                {op === 'rebase' && (
+                  <span class="link" onClick={() => send('command', { id: 'rebased.skipCommit', args: { root: r.root } })}>
+                    Skip
+                  </span>
+                )}
+                <span class="link" onClick={() => send('command', { id: 'rebased.abortOperation', args: { root: r.root } })}>
+                  Abort
+                </span>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </>
   );
 }
 
@@ -150,17 +160,34 @@ function App() {
       <OperationBanner />
       <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {goTo && <GoTo onClose={() => setGoTo(false)} />}
-        <LogTable />
+        {settings.showDiffPreview && settings.diffPreviewLocation === 'bottom' ? (
+          <Split vertical persistKey="diffBottom" initial={settings.diffPreviewSize} second min={80}>
+            <LogTable />
+            <DiffPreview />
+          </Split>
+        ) : (
+          <LogTable />
+        )}
       </div>
     </div>
   );
 
-  const main = (
+  const withRight = (
     <Split persistKey="right" initial={settings.rightWidth} second min={160}>
       {center}
       <RightPanel />
     </Split>
   );
+  // Diff Preview Location: Right puts the preview next to the changes browser.
+  const main =
+    settings.showDiffPreview && settings.diffPreviewLocation === 'right' ? (
+      <Split persistKey="diffRight" initial={Math.max(320, settings.diffPreviewSize)} second min={200}>
+        {withRight}
+        <DiffPreview />
+      </Split>
+    ) : (
+      withRight
+    );
 
   return (
     <div class="log-root">

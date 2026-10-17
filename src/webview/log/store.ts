@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { DetailsResult, LogFiltersDto, LogInit, LogOptionsDto, LogUiSettings, RowData, RowsResult } from '../../shared/logProtocol';
-import type { Ref } from '../../shared/types';
+import type { DetailsResult, LogFiltersDto, LogInit, LogOptionsDto, LogRepo, LogUiSettings, RefreshEvent, RowData, RowsResult, SignatureInfo } from '../../shared/logProtocol';
+import type { Change, Ref } from '../../shared/types';
 import { boot, call, on } from '../lib/rpc';
 
 const CHUNK = 200;
@@ -13,7 +13,18 @@ class LogStore {
   options: LogOptionsDto = this.init.options;
   refs: Ref[] = this.init.refs;
   head = this.init.head;
+  repos: LogRepo[] = this.init.repos;
   title = this.init.title;
+  /** Generation of the host model the cached rows belong to. */
+  modelGen: number | undefined;
+  /** GPG signature per hash (GPG Signature column). */
+  signatures = new Map<string, SignatureInfo>();
+  /** Not Cherry-Picked Commits highlighter: compared branch and the commits not picked yet. */
+  cherryPick: { branch: string; nonPicked?: Set<string> } | undefined;
+  /** Show My Branches: full ref names (prefixed with root and NUL in a multi-root log). */
+  myBranches: Set<string> | undefined;
+  /** File shown in the diff preview. */
+  previewChange: Change | undefined;
   total = 0;
   done = false;
   error: string | undefined;
@@ -48,11 +59,14 @@ class LogStore {
   }
 
   async start() {
-    on('refresh', async (d: { refs: Ref[]; head: LogInit['head']; total: number; done: boolean }) => {
+    on('refresh', async (d: RefreshEvent) => {
       this.refs = d.refs;
       this.head = d.head;
+      this.repos = d.repos;
       const keep = [...this.selection];
-      this.resetRows(d.total, d.done);
+      this.resetRows(d.total, d.done, d.gen);
+      if (this.cherryPick) void this.loadCherryPicked(this.cherryPick.branch);
+      if (this.myBranches) void this.loadMyBranches();
       await this.ensureRows(0, CHUNK);
       // Keep the selection on the same commits when they are still loaded.
       this.reselect(keep);
@@ -63,6 +77,11 @@ class LogStore {
     });
     on('settings', (s: LogUiSettings) => {
       this.settings = s;
+      this.emit();
+    });
+    on('optionsChanged', (d: { options: LogOptionsDto; total: number; done: boolean; gen: number }) => {
+      this.options = d.options;
+      this.resetRows(d.total, d.done, d.gen);
       this.emit();
     });
     on('filtersReset', (d: { filters: LogFiltersDto }) => {
@@ -95,8 +114,9 @@ class LogStore {
     void this.loadDetails();
   }
 
-  resetRows(total: number, done: boolean) {
+  resetRows(total: number, done: boolean, modelGen?: number) {
     this.generation++;
+    this.modelGen = modelGen;
     this.rows = new Map();
     this.pending.clear();
     this.total = total;
@@ -123,6 +143,9 @@ class LogStore {
         call<RowsResult>('rows', { start: c * CHUNK, count: CHUNK })
           .then(res => {
             if (gen !== this.generation) return;
+            // Rows of another host model generation (a refresh happened meanwhile) must not be mixed in.
+            if (this.modelGen === undefined) this.modelGen = res.gen;
+            else if (res.gen !== this.modelGen) return;
             res.rows.forEach((r, i) => this.rows.set(res.start + i, r));
             this.total = res.total;
             this.done = res.done;
@@ -145,9 +168,10 @@ class LogStore {
     this.loading = true;
     this.resetRows(0, false);
     this.emit();
-    const res = await call<{ total: number; done: boolean; title: string }>('setFilters', { filters, options });
+    const res = await call<{ total: number; done: boolean; title: string; gen: number }>('setFilters', { filters, options });
     this.title = res.title;
-    this.resetRows(res.total, res.done);
+    this.resetRows(res.total, res.done, res.gen);
+    if (this.cherryPick && !(filters.branches.length === 1 && filters.branches[0] === this.cherryPick.branch)) this.cherryPick = undefined;
     await this.ensureRows(0, CHUNK);
     this.loading = false;
     const keep = [...this.selection];
@@ -155,9 +179,60 @@ class LogStore {
   }
 
   updateSettings(patch: Partial<LogUiSettings>) {
+    const longEdges = 'showLongEdges' in patch && patch.showLongEdges !== this.settings.showLongEdges;
     this.settings = { ...this.settings, ...patch };
-    void call('saveSettings', this.settings);
+    const saved = call('saveSettings', this.settings);
+    if (longEdges) {
+      // Graph rows are laid out on the host with the long edge setting: reload them.
+      void saved.then(() => {
+        this.resetRows(this.total, this.done, this.modelGen);
+        void this.ensureRows(Math.max(0, this.lead - CHUNK), this.lead + CHUNK);
+      });
+    }
+    if ('columns' in patch && this.settings.columns.signature) void this.loadSignatures([...this.rows.values()].map(r => r.h));
     this.emit();
+  }
+
+  private sigPending = new Set<string>();
+
+  /** Loads GPG signatures of the given commits (GPG Signature column). */
+  async loadSignatures(hashes: string[]) {
+    const missing = hashes.filter(h => !this.signatures.has(h) && !this.sigPending.has(h));
+    if (!missing.length) return;
+    missing.forEach(h => this.sigPending.add(h));
+    try {
+      const res = await call<Record<string, SignatureInfo>>('signatures', missing);
+      for (const [h, info] of Object.entries(res)) this.signatures.set(h, info);
+    } finally {
+      missing.forEach(h => this.sigPending.delete(h));
+      this.emit();
+    }
+  }
+
+  async loadCherryPicked(branch: string) {
+    this.cherryPick = { branch };
+    this.emit();
+    const res = await call<{ nonPicked: string[] }>('cherryPicked', { branch });
+    if (this.cherryPick?.branch === branch) {
+      this.cherryPick = { branch, nonPicked: new Set(res.nonPicked) };
+      this.emit();
+    }
+  }
+
+  async loadMyBranches() {
+    this.myBranches = new Set(await call<string[]>('myBranches'));
+    this.emit();
+  }
+
+  /** Repository of a row (multi-root log). */
+  repoOf(r: RowData): LogRepo | undefined {
+    return r.r !== undefined ? this.repos[r.r] : undefined;
+  }
+
+  /** Root used for actions on a commit. */
+  rootOf(hash: string): string {
+    for (const r of this.rows.values()) if (r.h === hash) return this.repoOf(r)?.root ?? this.root;
+    return this.root;
   }
 
   async selectIndex(i: number, opts: { hash?: string; shift?: boolean; toggle?: boolean; noScroll?: boolean } = {}) {
