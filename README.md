@@ -105,6 +105,31 @@ sh scripts/preview-vscode.sh <dir> dark|light                              # scr
 xvfb-run -a node scripts/e2e.mjs test/e2e-log.mjs                          # run a scenario in real VS Code
 ```
 
+### Packaging
+
+Requires Node.js 20 or later (needed by `@vscode/vsce`) and npm.
+
+```
+npm install                 # once, installs the build tools (esbuild, TypeScript, vsce)
+npm test                    # optional: unit tests before packaging
+npm run package             # builds ideagittool-<version>.vsix in the repository root
+```
+
+`npm run package` merges `contrib/*.json` into `package.json`, bundles `src/` into `dist/` with minification, and runs
+`vsce package`. The version in the file name comes from `"version"` in `package.json`.
+
+To publish a new version:
+
+1. Change `"version"` in `package.json` and add an entry to `CHANGELOG.md`.
+2. Run `npm run package`.
+3. Copy the result to `releases/` (the only place where `.vsix` files are committed):
+   ```
+   cp ideagittool-<version>.vsix releases/
+   ```
+4. Commit, then tag the release: `git tag -a v<version> -m "IdeaGitTool <version>"` and `git push origin v<version>`.
+
+Install the package with `code --install-extension ideagittool-<version>.vsix` (see Installation).
+
 See ARCHITECTURE.md for the code layout.
 
 ## License

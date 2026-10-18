@@ -123,6 +123,31 @@ sh scripts/preview-vscode.sh <dir> dark|light                              # 截
 xvfb-run -a node scripts/e2e.mjs test/e2e-log.mjs                          # 在真实 VS Code 中运行一个测试场景
 ```
 
+### 打包
+
+需要 Node.js 20 或更高版本（`@vscode/vsce` 的要求）和 npm。
+
+```
+npm install                 # 首次执行，安装构建工具（esbuild、TypeScript、vsce）
+npm test                    # 可选：打包前跑一遍单元测试
+npm run package             # 在仓库根目录生成 ideagittool-<version>.vsix
+```
+
+`npm run package` 会依次：把 `contrib/*.json` 合并进 `package.json`，把 `src/` 压缩打包到 `dist/`，再执行 `vsce package`。
+文件名里的版本号取自 `package.json` 的 `"version"` 字段。
+
+发布新版本的步骤：
+
+1. 修改 `package.json` 里的 `"version"`，并在 `CHANGELOG.md` 里补充这一版的改动。
+2. 运行 `npm run package`。
+3. 把生成的安装包复制到 `releases/` 目录（仓库只在这个目录下提交 `.vsix` 文件）：
+   ```
+   cp ideagittool-<version>.vsix releases/
+   ```
+4. 提交代码，然后打版本标签：`git tag -a v<version> -m "IdeaGitTool <version>"`，再 `git push origin v<version>`。
+
+安装方法：`code --install-extension ideagittool-<version>.vsix`（详见"安装"一节）。
+
 代码结构见 ARCHITECTURE.md。
 
 ## 许可证
