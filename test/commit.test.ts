@@ -11,7 +11,7 @@ import { Change } from '../src/shared/types';
 const opts = { amend: false, signOff: false, gpgSign: false, runHooks: true };
 
 function makeRepo() {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'rebased-commit-test-')));
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ideagittool-commit-test-')));
   const sh = (c: string) => execSync(c, { cwd: dir, stdio: 'pipe' }).toString();
   sh('git init -q -b master && git config user.name tester && git config user.email t@e.st && git config commit.gpgsign false');
   fs.writeFileSync(path.join(dir, 'a.txt'), 'a\n');

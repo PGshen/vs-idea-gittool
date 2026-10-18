@@ -24,7 +24,7 @@ function refItems(repo: Repository) {
 }
 
 export function registerCompare(ctx: Ctx, openTab: (repo: Repository, state: Partial<LogTabState>) => Promise<unknown>) {
-  ctx.command('rebased.compareWithRevision', async (arg?: any) => {
+  ctx.command('ideagittool.compareWithRevision', async (arg?: any) => {
     const f = await fileFromArg(ctx, arg);
     if (!f) return;
     const out = await f.repo.execText(['log', '--follow', '--name-only', '--format=%x01%H%x00%s%x00%an%x00%at', '-n', '500', 'HEAD', '--', f.path], { quiet: true });
@@ -40,7 +40,7 @@ export function registerCompare(ctx: Ctx, openTab: (repo: Repository, state: Par
     if (picked) await openChangeDiff({ root: f.repo.root, path: f.path, oldPath: picked.path !== f.path ? picked.path : undefined, status: 'M' }, picked.hash, 'WORKTREE');
   });
 
-  ctx.command('rebased.compareWithBranch', async (arg?: any) => {
+  ctx.command('ideagittool.compareWithBranch', async (arg?: any) => {
     const f = await fileFromArg(ctx, arg);
     if (!f) return;
     const picked = await vscode.window.showQuickPick(refItems(f.repo), { title: `Compare ${f.path} with Branch or Tag`, placeHolder: 'Select branch or tag' });
@@ -49,7 +49,7 @@ export function registerCompare(ctx: Ctx, openTab: (repo: Repository, state: Par
     await openChangeDiff({ root: f.repo.root, path: f.path, status: exists ? 'M' : 'A' }, picked.ref, 'WORKTREE');
   });
 
-  ctx.command('rebased.compareRefs', async (arg?: { root?: string; ref?: string; with?: string }) => {
+  ctx.command('ideagittool.compareRefs', async (arg?: { root?: string; ref?: string; with?: string }) => {
     await ctx.repos.ready();
     const repo = arg?.root ? ctx.repos.get(arg.root) : await ctx.repos.pick();
     if (!repo) return;
@@ -63,7 +63,7 @@ export function registerCompare(ctx: Ctx, openTab: (repo: Repository, state: Par
     await openTab(repo, { mode: 'compare', compare: { ref, with: other }, filters: { ...EMPTY_FILTERS, branches: [`${other}..${ref}`] } });
   });
 
-  ctx.command('rebased.compareRefs.files', async (arg: { root: string; ref: string; with: string }) => {
+  ctx.command('ideagittool.compareRefs.files', async (arg: { root: string; ref: string; with: string }) => {
     const repo = ctx.repos.get(arg.root);
     if (!repo) return;
     const out = await repo.execText(['diff', '--name-status', '-z', '-M', arg.with, arg.ref, '--'], { quiet: true });
@@ -75,7 +75,7 @@ export function registerCompare(ctx: Ctx, openTab: (repo: Repository, state: Par
     await openMultiDiff(`${arg.with} ↔ ${arg.ref}`, changes, () => arg.with, () => arg.ref);
   });
 
-  ctx.command('rebased.showCommitDiff', async (arg: { root: string; hash: string; path?: string }) => {
+  ctx.command('ideagittool.showCommitDiff', async (arg: { root: string; hash: string; path?: string }) => {
     const repo = ctx.repos.get(arg.root);
     if (!repo) return;
     const parents = (await repo.execText(['rev-parse', `${arg.hash}^@`], { allowFailure: true, quiet: true })).split('\n').filter(Boolean);
@@ -92,7 +92,7 @@ export function registerCompare(ctx: Ctx, openTab: (repo: Repository, state: Par
     await openMultiDiff(arg.hash.slice(0, 8), changes, () => leftRev, () => arg.hash);
   });
 
-  ctx.command('rebased.showRepositoryAtRevision', async (arg: { root: string; hash: string }) => {
+  ctx.command('ideagittool.showRepositoryAtRevision', async (arg: { root: string; hash: string }) => {
     const repo = ctx.repos.get(arg.root);
     if (!repo) return;
     const out = await repo.execText(['ls-tree', '-r', '-z', '--name-only', arg.hash], { quiet: true });

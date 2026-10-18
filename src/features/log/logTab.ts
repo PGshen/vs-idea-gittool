@@ -27,7 +27,7 @@ import { EMPTY_FILTERS, filtersTitle, LogFilters, LogOptions } from './filters';
 import { addCommitsToRemoteBranch, dropSelectedChanges, EditResult, extractSelectedChanges, InMemoryError, MergeConflictError, undoEdit } from './inMemory';
 import { LogModel } from './model';
 
-const SETTINGS_KEY = 'rebased.log.ui';
+const SETTINGS_KEY = 'ideagittool.log.ui';
 
 export function getLogSettings(ctx: Ctx): LogUiSettings {
   const s = ctx.extension.globalState.get<Partial<LogUiSettings>>(SETTINGS_KEY, {});
@@ -151,7 +151,7 @@ export class LogTab implements vscode.Disposable {
       pickDate: (p: { which: 'since' | 'until' }) => this.pickDate(p.which),
       pickBranches: () => this.pickBranches(),
       copy: (text: string) => vscode.env.clipboard.writeText(text),
-      newTab: (p?: { filters?: LogFilters }) => vscode.commands.executeCommand('rebased.log.newTab', { root: this.repo.root, filters: p?.filters, multi: this.state.multi }),
+      newTab: (p?: { filters?: LogFilters }) => vscode.commands.executeCommand('ideagittool.log.newTab', { root: this.repo.root, filters: p?.filters, multi: this.state.multi }),
       input: (p: { title: string; prompt?: string; value?: string }) => vscode.window.showInputBox({ title: p.title, prompt: p.prompt, value: p.value }),
       refreshRepo: () => Promise.all(this.model.repositories.map(r => r.refresh())),
       openUrl: (url: string) => vscode.env.openExternal(vscode.Uri.parse(url)),
@@ -397,7 +397,7 @@ export class LogTab implements vscode.Disposable {
         const j = await this.model.find(hash);
         return j >= 0 ? { index: j, hash } : undefined;
       }
-      if (pick === 'View in new tab') await vscode.commands.executeCommand('rebased.log.selectCommit', { root: this.repo.root, hash, newTab: true });
+      if (pick === 'View in new tab') await vscode.commands.executeCommand('ideagittool.log.selectCommit', { root: this.repo.root, hash, newTab: true });
       return undefined;
     }
     return { index: i, hash: this.model.rows[i].commit.hash };
@@ -477,16 +477,16 @@ export class LogTab implements vscode.Disposable {
       case 'copy':
         return vscode.env.clipboard.writeText(ordered.join(' '));
       case 'createPatch':
-        return run('rebased.createPatch', { root, hashes: ordered });
+        return run('ideagittool.createPatch', { root, hashes: ordered });
       case 'cherryPick':
         // Oldest first.
-        return run('rebased.cherryPick', { root, hashes: [...ordered].reverse() });
+        return run('ideagittool.cherryPick', { root, hashes: [...ordered].reverse() });
       case 'checkoutRevision':
-        return run('rebased.checkoutRevision', { root, hash: ordered[0] });
+        return run('ideagittool.checkoutRevision', { root, hash: ordered[0] });
       case 'checkoutBranch':
-        return run('rebased.branch.checkout', { root, name: arg, type: arg?.includes('/') && repo.refs.some(r => r.type === 'remote' && r.name === arg) ? 'remote' : 'local' });
+        return run('ideagittool.branch.checkout', { root, name: arg, type: arg?.includes('/') && repo.refs.some(r => r.type === 'remote' && r.name === arg) ? 'remote' : 'local' });
       case 'showRepositoryAtRevision':
-        return run('rebased.showRepositoryAtRevision', { root, hash: ordered[0] });
+        return run('ideagittool.showRepositoryAtRevision', { root, hash: ordered[0] });
       case 'compareVersions': {
         const [a, b] = [ordered[ordered.length - 1], ordered[0]];
         return this.compareCommits(repo, a, b);
@@ -494,35 +494,35 @@ export class LogTab implements vscode.Disposable {
       case 'compareWithLocal':
         return this.compareWithLocal(repo, ordered[0]);
       case 'reset':
-        return run('rebased.resetHead', { root, hash: ordered[0] });
+        return run('ideagittool.resetHead', { root, hash: ordered[0] });
       case 'revert':
-        return run('rebased.revertCommits', { root, hashes: ordered });
+        return run('ideagittool.revertCommits', { root, hashes: ordered });
       case 'undo':
-        return run('rebased.undoCommit', { root, hash: ordered[ordered.length - 1] });
+        return run('ideagittool.undoCommit', { root, hash: ordered[ordered.length - 1] });
       case 'reword':
-        return run('rebased.rewordCommit', { root, hash: ordered[0] });
+        return run('ideagittool.rewordCommit', { root, hash: ordered[0] });
       case 'fixup':
-        return run('rebased.fixupCommit', { root, hash: ordered[0] });
+        return run('ideagittool.fixupCommit', { root, hash: ordered[0] });
       case 'squashInto':
-        return run('rebased.fixupCommit', { root, hash: ordered[0], squash: true });
+        return run('ideagittool.fixupCommit', { root, hash: ordered[0], squash: true });
       case 'drop':
-        return run('rebased.dropCommits', { root, hashes: ordered });
+        return run('ideagittool.dropCommits', { root, hashes: ordered });
       case 'squash':
-        return run('rebased.squashCommits', { root, hashes: ordered });
+        return run('ideagittool.squashCommits', { root, hashes: ordered });
       case 'interactiveRebase':
-        return run('rebased.interactiveRebase', { root, hash: ordered[0] });
+        return run('ideagittool.interactiveRebase', { root, hash: ordered[0] });
       case 'pushUpTo':
-        return run('rebased.push', { root, upTo: ordered[0] });
+        return run('ideagittool.push', { root, upTo: ordered[0] });
       case 'addToRemote':
         return this.addToRemoteBranch(repo, [...ordered].reverse());
       case 'newBranch':
-        return run('rebased.createBranch', { root, startPoint: ordered[0] });
+        return run('ideagittool.createBranch', { root, startPoint: ordered[0] });
       case 'newTag':
-        return run('rebased.createTag', { root, hash: ordered[0] });
+        return run('ideagittool.createTag', { root, hash: ordered[0] });
       case 'showDiff':
         return this.showCommitDiff(ordered);
       case 'showInLog':
-        return run('rebased.log.selectCommit', { root, hash: ordered[0] });
+        return run('ideagittool.log.selectCommit', { root, hash: ordered[0] });
       case 'historyGet':
       case 'historyShowFile':
       case 'historyCompareWithLocal':
@@ -612,7 +612,7 @@ export class LogTab implements vscode.Disposable {
       case 'historyCompareWithLocal':
         return openChangeDiff({ ...change, oldPath: info.path !== file ? info.path : undefined, path: file, status: 'M' }, hash, 'WORKTREE');
       case 'historyAnnotate':
-        return vscode.commands.executeCommand('rebased.annotateRevision', { root, hash, path: info.path });
+        return vscode.commands.executeCommand('ideagittool.annotateRevision', { root, hash, path: info.path });
       case 'historyDiff': {
         if (ordered.length >= 2) {
           const older = ordered[ordered.length - 1];
@@ -677,7 +677,7 @@ export class LogTab implements vscode.Disposable {
         await repo.refresh();
         if (r.exitCode !== 0) {
           void vscode.window.showWarningMessage(`${id === 'revertSelected' ? 'Revert' : 'Cherry-pick'} of selected changes finished with conflicts: ${r.stderr.trim()}`);
-          await vscode.commands.executeCommand('rebased.resolveConflicts', { root });
+          await vscode.commands.executeCommand('ideagittool.resolveConflicts', { root });
         } else void vscode.window.showInformationMessage(id === 'revertSelected' ? 'Selected changes reverted' : 'Selected changes applied');
         return;
       }
@@ -686,7 +686,7 @@ export class LogTab implements vscode.Disposable {
       case 'extractSelected':
         return this.extractSelected(repo, hashes[0], changes);
       case 'createPatch':
-        return vscode.commands.executeCommand('rebased.createPatch', { root, hashes, changes });
+        return vscode.commands.executeCommand('ideagittool.createPatch', { root, hashes, changes });
       case 'get': {
         const answer = await vscode.window.showWarningMessage(`Get ${changes.length === 1 ? `'${changes[0].path}'` : `${changes.length} files`} from revision ${right.slice(0, 8)}? Local changes will be overwritten.`, { modal: true }, 'Get');
         if (answer !== 'Get') return;
@@ -698,7 +698,7 @@ export class LogTab implements vscode.Disposable {
         return;
       }
       case 'historyUpToHere':
-        return vscode.commands.executeCommand('rebased.showFileHistory', { root, path: changes[0].path, revision: right });
+        return vscode.commands.executeCommand('ideagittool.showFileHistory', { root, path: changes[0].path, revision: right });
       case 'copyPath':
         return vscode.env.clipboard.writeText(changes.map(c => c.path).join('\n'));
       case 'copyAbsolutePath':
@@ -763,7 +763,7 @@ export class LogTab implements vscode.Disposable {
 
   private branchAction(id: string, name: string, type: string, root?: string) {
     if (id === 'filter') return; // handled in the webview
-    return vscode.commands.executeCommand(`rebased.${type === 'tag' ? 'tag' : 'branch'}.${id}`, { root: root ?? this.repo.root, name, type });
+    return vscode.commands.executeCommand(`ideagittool.${type === 'tag' ? 'tag' : 'branch'}.${id}`, { root: root ?? this.repo.root, name, type });
   }
 
   private async pickPaths(): Promise<string[] | undefined> {

@@ -22,7 +22,7 @@ export interface PatchRequest {
   produce(keys: string[], opts: { reverse: boolean; basePath: string }): Promise<string>;
 }
 
-const STATE_KEY = 'rebased.createPatch.settings';
+const STATE_KEY = 'ideagittool.createPatch.settings';
 
 let memento: vscode.Memento | undefined;
 

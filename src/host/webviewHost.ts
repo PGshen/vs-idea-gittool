@@ -3,11 +3,11 @@ import { GitError } from '../git/exec';
 
 export type Handler = (params: any) => unknown | Promise<unknown>;
 
-/** Theme class for the webview body, from the `rebased.appearance` setting. */
+/** Theme class for the webview body, from the `ideagittool.appearance` setting. */
 export function themeData() {
   const kind = vscode.window.activeColorTheme.kind;
   const dark = kind === vscode.ColorThemeKind.Dark || kind === vscode.ColorThemeKind.HighContrast;
-  const appearance = vscode.workspace.getConfiguration('rebased').get<string>('appearance', 'vscode');
+  const appearance = vscode.workspace.getConfiguration('ideagittool').get<string>('appearance', 'vscode');
   const themeClass = appearance === 'vscode' ? 'ij-vscode' : dark ? 'ij-dark' : 'ij-light';
   return { themeClass, dark };
 }
@@ -34,7 +34,7 @@ export class WebviewConnection implements vscode.Disposable {
     readonly webview: vscode.Webview,
     private readonly bundle: string,
     private readonly initial: () => unknown,
-    private readonly title = 'Rebased',
+    private readonly title = 'IdeaGitTool',
   ) {
     webview.options = {
       enableScripts: true,
@@ -44,7 +44,7 @@ export class WebviewConnection implements vscode.Disposable {
     vscode.window.onDidChangeActiveColorTheme(() => this.post('theme', themeData()), null, this.disposables);
     vscode.workspace.onDidChangeConfiguration(
       e => {
-        if (e.affectsConfiguration('rebased.appearance')) this.post('theme', themeData());
+        if (e.affectsConfiguration('ideagittool.appearance')) this.post('theme', themeData());
       },
       null,
       this.disposables,
@@ -137,6 +137,6 @@ export function showError(e: unknown, title?: string) {
   const msg = e instanceof GitError ? e.message : e instanceof Error ? e.message : String(e);
   const text = title ? `${title}: ${msg}` : msg;
   void vscode.window.showErrorMessage(text, 'Show Git Console').then(a => {
-    if (a) void vscode.commands.executeCommand('rebased.showConsole');
+    if (a) void vscode.commands.executeCommand('ideagittool.showConsole');
   });
 }

@@ -29,7 +29,7 @@ export class WorktreesView implements vscode.TreeDataProvider<Node>, vscode.Disp
   readonly view: vscode.TreeView<Node>;
 
   constructor(private readonly ctx: Ctx) {
-    this.view = vscode.window.createTreeView('rebased.worktrees', { treeDataProvider: this, showCollapseAll: false, canSelectMany: false });
+    this.view = vscode.window.createTreeView('ideagittool.worktrees', { treeDataProvider: this, showCollapseAll: false, canSelectMany: false });
     this.disposables.push(this.view);
     ctx.repos.onDidChangeRepository(e => e.refs && this.refresh(), null, this.disposables);
     ctx.repos.onDidChangeRepositories(() => this.refresh(), null, this.disposables);
@@ -67,7 +67,7 @@ export class WorktreesView implements vscode.TreeDataProvider<Node>, vscode.Disp
     const list = await this.worktrees(node.repo);
     // IntelliJ shows "No linked worktrees" when only the main worktree exists.
     const linked = list.filter(w => !w.main);
-    void vscode.commands.executeCommand('setContext', 'rebased.hasLinkedWorktrees', linked.length > 0 || repos.length > 1);
+    void vscode.commands.executeCommand('setContext', 'ideagittool.hasLinkedWorktrees', linked.length > 0 || repos.length > 1);
     if (linked.length === 0 && repos.length <= 1) return [];
     return list.map(wt => ({ kind: 'worktree', repo: node!.repo, wt }));
   }
@@ -94,7 +94,7 @@ export class WorktreesView implements vscode.TreeDataProvider<Node>, vscode.Disp
     tip.supportThemeIcons = true;
     item.tooltip = tip;
     item.contextValue = ['worktree', wt.main ? 'main' : 'linked', wt.locked ? 'locked' : 'unlocked', current ? 'current' : ''].join(' ');
-    item.command = { command: 'rebased.worktrees.open', title: 'Open Worktree', arguments: [{ root: repo.root, path: wt.path }] };
+    item.command = { command: 'ideagittool.worktrees.open', title: 'Open Worktree', arguments: [{ root: repo.root, path: wt.path }] };
     if (wt.prunable) item.label = { label: path.basename(wt.path), highlights: [] };
     return item;
   }
@@ -108,7 +108,7 @@ function suggestName(repo: Repository, branch: string) {
   return `${repo.name}-${branch.replace(/^.*\//, '').replace(/[^A-Za-z0-9 _.-]/g, '-')}`;
 }
 
-/** `rebased.worktrees.create {root?, ref?}`: New Worktree… dialog. */
+/** `ideagittool.worktrees.create {root?, ref?}`: New Worktree… dialog. */
 export async function createWorktreeCommand(ctx: Ctx, arg?: RootArg & { ref?: string }, view?: WorktreesView) {
   await ctx.repos.ready();
   const repos = arg?.root ? [await repoFor(ctx, arg)] : ctx.repos.repositories;

@@ -1,37 +1,37 @@
 {
   "configuration": {
     "properties": {
-      "rebased.log.showInEditor": {
+      "ideagittool.log.showInEditor": {
         "type": "boolean",
         "default": true,
-        "description": "Show the log in the editor window (Rebased default). When off, the log is shown in the \"Git\" panel at the bottom, like in JetBrains IDEs."
+        "description": "Show the log in the editor window (IdeaGitTool default). When off, the log is shown in the \"Git\" panel at the bottom, like in JetBrains IDEs."
       },
-      "rebased.log.openOnStartup": {
+      "ideagittool.log.openOnStartup": {
         "type": "boolean",
         "default": true,
         "description": "Open the Git log when a workspace with a Git repository is opened."
       },
-      "rebased.annotate.showAuthor": {
+      "ideagittool.annotate.showAuthor": {
         "type": "boolean",
         "default": true,
         "description": "Annotate with Git Blame: show the author."
       },
-      "rebased.annotate.showDate": {
+      "ideagittool.annotate.showDate": {
         "type": "boolean",
         "default": true,
         "description": "Annotate with Git Blame: show the date."
       },
-      "rebased.annotate.showRevision": {
+      "ideagittool.annotate.showRevision": {
         "type": "boolean",
         "default": false,
         "description": "Annotate with Git Blame: show the revision."
       },
-      "rebased.annotate.preferCommitDate": {
+      "ideagittool.annotate.preferCommitDate": {
         "type": "boolean",
         "default": false,
         "description": "Annotate with Git Blame: show the commit timestamp instead of the author timestamp."
       },
-      "rebased.annotate.names": {
+      "ideagittool.annotate.names": {
         "type": "string",
         "enum": [
           "full",
@@ -43,7 +43,7 @@
         "default": "first",
         "description": "Annotate with Git Blame: how to show author names."
       },
-      "rebased.annotate.colors": {
+      "ideagittool.annotate.colors": {
         "type": "string",
         "enum": [
           "order",
@@ -53,17 +53,17 @@
         "default": "order",
         "description": "Annotate with Git Blame: background colors by commit order (age), by author, or none."
       },
-      "rebased.annotate.ignoreWhitespace": {
+      "ideagittool.annotate.ignoreWhitespace": {
         "type": "boolean",
         "default": false,
         "description": "Annotate with Git Blame: ignore whitespace changes (-w)."
       },
-      "rebased.annotate.detectMovementsWithinFile": {
+      "ideagittool.annotate.detectMovementsWithinFile": {
         "type": "boolean",
         "default": false,
         "description": "Annotate with Git Blame: detect moved lines within the file (-M)."
       },
-      "rebased.annotate.detectMovementsAcrossFiles": {
+      "ideagittool.annotate.detectMovementsAcrossFiles": {
         "type": "boolean",
         "default": false,
         "description": "Annotate with Git Blame: detect lines moved from other files (-C)."
@@ -72,134 +72,134 @@
   },
   "commands": [
     {
-      "command": "rebased.showLog",
+      "command": "ideagittool.showLog",
       "title": "Show Git Log",
-      "category": "Rebased",
+      "category": "IdeaGitTool",
       "icon": "$(git-commit)"
     },
     {
-      "command": "rebased.log.newTab",
+      "command": "ideagittool.log.newTab",
       "title": "Open New Git Log Tab",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.log.selectCommit",
+      "command": "ideagittool.log.selectCommit",
       "title": "Show in Git Log",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.showFileHistory",
+      "command": "ideagittool.showFileHistory",
       "title": "Show History",
-      "category": "Rebased",
+      "category": "IdeaGitTool",
       "icon": "$(history)"
     },
     {
-      "command": "rebased.showHistoryForSelection",
+      "command": "ideagittool.showHistoryForSelection",
       "title": "Show History for Selection",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.annotate",
+      "command": "ideagittool.annotate",
       "title": "Annotate with Git Blame",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.annotateClose",
+      "command": "ideagittool.annotateClose",
       "title": "Close Annotations",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.annotateOptions",
+      "command": "ideagittool.annotateOptions",
       "title": "Annotations View Options",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.annotateRevision",
+      "command": "ideagittool.annotateRevision",
       "title": "Annotate Revision",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.compareWithRevision",
+      "command": "ideagittool.compareWithRevision",
       "title": "Compare with Revision\u2026",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.compareWithBranch",
+      "command": "ideagittool.compareWithBranch",
       "title": "Compare with Branch or Tag\u2026",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.compareRefs",
+      "command": "ideagittool.compareRefs",
       "title": "Compare with Branch\u2026",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.compareRefs.files",
+      "command": "ideagittool.compareRefs.files",
       "title": "Show Files Diff",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.showCommitDiff",
+      "command": "ideagittool.showCommitDiff",
       "title": "Show Commit Diff",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.showRepositoryAtRevision",
+      "command": "ideagittool.showRepositoryAtRevision",
       "title": "Show Repository at Revision",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.copyText",
+      "command": "ideagittool.copyText",
       "title": "Copy",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     }
   ],
   "views": {
-    "rebased-panel": [
+    "ideagittool-panel": [
       {
         "type": "webview",
-        "id": "rebased.logView",
+        "id": "ideagittool.logView",
         "name": "Log",
-        "when": "rebased.logInPanel"
+        "when": "ideagittool.logInPanel"
       }
     ]
   },
   "menus": {
     "commandPalette": [
       {
-        "command": "rebased.log.selectCommit",
+        "command": "ideagittool.log.selectCommit",
         "when": "false"
       },
       {
-        "command": "rebased.annotateRevision",
+        "command": "ideagittool.annotateRevision",
         "when": "false"
       },
       {
-        "command": "rebased.compareRefs.files",
+        "command": "ideagittool.compareRefs.files",
         "when": "false"
       },
       {
-        "command": "rebased.showCommitDiff",
+        "command": "ideagittool.showCommitDiff",
         "when": "false"
       },
       {
-        "command": "rebased.showRepositoryAtRevision",
+        "command": "ideagittool.showRepositoryAtRevision",
         "when": "false"
       },
       {
-        "command": "rebased.copyText",
+        "command": "ideagittool.copyText",
         "when": "false"
       },
       {
-        "command": "rebased.annotate",
-        "when": "rebased.hasRepository && editorIsOpen && !rebased.annotated"
+        "command": "ideagittool.annotate",
+        "when": "ideagittool.hasRepository && editorIsOpen && !ideagittool.annotated"
       },
       {
-        "command": "rebased.annotateClose",
-        "when": "rebased.annotated"
+        "command": "ideagittool.annotateClose",
+        "when": "ideagittool.annotated"
       },
       {
-        "command": "rebased.showHistoryForSelection",
+        "command": "ideagittool.showHistoryForSelection",
         "when": "editorHasSelection"
       }
     ],
@@ -208,38 +208,38 @@
     "editor/title/context": [],
     "editor/lineNumber/context": [
       {
-        "command": "rebased.annotate",
-        "when": "rebased.hasRepository && !rebased.annotated",
-        "group": "9_rebased"
+        "command": "ideagittool.annotate",
+        "when": "ideagittool.hasRepository && !ideagittool.annotated",
+        "group": "9_ideagittool"
       },
       {
-        "command": "rebased.annotateClose",
-        "when": "rebased.annotated",
-        "group": "9_rebased"
+        "command": "ideagittool.annotateClose",
+        "when": "ideagittool.annotated",
+        "group": "9_ideagittool"
       },
       {
-        "command": "rebased.annotateOptions",
-        "when": "rebased.annotated",
-        "group": "9_rebased"
+        "command": "ideagittool.annotateOptions",
+        "when": "ideagittool.annotated",
+        "group": "9_ideagittool"
       }
     ]
   },
   "keybindings": [
     {
-      "command": "rebased.showLog",
+      "command": "ideagittool.showLog",
       "key": "alt+9",
       "mac": "cmd+9",
-      "when": "rebased.hasRepository"
+      "when": "ideagittool.hasRepository"
     },
     {
-      "command": "rebased.annotate",
+      "command": "ideagittool.annotate",
       "key": "ctrl+alt+shift+a",
-      "when": "editorTextFocus && rebased.hasRepository && !rebased.annotated"
+      "when": "editorTextFocus && ideagittool.hasRepository && !ideagittool.annotated"
     },
     {
-      "command": "rebased.annotateClose",
+      "command": "ideagittool.annotateClose",
       "key": "ctrl+alt+shift+a",
-      "when": "editorTextFocus && rebased.annotated"
+      "when": "editorTextFocus && ideagittool.annotated"
     }
   ]
 }

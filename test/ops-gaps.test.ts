@@ -21,7 +21,7 @@ import {
 
 const env = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' };
 const sh = (cwd: string, cmd: string) => execSync(cmd, { cwd, env, stdio: 'pipe' }).toString();
-const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'rebased-ops-gaps-'));
+const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'ideagittool-ops-gaps-'));
 const subjects = (dir: string) => sh(dir, 'git log --format=%s').trim().split('\n');
 
 async function open(dir: string) {

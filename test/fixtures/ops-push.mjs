@@ -6,14 +6,14 @@ const commits = [
 ];
 export const initial = {
   kind: 'ops.push',
-  title: 'Push Commits to rebased',
+  title: 'Push Commits to ideagittool',
   props: {
-    title: 'Push Commits to rebased',
+    title: 'Push Commits to ideagittool',
     tagsMode: 'none',
     runHooks: true,
     forceAllowed: true,
     repos: [
-      { root: '/r', name: 'rebased', source: 'master', remote: 'origin', target: 'master', remotes: ['origin', 'upstream'], remoteBranches: { origin: ['master', 'dev'] }, commits, isNew: false, hasUpstream: true, checked: true },
+      { root: '/r', name: 'ideagittool', source: 'master', remote: 'origin', target: 'master', remotes: ['origin', 'upstream'], remoteBranches: { origin: ['master', 'dev'] }, commits, isNew: false, hasUpstream: true, checked: true },
     ],
   },
 };
@@ -22,7 +22,7 @@ export async function handle(method) {
     return [
       { root: '/r', path: 'README.md', status: 'M', hash: 'x' },
       { root: '/r', path: 'screenshot.png', status: 'M', hash: 'x' },
-      { root: '/r', path: 'build/src/org/jetbrains/intellij/build/RebasedProperties.kt', status: 'A', hash: 'x' },
+      { root: '/r', path: 'build/src/org/jetbrains/intellij/build/IdeaGitToolProperties.kt', status: 'A', hash: 'x' },
       { root: '/r', path: '.github/workflows/ide_build_and_upload.yml', status: 'D', hash: 'x' },
     ];
   return null;

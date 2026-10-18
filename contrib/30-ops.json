@@ -1,682 +1,682 @@
 {
   "commands": [
     {
-      "command": "rebased.push",
+      "command": "ideagittool.push",
       "title": "Push…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.fetch",
+      "command": "ideagittool.fetch",
       "title": "Fetch",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.pull",
+      "command": "ideagittool.pull",
       "title": "Pull…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.updateProject",
+      "command": "ideagittool.updateProject",
       "title": "Update Project…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.remotes",
+      "command": "ideagittool.remotes",
       "title": "Manage Remotes…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.clone",
+      "command": "ideagittool.clone",
       "title": "Clone…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.init",
+      "command": "ideagittool.init",
       "title": "Create Git Repository…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.unshallow",
+      "command": "ideagittool.unshallow",
       "title": "Unshallow repository",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branches",
+      "command": "ideagittool.branches",
       "title": "Branches…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.createBranch",
+      "command": "ideagittool.createBranch",
       "title": "New Branch…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.merge",
+      "command": "ideagittool.merge",
       "title": "Merge…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.rebase",
+      "command": "ideagittool.rebase",
       "title": "Rebase…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.resetHead",
+      "command": "ideagittool.resetHead",
       "title": "Reset HEAD…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.createTag",
+      "command": "ideagittool.createTag",
       "title": "New Tag…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.createPatch",
+      "command": "ideagittool.createPatch",
       "title": "Create Patch from Local Changes…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.applyPatch",
+      "command": "ideagittool.applyPatch",
       "title": "Apply Patch…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.applyPatchFromClipboard",
+      "command": "ideagittool.applyPatchFromClipboard",
       "title": "Apply Patch from Clipboard…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.abortOperation",
+      "command": "ideagittool.abortOperation",
       "title": "Abort Merge / Rebase / Cherry-Pick / Revert",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.continueOperation",
+      "command": "ideagittool.continueOperation",
       "title": "Continue Rebase / Cherry-Pick / Commit Merge",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.skipCommit",
+      "command": "ideagittool.skipCommit",
       "title": "Skip Commit",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.mainMenu",
+      "command": "ideagittool.mainMenu",
       "title": "Git Menu…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.vcsOperationsPopup",
+      "command": "ideagittool.vcsOperationsPopup",
       "title": "VCS Operations Popup…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.currentFileMenu",
+      "command": "ideagittool.currentFileMenu",
       "title": "Git: Current File…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.copyBranchName",
+      "command": "ideagittool.copyBranchName",
       "title": "Copy Current Branch Name",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.updateForcePushedBranch",
+      "command": "ideagittool.updateForcePushedBranch",
       "title": "Update Force-Pushed Branch",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.resetToRemoteBranch",
+      "command": "ideagittool.resetToRemoteBranch",
       "title": "Reset to the Remote Branch",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.worktrees.create",
+      "command": "ideagittool.worktrees.create",
       "title": "New Worktree…",
-      "category": "Rebased",
+      "category": "IdeaGitTool",
       "icon": {
         "light": "media/icons/general/add.svg",
         "dark": "media/icons/general/add_dark.svg"
       }
     },
     {
-      "command": "rebased.worktrees.show",
+      "command": "ideagittool.worktrees.show",
       "title": "Worktrees…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.worktrees.refresh",
+      "command": "ideagittool.worktrees.refresh",
       "title": "Refresh Worktrees",
-      "category": "Rebased",
+      "category": "IdeaGitTool",
       "icon": {
         "light": "media/icons/general/refresh.svg",
         "dark": "media/icons/general/refresh_dark.svg"
       }
     },
     {
-      "command": "rebased.worktrees.prune",
+      "command": "ideagittool.worktrees.prune",
       "title": "Prune Worktrees",
-      "category": "Rebased",
+      "category": "IdeaGitTool",
       "icon": {
         "light": "media/icons/actions/clearCash.svg",
         "dark": "media/icons/actions/clearCash_dark.svg"
       }
     },
     {
-      "command": "rebased.worktrees.open",
+      "command": "ideagittool.worktrees.open",
       "title": "Open Worktree…",
-      "category": "Rebased",
+      "category": "IdeaGitTool",
       "icon": {
         "light": "media/icons/general/open.svg",
         "dark": "media/icons/general/open_dark.svg"
       }
     },
     {
-      "command": "rebased.worktrees.delete",
+      "command": "ideagittool.worktrees.delete",
       "title": "Delete Worktree…",
-      "category": "Rebased",
+      "category": "IdeaGitTool",
       "icon": {
         "light": "media/icons/general/delete.svg",
         "dark": "media/icons/general/delete_dark.svg"
       }
     },
     {
-      "command": "rebased.worktrees.lock",
+      "command": "ideagittool.worktrees.lock",
       "title": "Lock Worktree",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.worktrees.unlock",
+      "command": "ideagittool.worktrees.unlock",
       "title": "Unlock Worktree",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.checkout",
+      "command": "ideagittool.branch.checkout",
       "title": "branch.checkout",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.newBranchFrom",
+      "command": "ideagittool.branch.newBranchFrom",
       "title": "branch.newBranchFrom",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.checkoutAndRebase",
+      "command": "ideagittool.branch.checkoutAndRebase",
       "title": "branch.checkoutAndRebase",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.checkoutAndUpdate",
+      "command": "ideagittool.branch.checkoutAndUpdate",
       "title": "branch.checkoutAndUpdate",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.compare",
+      "command": "ideagittool.branch.compare",
       "title": "branch.compare",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.showDiffWithWorkingTree",
+      "command": "ideagittool.branch.showDiffWithWorkingTree",
       "title": "branch.showDiffWithWorkingTree",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.rebaseCurrentOnto",
+      "command": "ideagittool.branch.rebaseCurrentOnto",
       "title": "branch.rebaseCurrentOnto",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.mergeIntoCurrent",
+      "command": "ideagittool.branch.mergeIntoCurrent",
       "title": "branch.mergeIntoCurrent",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.pullRebase",
+      "command": "ideagittool.branch.pullRebase",
       "title": "branch.pullRebase",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.pullMerge",
+      "command": "ideagittool.branch.pullMerge",
       "title": "branch.pullMerge",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.push",
+      "command": "ideagittool.branch.push",
       "title": "branch.push",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.update",
+      "command": "ideagittool.branch.update",
       "title": "branch.update",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.rename",
+      "command": "ideagittool.branch.rename",
       "title": "branch.rename",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.delete",
+      "command": "ideagittool.branch.delete",
       "title": "branch.delete",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.toggleFavorite",
+      "command": "ideagittool.branch.toggleFavorite",
       "title": "branch.toggleFavorite",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.branch.trackRemote",
+      "command": "ideagittool.branch.trackRemote",
       "title": "branch.trackRemote",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.tag.checkout",
+      "command": "ideagittool.tag.checkout",
       "title": "tag.checkout",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.tag.mergeIntoCurrent",
+      "command": "ideagittool.tag.mergeIntoCurrent",
       "title": "tag.mergeIntoCurrent",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.tag.push",
+      "command": "ideagittool.tag.push",
       "title": "tag.push",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.tag.delete",
+      "command": "ideagittool.tag.delete",
       "title": "tag.delete",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.cherryPick",
+      "command": "ideagittool.cherryPick",
       "title": "Cherry-Pick",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.revertCommits",
+      "command": "ideagittool.revertCommits",
       "title": "Revert Commit",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.undoCommit",
+      "command": "ideagittool.undoCommit",
       "title": "Undo Commit…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.rewordCommit",
+      "command": "ideagittool.rewordCommit",
       "title": "Edit Commit Message…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.fixupCommit",
+      "command": "ideagittool.fixupCommit",
       "title": "Fixup…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.squashCommits",
+      "command": "ideagittool.squashCommits",
       "title": "Squash Commits…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.dropCommits",
+      "command": "ideagittool.dropCommits",
       "title": "Drop Commits",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.interactiveRebase",
+      "command": "ideagittool.interactiveRebase",
       "title": "Interactively Rebase from Here…",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.checkoutRevision",
+      "command": "ideagittool.checkoutRevision",
       "title": "Checkout Revision",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.ops.pickToolbarRepository",
+      "command": "ideagittool.ops.pickToolbarRepository",
       "title": "Select Toolbar Repository",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     }
   ],
   "menus": {
     "commandPalette": [
       {
-        "command": "rebased.branch.checkout",
+        "command": "ideagittool.branch.checkout",
         "when": "false"
       },
       {
-        "command": "rebased.branch.newBranchFrom",
+        "command": "ideagittool.branch.newBranchFrom",
         "when": "false"
       },
       {
-        "command": "rebased.branch.checkoutAndRebase",
+        "command": "ideagittool.branch.checkoutAndRebase",
         "when": "false"
       },
       {
-        "command": "rebased.branch.checkoutAndUpdate",
+        "command": "ideagittool.branch.checkoutAndUpdate",
         "when": "false"
       },
       {
-        "command": "rebased.branch.compare",
+        "command": "ideagittool.branch.compare",
         "when": "false"
       },
       {
-        "command": "rebased.branch.showDiffWithWorkingTree",
+        "command": "ideagittool.branch.showDiffWithWorkingTree",
         "when": "false"
       },
       {
-        "command": "rebased.branch.rebaseCurrentOnto",
+        "command": "ideagittool.branch.rebaseCurrentOnto",
         "when": "false"
       },
       {
-        "command": "rebased.branch.mergeIntoCurrent",
+        "command": "ideagittool.branch.mergeIntoCurrent",
         "when": "false"
       },
       {
-        "command": "rebased.branch.pullRebase",
+        "command": "ideagittool.branch.pullRebase",
         "when": "false"
       },
       {
-        "command": "rebased.branch.pullMerge",
+        "command": "ideagittool.branch.pullMerge",
         "when": "false"
       },
       {
-        "command": "rebased.branch.push",
+        "command": "ideagittool.branch.push",
         "when": "false"
       },
       {
-        "command": "rebased.branch.update",
+        "command": "ideagittool.branch.update",
         "when": "false"
       },
       {
-        "command": "rebased.branch.rename",
+        "command": "ideagittool.branch.rename",
         "when": "false"
       },
       {
-        "command": "rebased.branch.delete",
+        "command": "ideagittool.branch.delete",
         "when": "false"
       },
       {
-        "command": "rebased.branch.toggleFavorite",
+        "command": "ideagittool.branch.toggleFavorite",
         "when": "false"
       },
       {
-        "command": "rebased.branch.trackRemote",
+        "command": "ideagittool.branch.trackRemote",
         "when": "false"
       },
       {
-        "command": "rebased.tag.checkout",
+        "command": "ideagittool.tag.checkout",
         "when": "false"
       },
       {
-        "command": "rebased.tag.mergeIntoCurrent",
+        "command": "ideagittool.tag.mergeIntoCurrent",
         "when": "false"
       },
       {
-        "command": "rebased.tag.push",
+        "command": "ideagittool.tag.push",
         "when": "false"
       },
       {
-        "command": "rebased.tag.delete",
+        "command": "ideagittool.tag.delete",
         "when": "false"
       },
       {
-        "command": "rebased.cherryPick",
+        "command": "ideagittool.cherryPick",
         "when": "false"
       },
       {
-        "command": "rebased.revertCommits",
+        "command": "ideagittool.revertCommits",
         "when": "false"
       },
       {
-        "command": "rebased.undoCommit",
+        "command": "ideagittool.undoCommit",
         "when": "false"
       },
       {
-        "command": "rebased.rewordCommit",
+        "command": "ideagittool.rewordCommit",
         "when": "false"
       },
       {
-        "command": "rebased.fixupCommit",
+        "command": "ideagittool.fixupCommit",
         "when": "false"
       },
       {
-        "command": "rebased.squashCommits",
+        "command": "ideagittool.squashCommits",
         "when": "false"
       },
       {
-        "command": "rebased.dropCommits",
+        "command": "ideagittool.dropCommits",
         "when": "false"
       },
       {
-        "command": "rebased.interactiveRebase",
+        "command": "ideagittool.interactiveRebase",
         "when": "false"
       },
       {
-        "command": "rebased.checkoutRevision",
+        "command": "ideagittool.checkoutRevision",
         "when": "false"
       },
       {
-        "command": "rebased.ops.pickToolbarRepository",
+        "command": "ideagittool.ops.pickToolbarRepository",
         "when": "false"
       },
       {
-        "command": "rebased.push",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.push",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.fetch",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.fetch",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.pull",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.pull",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.updateProject",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.updateProject",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.branches",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.branches",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.createBranch",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.createBranch",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.merge",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.merge",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.rebase",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.rebase",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.resetHead",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.resetHead",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.createTag",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.createTag",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.remotes",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.remotes",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.unshallow",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.unshallow",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.copyBranchName",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.copyBranchName",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.createPatch",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.createPatch",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.applyPatch",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.applyPatch",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.applyPatchFromClipboard",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.applyPatchFromClipboard",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.updateForcePushedBranch",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.updateForcePushedBranch",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.resetToRemoteBranch",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.resetToRemoteBranch",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.worktrees.create",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.worktrees.create",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.worktrees.show",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.worktrees.show",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.worktrees.refresh",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.worktrees.refresh",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.worktrees.prune",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.worktrees.prune",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.worktrees.open",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.worktrees.open",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.worktrees.delete",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.worktrees.delete",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.worktrees.lock",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.worktrees.lock",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.worktrees.unlock",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.worktrees.unlock",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.abortOperation",
-        "when": "rebased.operation && rebased.operation != 'none'"
+        "command": "ideagittool.abortOperation",
+        "when": "ideagittool.operation && ideagittool.operation != 'none'"
       },
       {
-        "command": "rebased.continueOperation",
-        "when": "rebased.operation && rebased.operation != 'none'"
+        "command": "ideagittool.continueOperation",
+        "when": "ideagittool.operation && ideagittool.operation != 'none'"
       },
       {
-        "command": "rebased.skipCommit",
-        "when": "rebased.operation && rebased.operation != 'none'"
+        "command": "ideagittool.skipCommit",
+        "when": "ideagittool.operation && ideagittool.operation != 'none'"
       }
     ],
     "view/title": [
       {
-        "command": "rebased.worktrees.create",
-        "when": "view == rebased.worktrees",
+        "command": "ideagittool.worktrees.create",
+        "when": "view == ideagittool.worktrees",
         "group": "navigation@1"
       },
       {
-        "command": "rebased.worktrees.refresh",
-        "when": "view == rebased.worktrees",
+        "command": "ideagittool.worktrees.refresh",
+        "when": "view == ideagittool.worktrees",
         "group": "navigation@2"
       },
       {
-        "command": "rebased.worktrees.delete",
-        "when": "view == rebased.worktrees",
+        "command": "ideagittool.worktrees.delete",
+        "when": "view == ideagittool.worktrees",
         "group": "navigation@3"
       },
       {
-        "command": "rebased.worktrees.prune",
-        "when": "view == rebased.worktrees",
+        "command": "ideagittool.worktrees.prune",
+        "when": "view == ideagittool.worktrees",
         "group": "navigation@4"
       }
     ],
     "view/item/context": [
       {
-        "command": "rebased.worktrees.open",
-        "when": "view == rebased.worktrees && viewItem =~ /^worktree/",
+        "command": "ideagittool.worktrees.open",
+        "when": "view == ideagittool.worktrees && viewItem =~ /^worktree/",
         "group": "1_open@1"
       },
       {
-        "command": "rebased.worktrees.lock",
-        "when": "view == rebased.worktrees && viewItem =~ / linked / && viewItem =~ / unlocked/",
+        "command": "ideagittool.worktrees.lock",
+        "when": "view == ideagittool.worktrees && viewItem =~ / linked / && viewItem =~ / unlocked/",
         "group": "1_open@2"
       },
       {
-        "command": "rebased.worktrees.unlock",
-        "when": "view == rebased.worktrees && viewItem =~ / locked/",
+        "command": "ideagittool.worktrees.unlock",
+        "when": "view == ideagittool.worktrees && viewItem =~ / locked/",
         "group": "1_open@2"
       },
       {
-        "command": "rebased.worktrees.delete",
-        "when": "view == rebased.worktrees && viewItem =~ / linked /",
+        "command": "ideagittool.worktrees.delete",
+        "when": "view == ideagittool.worktrees && viewItem =~ / linked /",
         "group": "2_delete@1"
       }
     ]
   },
   "keybindings": [
     {
-      "command": "rebased.push",
+      "command": "ideagittool.push",
       "key": "ctrl+shift+k",
       "mac": "cmd+shift+k",
-      "when": "config.rebased.intellijShortcuts && !editorTextFocus"
+      "when": "config.ideagittool.intellijShortcuts && !editorTextFocus"
     },
     {
-      "command": "rebased.push",
+      "command": "ideagittool.push",
       "key": "ctrl+shift+k",
       "mac": "cmd+shift+k",
-      "when": "config.rebased.intellijShortcuts && editorTextFocus && config.rebased.intellijShortcutsInEditor"
+      "when": "config.ideagittool.intellijShortcuts && editorTextFocus && config.ideagittool.intellijShortcutsInEditor"
     },
     {
-      "command": "rebased.updateProject",
+      "command": "ideagittool.updateProject",
       "key": "ctrl+t",
       "mac": "cmd+t",
-      "when": "config.rebased.intellijShortcuts"
+      "when": "config.ideagittool.intellijShortcuts"
     },
     {
-      "command": "rebased.branches",
+      "command": "ideagittool.branches",
       "key": "ctrl+shift+`",
       "mac": "cmd+shift+`",
-      "when": "config.rebased.intellijShortcuts"
+      "when": "config.ideagittool.intellijShortcuts"
     },
     {
-      "command": "rebased.vcsOperationsPopup",
+      "command": "ideagittool.vcsOperationsPopup",
       "key": "alt+`",
       "mac": "ctrl+v",
-      "when": "config.rebased.intellijShortcuts && !terminalFocus && !editorTextFocus"
+      "when": "config.ideagittool.intellijShortcuts && !terminalFocus && !editorTextFocus"
     },
     {
-      "command": "rebased.createBranch",
+      "command": "ideagittool.createBranch",
       "key": "ctrl+alt+n",
       "mac": "alt+cmd+n",
-      "when": "config.rebased.intellijShortcuts && rebased.hasRepository"
+      "when": "config.ideagittool.intellijShortcuts && ideagittool.hasRepository"
     }
   ],
   "configuration": {
-    "title": "Rebased",
+    "title": "IdeaGitTool",
     "properties": {
-      "rebased.intellijShortcuts": {
+      "ideagittool.intellijShortcuts": {
         "type": "boolean",
         "default": true,
         "description": "Use IntelliJ keyboard shortcuts for Git actions (Ctrl+T Update Project, Ctrl+Shift+K Push, Ctrl+Shift+` Branches, Alt+` VCS Operations Popup, Ctrl+Alt+N New Branch)."
       },
-      "rebased.intellijShortcutsInEditor": {
+      "ideagittool.intellijShortcutsInEditor": {
         "type": "boolean",
         "default": false,
         "description": "Also use Ctrl+Shift+K for Push while a text editor has focus (it replaces VS Code's Delete Line)."
       },
-      "rebased.updateMethod": {
+      "ideagittool.updateMethod": {
         "type": "string",
         "enum": [
           "merge",
@@ -691,12 +691,12 @@
         "default": "merge",
         "description": "Update method used by Update Project."
       },
-      "rebased.update.showDialog": {
+      "ideagittool.update.showDialog": {
         "type": "boolean",
         "default": true,
         "description": "Show the Update Project dialog before updating."
       },
-      "rebased.update.saveChangesPolicy": {
+      "ideagittool.update.saveChangesPolicy": {
         "type": "string",
         "enum": [
           "stash",
@@ -709,7 +709,7 @@
         ],
         "description": "Clean working tree using: Stash / Shelve. Local changes are saved before Update Project, Smart Checkout and Smart Merge, and restored afterwards."
       },
-      "rebased.push.tags": {
+      "ideagittool.push.tags": {
         "type": "string",
         "enum": [
           "none",
@@ -719,12 +719,12 @@
         "default": "none",
         "description": "Push tags option of the Push dialog."
       },
-      "rebased.push.runHooks": {
+      "ideagittool.push.runHooks": {
         "type": "boolean",
         "default": true,
         "description": "Run Git hooks on push."
       },
-      "rebased.push.autoUpdateOnRejected": {
+      "ideagittool.push.autoUpdateOnRejected": {
         "type": "string",
         "enum": [
           "",
@@ -734,27 +734,27 @@
         "default": "",
         "description": "Update method to use silently when a push is rejected. Empty: ask with the Push Rejected dialog."
       },
-      "rebased.fetch.prune": {
+      "ideagittool.fetch.prune": {
         "type": "boolean",
         "default": false,
         "description": "Prune obsolete remote references on fetch."
       },
-      "rebased.branches.showRecent": {
+      "ideagittool.branches.showRecent": {
         "type": "boolean",
         "default": true,
         "description": "Show recent branches in the branches popup."
       },
-      "rebased.branches.showTags": {
+      "ideagittool.branches.showTags": {
         "type": "boolean",
         "default": true,
         "description": "Show tags in the branches popup."
       },
-      "rebased.branches.syncControl": {
+      "ideagittool.branches.syncControl": {
         "type": "boolean",
         "default": true,
         "description": "Execute branch operations on all roots: with several repositories, branches that exist in all of them are shown once in the branches popup and their actions run in every repository."
       },
-      "rebased.statusBar.enabled": {
+      "ideagittool.statusBar.enabled": {
         "type": "boolean",
         "default": true,
         "description": "Show the Git toolbar widgets (Update Project, Push, branch, merge/rebase actions) in the status bar."
@@ -762,18 +762,18 @@
     }
   },
   "views": {
-    "rebased-panel": [
+    "ideagittool-panel": [
       {
-        "id": "rebased.worktrees",
+        "id": "ideagittool.worktrees",
         "name": "Worktrees",
-        "when": "rebased.hasRepository"
+        "when": "ideagittool.hasRepository"
       }
     ]
   },
   "viewsWelcome": [
     {
-      "view": "rebased.worktrees",
-      "contents": "No linked worktrees\n[Create worktree…](command:rebased.worktrees.create)\n[What is a Git worktree](https://git-scm.com/docs/git-worktree)"
+      "view": "ideagittool.worktrees",
+      "contents": "No linked worktrees\n[Create worktree…](command:ideagittool.worktrees.create)\n[What is a Git worktree](https://git-scm.com/docs/git-worktree)"
     }
   ]
 }

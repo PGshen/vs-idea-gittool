@@ -9,7 +9,7 @@ import { EMPTY_FILTERS, LogFilters, LogOptions } from './filters';
 import { LogTab, LogTabState } from './logTab';
 import { fileFromArg } from './util';
 
-const MAIN_KEY = 'rebased.log.main';
+const MAIN_KEY = 'ideagittool.log.main';
 const DEFAULT_OPTIONS: LogOptions = { sort: 'date', firstParent: false };
 
 interface OpenTab {
@@ -20,7 +20,7 @@ interface OpenTab {
 }
 
 /**
- * Log tabs: the main log (editor tab "Log" or the panel view, per `rebased.log.showInEditor`)
+ * Log tabs: the main log (editor tab "Log" or the panel view, per `ideagittool.log.showInEditor`)
  * plus extra tabs (new tab, branch filtered tabs, file history, branch comparison).
  */
 class LogTabs {
@@ -30,7 +30,7 @@ class LogTabs {
   constructor(private readonly ctx: Ctx) {}
 
   private get showInEditor() {
-    return vscode.workspace.getConfiguration('rebased.log').get<boolean>('showInEditor', true);
+    return vscode.workspace.getConfiguration('ideagittool.log').get<boolean>('showInEditor', true);
   }
 
   mainState(repo: Repository): LogTabState {
@@ -66,7 +66,7 @@ class LogTabs {
       }
     }
     if (this.showInEditor) return this.openPanel(repo, this.mainState(repo), true, undefined, preserveFocus);
-    await vscode.commands.executeCommand('rebased.logView.focus');
+    await vscode.commands.executeCommand('ideagittool.logView.focus');
     return this.main();
   }
 
@@ -75,7 +75,7 @@ class LogTabs {
     await tab.start();
     const panel =
       existingPanel ??
-      vscode.window.createWebviewPanel('rebased.log', tab.title, { viewColumn: vscode.ViewColumn.Active, preserveFocus }, { retainContextWhenHidden: true, enableFindWidget: false });
+      vscode.window.createWebviewPanel('ideagittool.log', tab.title, { viewColumn: vscode.ViewColumn.Active, preserveFocus }, { retainContextWhenHidden: true, enableFindWidget: false });
     panel.title = tab.title;
     const icon = state.mode === 'history' ? 'general/history' : 'toolwindows/changes';
     panel.iconPath = {
@@ -146,7 +146,7 @@ export function register(ctx: Ctx) {
   const ext = ctx.extension;
 
   ext.subscriptions.push(
-    vscode.window.registerWebviewPanelSerializer('rebased.log', {
+    vscode.window.registerWebviewPanelSerializer('ideagittool.log', {
       async deserializeWebviewPanel(panel) {
         await ctx.repos.ready();
         const repo = ctx.repos.repositories[0];
@@ -157,10 +157,10 @@ export function register(ctx: Ctx) {
         await tabs.openPanel(repo, tabs.mainState(repo), true, panel);
       },
     }),
-    vscode.window.registerWebviewViewProvider('rebased.logView', { resolveWebviewView: v => tabs.resolveView(v) }, { webviewOptions: { retainContextWhenHidden: true } }),
+    vscode.window.registerWebviewViewProvider('ideagittool.logView', { resolveWebviewView: v => tabs.resolveView(v) }, { webviewOptions: { retainContextWhenHidden: true } }),
   );
 
-  ctx.command('rebased.showLog', async (arg?: { root?: string; branch?: string; path?: string }) => {
+  ctx.command('ideagittool.showLog', async (arg?: { root?: string; branch?: string; path?: string }) => {
     const repo = await repoFromArg(ctx, arg);
     if (!repo) return;
     if (arg?.branch || arg?.path) {
@@ -168,17 +168,17 @@ export function register(ctx: Ctx) {
     } else await tabs.showMain(repo);
   });
 
-  ctx.command('rebased.log.newTab', async (arg?: { root?: string; filters?: LogFilters; multi?: boolean }) => {
+  ctx.command('ideagittool.log.newTab', async (arg?: { root?: string; filters?: LogFilters; multi?: boolean }) => {
     const repo = await repoFromArg(ctx, arg);
     if (repo) await tabs.newTab(repo, { filters: { ...EMPTY_FILTERS, ...arg?.filters }, multi: arg?.multi ?? ctx.repos.repositories.length > 1 });
   });
 
-  ctx.command('rebased.log.selectCommit', async (arg: { root: string; hash: string; newTab?: boolean }) => {
+  ctx.command('ideagittool.log.selectCommit', async (arg: { root: string; hash: string; newTab?: boolean }) => {
     const repo = await repoFromArg(ctx, arg);
     if (repo) await tabs.selectCommit(repo, arg.hash, arg.newTab);
   });
 
-  ctx.command('rebased.showFileHistory', async (arg?: any) => {
+  ctx.command('ideagittool.showFileHistory', async (arg?: any) => {
     const f = await fileFromArg(ctx, arg);
     if (!f) return;
     const isDir = await isDirectory(f.repo, f.path);
@@ -188,7 +188,7 @@ export function register(ctx: Ctx) {
     });
   });
 
-  ctx.command('rebased.showHistoryForSelection', async () => {
+  ctx.command('ideagittool.showHistoryForSelection', async () => {
     const editor = vscode.window.activeTextEditor;
     const f = await fileFromArg(ctx, undefined);
     if (!f || !editor) return;
@@ -201,10 +201,10 @@ export function register(ctx: Ctx) {
   registerAnnotate(ctx);
   registerCompare(ctx, (repo, state) => tabs.newTab(repo, state));
 
-  // Open the log on startup, like Rebased opens it in the editor when a project is opened.
+  // Open the log on startup, like IdeaGitTool opens it in the editor when a project is opened.
   void (async () => {
     await ctx.repos.ready();
-    const cfg = vscode.workspace.getConfiguration('rebased.log');
+    const cfg = vscode.workspace.getConfiguration('ideagittool.log');
     const repo = ctx.repos.repositories[0];
     if (!repo || !cfg.get<boolean>('openOnStartup', true) || !cfg.get<boolean>('showInEditor', true)) return;
     // A restored panel (serializer) counts as opened.
@@ -214,14 +214,14 @@ export function register(ctx: Ctx) {
 
   vscode.workspace.onDidChangeConfiguration(
     e => {
-      if (e.affectsConfiguration('rebased.log.showInEditor')) {
-        void vscode.commands.executeCommand('setContext', 'rebased.logInPanel', !vscode.workspace.getConfiguration('rebased.log').get<boolean>('showInEditor', true));
+      if (e.affectsConfiguration('ideagittool.log.showInEditor')) {
+        void vscode.commands.executeCommand('setContext', 'ideagittool.logInPanel', !vscode.workspace.getConfiguration('ideagittool.log').get<boolean>('showInEditor', true));
       }
     },
     null,
     ext.subscriptions,
   );
-  void vscode.commands.executeCommand('setContext', 'rebased.logInPanel', !vscode.workspace.getConfiguration('rebased.log').get<boolean>('showInEditor', true));
+  void vscode.commands.executeCommand('setContext', 'ideagittool.logInPanel', !vscode.workspace.getConfiguration('ideagittool.log').get<boolean>('showInEditor', true));
 }
 
 async function isDirectory(repo: Repository, rel: string): Promise<boolean> {

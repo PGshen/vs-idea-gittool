@@ -186,9 +186,9 @@ export class Repository implements vscode.Disposable {
   }
 
   private async loadStatus() {
-    const untracked = vscode.workspace.getConfiguration('rebased').get<string>('untrackedFiles', 'all');
+    const untracked = vscode.workspace.getConfiguration('ideagittool').get<string>('untrackedFiles', 'all');
     const args = ['status', '--porcelain=v2', '-z', `--untracked-files=${untracked === 'hide' ? 'no' : untracked}`];
-    if (vscode.workspace.getConfiguration('rebased').get<boolean>('showIgnoredFiles', false)) args.push('--ignored=matching');
+    if (vscode.workspace.getConfiguration('ideagittool').get<boolean>('showIgnoredFiles', false)) args.push('--ignored=matching');
     const out = await this.execText(args, { quiet: true });
     this.status = parseStatusV2(this.root, out);
   }

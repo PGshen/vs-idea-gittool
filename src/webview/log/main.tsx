@@ -76,10 +76,10 @@ function CompareBanner() {
         Commits in <b>{c.ref}</b> that are not in <b>{c.with}</b>
       </span>
       <span class="spacer" />
-      <span class="link" onClick={() => send('command', { id: 'rebased.compareRefs', args: { root: s.root, ref: c.with, with: c.ref } })}>
+      <span class="link" onClick={() => send('command', { id: 'ideagittool.compareRefs', args: { root: s.root, ref: c.with, with: c.ref } })}>
         Swap Branches
       </span>
-      <span class="link" onClick={() => send('command', { id: 'rebased.compareRefs.files', args: { root: s.root, ref: c.ref, with: c.with } })}>
+      <span class="link" onClick={() => send('command', { id: 'ideagittool.compareRefs.files', args: { root: s.root, ref: c.ref, with: c.with } })}>
         Show Files Diff
       </span>
     </div>
@@ -105,15 +105,15 @@ function OperationBanner() {
             <span class="spacer" />
             {op !== 'bisect' && (
               <>
-                <span class="link" onClick={() => send('command', { id: 'rebased.continueOperation', args: { root: r.root } })}>
+                <span class="link" onClick={() => send('command', { id: 'ideagittool.continueOperation', args: { root: r.root } })}>
                   Continue
                 </span>
                 {op === 'rebase' && (
-                  <span class="link" onClick={() => send('command', { id: 'rebased.skipCommit', args: { root: r.root } })}>
+                  <span class="link" onClick={() => send('command', { id: 'ideagittool.skipCommit', args: { root: r.root } })}>
                     Skip
                   </span>
                 )}
-                <span class="link" onClick={() => send('command', { id: 'rebased.abortOperation', args: { root: r.root } })}>
+                <span class="link" onClick={() => send('command', { id: 'ideagittool.abortOperation', args: { root: r.root } })}>
                   Abort
                 </span>
               </>

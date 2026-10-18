@@ -16,7 +16,7 @@ async function findFrame(window, selector, timeout = 8000) {
 
 export async function run({ app, window, shot, command, sleep, workspace }) {
   await sleep(4000);
-  await command('Rebased: New Worktree…');
+  await command('IdeaGitTool: New Worktree…');
   const dlg = await findFrame(window, '.dialog');
   await sleep(600);
   await shot('worktree-dialog');
@@ -34,11 +34,11 @@ export async function run({ app, window, shot, command, sleep, workspace }) {
   // The new worktree opens in a new window; continue in the first one.
   console.log('windows:', app.windows().length);
   await window.bringToFront();
-  await command('Rebased: Worktrees…');
+  await command('IdeaGitTool: Worktrees…');
   await sleep(1500);
   await shot('worktrees-view');
   // Checking out "topic" here hits the worktree conflict.
-  await command('Rebased: Branches…');
+  await command('IdeaGitTool: Branches…');
   await sleep(800);
   await window.keyboard.type('topic');
   await sleep(400);

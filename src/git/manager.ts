@@ -37,7 +37,7 @@ export class RepositoryManager implements vscode.Disposable {
   }
 
   private async doScan() {
-    const depth = vscode.workspace.getConfiguration('rebased').get<number>('repositoryScanMaxDepth', 1);
+    const depth = vscode.workspace.getConfiguration('ideagittool').get<number>('repositoryScanMaxDepth', 1);
     const found = new Set<string>();
     for (const folder of vscode.workspace.workspaceFolders ?? []) {
       const top = await this.findTopLevel(folder.uri.fsPath);

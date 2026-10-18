@@ -14,7 +14,7 @@ interface Stored {
   assignment: Record<string, string>;
 }
 
-const KEY = 'rebased.changelists';
+const KEY = 'ideagittool.changelists';
 export const DEFAULT_ID = 'default';
 
 /**
@@ -65,7 +65,7 @@ export class ChangeLists {
     for (const c of changes) {
       const k = changeKey(c);
       keys.add(k);
-      // Rebased starts with nothing included (no check marks), unless `rebased.commit.includeActiveChangelist`.
+      // IdeaGitTool starts with nothing included (no check marks), unless `ideagittool.commit.includeActiveChangelist`.
       if (this.autoInclude && !this.seen.has(k) && this.listOf(k) === this.activeId) this.included.add(k);
       // A change stays in its changelist when another list becomes active.
       const id = this.assignment.get(k);

@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { RepositoryManager } from '../git/manager';
 import { Change } from '../shared/types';
 
-export const GIT_SCHEME = 'rebased-git';
+export const GIT_SCHEME = 'ideagittool-git';
 
 /** Special revisions understood by the content provider. */
 export const REV_EMPTY = '~empty';

@@ -1,88 +1,88 @@
 {
   "submenus": [
     {
-      "id": "rebased.git.file",
+      "id": "ideagittool.git.file",
       "label": "Git"
     }
   ],
   "menus": {
-    "rebased.git.file": [
+    "ideagittool.git.file": [
       {
-        "command": "rebased.commit",
+        "command": "ideagittool.commit",
         "group": "1_file@1"
       },
       {
-        "command": "rebased.addToVcs",
+        "command": "ideagittool.addToVcs",
         "group": "1_file@2"
       },
       {
-        "command": "rebased.addToGitignore",
+        "command": "ideagittool.addToGitignore",
         "group": "1_file@3"
       },
       {
-        "command": "rebased.annotate",
+        "command": "ideagittool.annotate",
         "group": "2_history@1",
-        "when": "!rebased.annotated"
+        "when": "!ideagittool.annotated"
       },
       {
-        "command": "rebased.annotateClose",
+        "command": "ideagittool.annotateClose",
         "group": "2_history@2",
-        "when": "rebased.annotated"
+        "when": "ideagittool.annotated"
       },
       {
-        "command": "rebased.showLocalDiff",
+        "command": "ideagittool.showLocalDiff",
         "group": "2_history@3"
       },
       {
-        "command": "rebased.compareWithRevision",
+        "command": "ideagittool.compareWithRevision",
         "group": "2_history@4"
       },
       {
-        "command": "rebased.compareWithBranch",
+        "command": "ideagittool.compareWithBranch",
         "group": "2_history@5"
       },
       {
-        "command": "rebased.showFileHistory",
+        "command": "ideagittool.showFileHistory",
         "group": "2_history@6"
       },
       {
-        "command": "rebased.showHistoryForSelection",
+        "command": "ideagittool.showHistoryForSelection",
         "group": "2_history@7",
         "when": "editorHasSelection"
       },
       {
-        "command": "rebased.rollback",
+        "command": "ideagittool.rollback",
         "group": "3_rollback@1"
       },
       {
-        "command": "rebased.shelve",
+        "command": "ideagittool.shelve",
         "group": "3_rollback@3"
       },
       {
-        "command": "rebased.resolveConflicts",
+        "command": "ideagittool.resolveConflicts",
         "group": "4_conflicts@1",
-        "when": "rebased.hasConflicts"
+        "when": "ideagittool.hasConflicts"
       }
     ],
     "explorer/context": [
       {
-        "submenu": "rebased.git.file",
+        "submenu": "ideagittool.git.file",
         "group": "7_modification@9",
-        "when": "rebased.hasRepository"
+        "when": "ideagittool.hasRepository"
       }
     ],
     "editor/context": [
       {
-        "submenu": "rebased.git.file",
+        "submenu": "ideagittool.git.file",
         "group": "1_modification@9",
-        "when": "rebased.hasRepository && resourceScheme == file"
+        "when": "ideagittool.hasRepository && resourceScheme == file"
       }
     ],
     "editor/title/context": [
       {
-        "submenu": "rebased.git.file",
+        "submenu": "ideagittool.git.file",
         "group": "2_files@9",
-        "when": "rebased.hasRepository && resourceScheme == file"
+        "when": "ideagittool.hasRepository && resourceScheme == file"
       }
     ]
   }

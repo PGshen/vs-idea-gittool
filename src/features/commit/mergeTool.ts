@@ -8,7 +8,7 @@ import { getExtensionUri, WebviewConnection } from '../../host/webviewHost';
 import { CompareMode, DEFAULT_MERGE_SETTINGS, MergeFinish, MergeInit, MergeProgress, MergeSettings, TitleParts } from '../../shared/mergeProtocol';
 import { Change } from '../../shared/types';
 
-const SETTINGS_KEY = 'rebased.merge.settings';
+const SETTINGS_KEY = 'ideagittool.merge.settings';
 
 export interface MergeRevisions {
   base: string;
@@ -29,7 +29,7 @@ export class MergeTool {
 
   /** "Diff & Merge > Context lines": 1, 2, 4, 8 or -1 (do not collapse). */
   contextLines(): number {
-    const v = vscode.workspace.getConfiguration('rebased').get<number>('merge.contextLines', 4);
+    const v = vscode.workspace.getConfiguration('ideagittool').get<number>('merge.contextLines', 4);
     return [1, 2, 4, 8, -1].includes(v) ? v : 4;
   }
 
@@ -53,7 +53,7 @@ export class MergeTool {
       progress: opts.progress,
     };
     return new Promise<MergeFinish>(resolve => {
-      const panel = vscode.window.createWebviewPanel('rebased.merge', `Merge Revisions for ${c.path}`, vscode.ViewColumn.Active, {
+      const panel = vscode.window.createWebviewPanel('ideagittool.merge', `Merge Revisions for ${c.path}`, vscode.ViewColumn.Active, {
         retainContextWhenHidden: true,
       });
       panel.iconPath = {
@@ -65,7 +65,7 @@ export class MergeTool {
       const conn = new WebviewConnection(panel.webview, 'merge', () => init, panel.title);
       const temp: string[] = [];
       const write = (name: string, text: string) => {
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rebased-merge-'));
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideagittool-merge-'));
         const f = path.join(dir, `${name} - ${init.fileName}`);
         fs.writeFileSync(f, text);
         temp.push(dir);

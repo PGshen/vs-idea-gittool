@@ -245,12 +245,12 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
           {
             label: 'Compare with Revision…',
             disabled: !single || single.status === '?',
-            action: () => send('gitCommand', { command: 'rebased.compareWithRevision', args: fileUriArg(single!) }),
+            action: () => send('gitCommand', { command: 'ideagittool.compareWithRevision', args: fileUriArg(single!) }),
           },
           {
             label: 'Compare with Branch or Tag…',
             disabled: !single || single.status === '?',
-            action: () => send('gitCommand', { command: 'rebased.compareWithBranch', args: fileUriArg(single!) }),
+            action: () => send('gitCommand', { command: 'ideagittool.compareWithBranch', args: fileUriArg(single!) }),
           },
           { label: 'Show History', icon: 'general/history', disabled: !single || single.status === '?', action: () => send('showHistory', { key: changeKey(single!) }) },
           { separator: true },

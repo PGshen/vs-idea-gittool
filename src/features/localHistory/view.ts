@@ -8,7 +8,7 @@ import { createPatchDialog, PatchEntry } from '../commit/patchDialog';
 import { LocalHistoryRecorder } from './recorder';
 import { FileState, LhEvent, LocalHistoryStore, normPath } from './store';
 
-export const LH_SCHEME = 'rebased-lh';
+export const LH_SCHEME = 'ideagittool-lh';
 
 /** URI of a stored revision: the original path with the content hash (or "none") in the query. */
 export function lhUri(p: string, state: FileState): vscode.Uri {
@@ -42,7 +42,7 @@ export class LocalHistoryView {
     select?: number,
   ) {
     const title = this.title();
-    this.panel = vscode.window.createWebviewPanel('rebased.localHistory', title, vscode.ViewColumn.Active, { retainContextWhenHidden: true });
+    this.panel = vscode.window.createWebviewPanel('ideagittool.localHistory', title, vscode.ViewColumn.Active, { retainContextWhenHidden: true });
     this.panel.iconPath = {
       light: vscode.Uri.joinPath(getExtensionUri(), 'media', 'icons', 'general', 'history.svg'),
       dark: vscode.Uri.joinPath(getExtensionUri(), 'media', 'icons', 'general', 'history_dark.svg'),
@@ -57,7 +57,7 @@ export class LocalHistoryView {
     this.conn = new WebviewConnection(this.panel.webview, 'localHistory', () => init, title);
     this.conn.handleAll({
       items: (p: { showSystem: boolean }) => this.listItems(p.showSystem),
-      setShowSystem: (v: boolean) => this.memento.update('rebased.localHistory.showSystem', v),
+      setShowSystem: (v: boolean) => this.memento.update('ideagittool.localHistory.showSystem', v),
       diff: (p: { id: number; mode: LhDiffMode }) => this.diff(p.id, p.mode),
       openDiff: (p: { id: number; mode: LhDiffMode; path?: string }) => this.openDiff(p.id, p.mode, p.path),
       revert: (p: { id: number }) => this.revert(p.id),
@@ -73,7 +73,7 @@ export class LocalHistoryView {
   }
 
   get showSystem(): boolean {
-    return this.memento.get<boolean>('rebased.localHistory.showSystem', false);
+    return this.memento.get<boolean>('ideagittool.localHistory.showSystem', false);
   }
 
   private get store(): LocalHistoryStore {

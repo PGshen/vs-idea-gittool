@@ -10,7 +10,7 @@ import { addCommitsToRemoteBranch, dropSelectedChanges, extractSelectedChanges, 
 const env = { ...process.env, GIT_AUTHOR_NAME: 'a', GIT_AUTHOR_EMAIL: 'a@x', GIT_COMMITTER_NAME: 'a', GIT_COMMITTER_EMAIL: 'a@x' };
 
 function makeRepo() {
-  const dir = mkdtempSync(join(tmpdir(), 'rebased-inmem-'));
+  const dir = mkdtempSync(join(tmpdir(), 'ideagittool-inmem-'));
   const sh = (c: string) => execSync(c, { cwd: dir, env, encoding: 'utf8' });
   sh('git init -q -b main');
   writeFileSync(join(dir, 'a.txt'), 'a1\n');
@@ -65,7 +65,7 @@ test('extract selected changes splits a commit without changing the final tree',
 
 test('add commits to a remote branch cherry-picks in memory', async () => {
   const { dir, sh } = makeRepo();
-  const bare = mkdtempSync(join(tmpdir(), 'rebased-inmem-bare-'));
+  const bare = mkdtempSync(join(tmpdir(), 'ideagittool-inmem-bare-'));
   execSync('git init -q --bare -b main', { cwd: bare });
   sh(`git remote add origin ${bare} && git push -q origin HEAD~2:refs/heads/release`);
   const repo = await open(dir);

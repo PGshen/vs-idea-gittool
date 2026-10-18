@@ -106,7 +106,7 @@ test('unified diff is aligned side by side', () => {
 });
 
 test('collapse linear branches hides the middle of linear fragments', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'rebased-collapse-'));
+  const dir = mkdtempSync(join(tmpdir(), 'ideagittool-collapse-'));
   const env = { ...process.env, GIT_AUTHOR_NAME: 'a', GIT_AUTHOR_EMAIL: 'a@x', GIT_COMMITTER_NAME: 'a', GIT_COMMITTER_EMAIL: 'a@x' };
   const sh = (c: string) => execSync(c, { cwd: dir, env, encoding: 'utf8' });
   sh('git init -q -b main');

@@ -731,10 +731,10 @@
   --vscode-gitDecoration-stageDeletedResourceForeground: #ad0707;
   --vscode-gitDecoration-conflictingResourceForeground: #ad0707;
   --vscode-gitDecoration-submoduleResourceForeground: #1258a7;
-  --vscode-rebased-fileStatus\.modified: #0033b3;
-  --vscode-rebased-fileStatus\.added: #067d17;
-  --vscode-rebased-fileStatus\.deleted: #6c707e;
-  --vscode-rebased-fileStatus\.unknown: #b23247;
-  --vscode-rebased-fileStatus\.ignored: #8c4f00;
-  --vscode-rebased-fileStatus\.conflict: #de1b2e;
+  --vscode-ideagittool-fileStatus\.modified: #0033b3;
+  --vscode-ideagittool-fileStatus\.added: #067d17;
+  --vscode-ideagittool-fileStatus\.deleted: #6c707e;
+  --vscode-ideagittool-fileStatus\.unknown: #b23247;
+  --vscode-ideagittool-fileStatus\.ignored: #8c4f00;
+  --vscode-ideagittool-fileStatus\.conflict: #de1b2e;
 }

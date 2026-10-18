@@ -60,8 +60,8 @@ function App() {
               ],
             },
             { separator: true },
-            { label: 'Show Git Console', action: () => send('gitCommand', { command: 'rebased.showConsole' }) },
-            { label: 'Show Git Log', icon: 'general/history', action: () => send('gitCommand', { command: 'rebased.showLog' }) },
+            { label: 'Show Git Console', action: () => send('gitCommand', { command: 'ideagittool.showConsole' }) },
+            { label: 'Show Git Log', icon: 'general/history', action: () => send('gitCommand', { command: 'ideagittool.showLog' }) },
           ]}
         />
       </div>

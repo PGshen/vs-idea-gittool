@@ -7,7 +7,7 @@ const built = await esbuild.build({ entryPoints: ['src/git/graph.ts'], bundle: t
 const { GraphLayout, visualizeRow } = await import('data:text/javascript;base64,' + Buffer.from(built.outputFiles[0].text).toString('base64'));
 
 const layoutVariant = process.env.LAYOUT ?? 'bottom';
-const roots = ['/work/rebased', '/work/intellij-community'];
+const roots = ['/work/ideagittool', '/work/intellij-community'];
 const t0 = Date.UTC(2026, 5, 17, 18, 56) / 1000;
 let n = 0;
 const hash = () => (++n).toString(16).padStart(8, '0') + '9f1e2d3c4b5a69788796a5b4c3d2e1f0';
@@ -19,7 +19,7 @@ const add = (subject, author, root, parents) => {
   commits.push(c);
   return c;
 };
-const sideTip = add('[ide] add the Rebased product icons', 'detachhead', 0, []);
+const sideTip = add('[ide] add the IdeaGitTool product icons', 'detachhead', 0, []);
 const main = [];
 for (let i = 0; i < 45; i++) main.push(add(i === 0 ? 'fix `test.cmd` command' : `IJPL-${180000 + i} platform change ${i}`, ['detachhead', 'Tomasz Blachut', 'Mihail Buryakov'][i % 3], i % 4 === 1 ? 1 : 0, []));
 for (let i = 0; i < main.length - 1; i++) main[i].parents = [main[i + 1].hash];
@@ -57,7 +57,7 @@ export const initial = {
   mode: 'log',
   title: 'Log',
   repos: [
-    { root: roots[0], name: 'rebased', head, color: 0 },
+    { root: roots[0], name: 'ideagittool', head, color: 0 },
     { root: roots[1], name: 'intellij-community', head: { branch: 'master', hash: commits[2].hash, detached: false, operation: 'none' }, color: 1 },
   ],
   multi: true,
@@ -101,7 +101,7 @@ export const initial = {
   select: commits[0].hash,
 };
 
-const files = ['build/idea-community-images/linux/icon_rebased_128.png', 'build/src/org/jetbrains/intellij/build/RebasedProperties.kt', 'README.md'];
+const files = ['build/idea-community-images/linux/icon_ideagittool_128.png', 'build/src/org/jetbrains/intellij/build/IdeaGitToolProperties.kt', 'README.md'];
 
 const hunks = [
   {
@@ -110,12 +110,12 @@ const hunks = [
     newStart: 12,
     newLines: 8,
     lines: [
-      { t: ' ', s: 'object RebasedProperties : JetBrainsProductProperties() {' },
+      { t: ' ', s: 'object IdeaGitToolProperties : JetBrainsProductProperties() {' },
       { t: ' ', s: '  init {' },
       { t: '-', s: '    platformPrefix = "Idea"' },
-      { t: '+', s: '    platformPrefix = "Rebased"' },
-      { t: ' ', s: '    applicationInfoModule = "intellij.rebased"' },
-      { t: '+', s: '    productLayout.productIcons = listOf("rebased.svg", "rebased_16.svg")' },
+      { t: '+', s: '    platformPrefix = "IdeaGitTool"' },
+      { t: ' ', s: '    applicationInfoModule = "intellij.ideagittool"' },
+      { t: '+', s: '    productLayout.productIcons = listOf("ideagittool.svg", "ideagittool_16.svg")' },
       { t: ' ', s: '    scrambleMainJar = false' },
       { t: '-', s: '    useSplash = true' },
       { t: ' ', s: '  }' },
@@ -129,7 +129,7 @@ const hunks = [
     lines: [
       { t: ' ', s: '  override fun getBaseArtifactName(appInfo: ApplicationInfoProperties, buildNumber: String): String =' },
       { t: '-', s: '    "ideaIC-$buildNumber"' },
-      { t: '+', s: '    "rebased-$buildNumber"' },
+      { t: '+', s: '    "ideagittool-$buildNumber"' },
     ],
   },
 ];
@@ -189,7 +189,7 @@ export async function act(page) {
     await page.waitForTimeout(200);
   }
   if (process.env.ACT === 'changesMenu') {
-    await page.click('.right .tree-row >> text=RebasedProperties.kt', { button: 'right' });
+    await page.click('.right .tree-row >> text=IdeaGitToolProperties.kt', { button: 'right' });
     await page.waitForTimeout(400);
   }
   if (process.env.ACT === 'graphMenu') {

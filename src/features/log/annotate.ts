@@ -100,7 +100,7 @@ interface AnnotateOptions {
 }
 
 function options(): AnnotateOptions {
-  const c = vscode.workspace.getConfiguration('rebased.annotate');
+  const c = vscode.workspace.getConfiguration('ideagittool.annotate');
   return {
     showRevision: c.get('showRevision', false),
     showDate: c.get('showDate', true),
@@ -167,7 +167,7 @@ class AnnotationController implements vscode.Disposable {
     vscode.workspace.onDidChangeTextDocument(e => this.onEdit(e.document), null, this.disposables);
     vscode.workspace.onDidCloseTextDocument(d => this.annotated.delete(d.uri.toString()), null, this.disposables);
     vscode.workspace.onDidChangeConfiguration(e => {
-      if (!e.affectsConfiguration('rebased.annotate')) return;
+      if (!e.affectsConfiguration('ideagittool.annotate')) return;
       this.createTypes();
       for (const key of this.annotated.keys()) void this.load(key);
     }, null, this.disposables);
@@ -324,14 +324,14 @@ class AnnotationController implements vscode.Disposable {
     md.appendMarkdown(`$(git-commit) \`${c.hash.slice(0, 8)}\` ${escapeMd(c.author)} <${escapeMd(c.authorMail)}> on ${date}\n\n`);
     md.appendMarkdown(
       [
-        `[Show in Git Log](${cmd('rebased.log.selectCommit', { root: repo.root, hash: c.hash })})`,
-        `[Show Diff](${cmd('rebased.showCommitDiff', { root: repo.root, hash: c.hash, path: c.filename })})`,
-        `[Show All Affected Files](${cmd('rebased.showCommitDiff', { root: repo.root, hash: c.hash })})`,
-        c.previous ? `[Annotate Previous Revision](${cmd('rebased.annotateRevision', { root: repo.root, hash: c.previous.hash, path: c.previous.path })})` : '',
-        `[Copy Revision Number](${cmd('rebased.copyText', c.hash)})`,
-        `[Show in File History](${cmd('rebased.showFileHistory', { root: repo.root, path: c.filename })})`,
-        `[View Options…](${cmd('rebased.annotateOptions', {})})`,
-        `[Close Annotations](${cmd('rebased.annotateClose', {})})`,
+        `[Show in Git Log](${cmd('ideagittool.log.selectCommit', { root: repo.root, hash: c.hash })})`,
+        `[Show Diff](${cmd('ideagittool.showCommitDiff', { root: repo.root, hash: c.hash, path: c.filename })})`,
+        `[Show All Affected Files](${cmd('ideagittool.showCommitDiff', { root: repo.root, hash: c.hash })})`,
+        c.previous ? `[Annotate Previous Revision](${cmd('ideagittool.annotateRevision', { root: repo.root, hash: c.previous.hash, path: c.previous.path })})` : '',
+        `[Copy Revision Number](${cmd('ideagittool.copyText', c.hash)})`,
+        `[Show in File History](${cmd('ideagittool.showFileHistory', { root: repo.root, path: c.filename })})`,
+        `[View Options…](${cmd('ideagittool.annotateOptions', {})})`,
+        `[Close Annotations](${cmd('ideagittool.annotateClose', {})})`,
       ]
         .filter(Boolean)
         .join(' &nbsp;·&nbsp; '),
@@ -341,7 +341,7 @@ class AnnotationController implements vscode.Disposable {
 
   updateContext() {
     const e = vscode.window.activeTextEditor;
-    void vscode.commands.executeCommand('setContext', 'rebased.annotated', !!e && this.annotated.has(e.document.uri.toString()));
+    void vscode.commands.executeCommand('setContext', 'ideagittool.annotated', !!e && this.annotated.has(e.document.uri.toString()));
   }
 
   async annotateRevision(root: string, hash: string, rel: string) {
@@ -364,18 +364,18 @@ function escapeMd(s: string) {
 export function registerAnnotate(ctx: Ctx) {
   const controller = new AnnotationController(ctx);
   ctx.extension.subscriptions.push(controller);
-  ctx.command('rebased.annotate', async (uri?: vscode.Uri) => {
+  ctx.command('ideagittool.annotate', async (uri?: vscode.Uri) => {
     let editor = vscode.window.activeTextEditor;
     if (uri instanceof vscode.Uri && editor?.document.uri.toString() !== uri.toString()) editor = await vscode.window.showTextDocument(uri);
     if (editor) await controller.toggle(editor);
   });
-  ctx.command('rebased.annotateClose', async () => {
+  ctx.command('ideagittool.annotateClose', async () => {
     const editor = vscode.window.activeTextEditor;
     if (editor && controller.isAnnotated(editor.document.uri)) await controller.toggle(editor);
   });
-  ctx.command('rebased.annotateRevision', (a: { root: string; hash: string; path: string }) => controller.annotateRevision(a.root, a.hash, a.path));
-  ctx.command('rebased.annotateOptions', async () => {
-    const c = vscode.workspace.getConfiguration('rebased.annotate');
+  ctx.command('ideagittool.annotateRevision', (a: { root: string; hash: string; path: string }) => controller.annotateRevision(a.root, a.hash, a.path));
+  ctx.command('ideagittool.annotateOptions', async () => {
+    const c = vscode.workspace.getConfiguration('ideagittool.annotate');
     const o = options();
     type Item = vscode.QuickPickItem & { key?: string; value?: unknown };
     const toggle = (label: string, key: keyof AnnotateOptions): Item => ({ label: `${o[key] ? '$(check)' : '$(blank)'} ${label}`, key, value: !o[key] });
@@ -404,5 +404,5 @@ export function registerAnnotate(ctx: Ctx) {
     const picked = await vscode.window.showQuickPick(items, { title: 'Annotations' });
     if (picked?.key) await c.update(picked.key, picked.value, vscode.ConfigurationTarget.Global);
   });
-  ctx.command('rebased.copyText', (text: string) => vscode.env.clipboard.writeText(text));
+  ctx.command('ideagittool.copyText', (text: string) => vscode.env.clipboard.writeText(text));
 }

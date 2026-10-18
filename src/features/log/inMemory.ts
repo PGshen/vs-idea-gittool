@@ -11,7 +11,7 @@ import { Repository } from '../../git/repository';
  * "Add Commits to Remote Branch…".
  */
 
-export const REFLOG_SUFFIX = 'by Rebased';
+export const REFLOG_SUFFIX = 'by IdeaGitTool';
 
 export class InMemoryError extends Error {}
 
@@ -108,7 +108,7 @@ export async function rangeToHead(repo: Repository, base: string): Promise<Commi
  * Uses a temporary index, so the real index is not touched.
  */
 export async function treeWithPathsFrom(repo: Repository, tree: string, from: string | undefined, paths: string[]): Promise<string> {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rebased-index-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ideagittool-index-'));
   const env = { GIT_INDEX_FILE: path.join(dir, 'index') };
   try {
     await repo.exec(['read-tree', tree], { env, quiet: true });

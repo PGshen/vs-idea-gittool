@@ -62,11 +62,11 @@ interface FileModel {
 
 /**
  * The Conflicts dialog (MultipleFileMergeDialog) in the iterative flow (registry
- * `vcs.merge.conflict.iterative.resolution`, on in Rebased) and the three-pane merge window.
+ * `vcs.merge.conflict.iterative.resolution`, on in IdeaGitTool) and the three-pane merge window.
  */
 export class ConflictsController {
   /**
-   * Files open in VS Code's merge editor (setting `rebased.merge.useVsCodeMergeEditor`), with the file content
+   * Files open in VS Code's merge editor (setting `ideagittool.merge.useVsCodeMergeEditor`), with the file content
    * when the editor was opened. A file is marked resolved when its merge editor is closed with a changed,
    * saved result without conflict markers.
    */
@@ -348,7 +348,7 @@ export class ConflictsController {
   private async openMerge(c: Change): Promise<MergeFinish['result']> {
     const repo = this.ctx.repos.get(c.root);
     if (!repo) return 'CANCEL';
-    if (vscode.workspace.getConfiguration('rebased').get<boolean>('merge.useVsCodeMergeEditor', false)) {
+    if (vscode.workspace.getConfiguration('ideagittool').get<boolean>('merge.useVsCodeMergeEditor', false)) {
       await this.openVsCodeMergeEditor(c);
       return 'CANCEL';
     }
@@ -508,7 +508,7 @@ export class ConflictsController {
 
   // ---------------------------------------------------------------- VS Code merge editor (optional)
 
-  /** Opens the three-pane window, or VS Code's merge editor when `rebased.merge.useVsCodeMergeEditor` is set. */
+  /** Opens the three-pane window, or VS Code's merge editor when `ideagittool.merge.useVsCodeMergeEditor` is set. */
   async openMergeEditor(c: Change) {
     await this.show(c.root, [changeKey(c)]);
   }

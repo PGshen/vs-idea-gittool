@@ -112,10 +112,10 @@ export function refActions(r: Ref, current: string | undefined): MenuEntry[] {
   if (r.type === 'tag') {
     return [
       { label: 'Checkout', action: act('checkout') },
-      { label: `New Branch from '${r.name}'…`, action: () => send('command', { id: 'rebased.createBranch', args: { root, startPoint: r.name } }) },
+      { label: `New Branch from '${r.name}'…`, action: () => send('command', { id: 'ideagittool.createBranch', args: { root, startPoint: r.name } }) },
       { separator: true },
-      { label: `Compare with '${cur}'`, action: () => send('command', { id: 'rebased.compareRefs', args: { root, ref: r.name, with: cur } }) },
-      { label: 'Show Diff with Working Tree', action: () => send('command', { id: 'rebased.branch.showDiffWithWorkingTree', args: { root, name: r.name, type: 'tag' } }) },
+      { label: `Compare with '${cur}'`, action: () => send('command', { id: 'ideagittool.compareRefs', args: { root, ref: r.name, with: cur } }) },
+      { label: 'Show Diff with Working Tree', action: () => send('command', { id: 'ideagittool.branch.showDiffWithWorkingTree', args: { root, name: r.name, type: 'tag' } }) },
       { separator: true },
       { label: `Merge '${r.name}' into '${cur}'`, action: act('mergeIntoCurrent') },
       { separator: true },

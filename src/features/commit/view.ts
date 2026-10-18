@@ -27,10 +27,10 @@ import {
 import { createPatchDialog, rebasePatchPaths, reversePatch } from './patchDialog';
 import { Shelf } from './shelf';
 
-const SETTINGS_KEY = 'rebased.commitView.settings';
-const OPTIONS_KEY = 'rebased.commit.options';
-const HISTORY_KEY = 'rebased.commit.messageHistory';
-const DRAFT_KEY = 'rebased.commit.draft';
+const SETTINGS_KEY = 'ideagittool.commitView.settings';
+const OPTIONS_KEY = 'ideagittool.commit.options';
+const HISTORY_KEY = 'ideagittool.commit.messageHistory';
+const DRAFT_KEY = 'ideagittool.commit.draft';
 
 const DEFAULT_SETTINGS: ViewSettings = { groupByDirectory: false, groupByRepository: true, showIgnored: false, doubleClick: 'diff', showRecycledShelves: false };
 
@@ -59,7 +59,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     this.changelists.onDidChange(() => this.schedulePush());
     this.shelf.onDidChange(() => this.schedulePush());
     vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('rebased')) this.schedulePush();
+      if (e.affectsConfiguration('ideagittool')) this.schedulePush();
     });
   }
 
@@ -89,7 +89,7 @@ export class CommitView implements vscode.WebviewViewProvider {
   }
 
   async reveal(tab?: 'commit' | 'shelf' | 'stash') {
-    await vscode.commands.executeCommand('rebased.commit.focus');
+    await vscode.commands.executeCommand('ideagittool.commit.focus');
     if (tab) this.conn?.post('selectTab', tab);
   }
 
@@ -127,7 +127,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     }
     for (const c of [...changes, ...unversioned, ...ignored]) this.changeByKey.set(changeKey(c), c);
     const nonConflict = changes.filter(c => c.status !== 'U');
-    this.changelists.autoInclude = vscode.workspace.getConfiguration('rebased.commit').get<boolean>('includeActiveChangelist', false);
+    this.changelists.autoInclude = vscode.workspace.getConfiguration('ideagittool.commit').get<boolean>('includeActiveChangelist', false);
     const changelists = this.changelists.sync(nonConflict, unversioned);
     const stashes: StashInfo[] = repos.flatMap(r => r.stashes.map(s => ({ ...s, root: r.root, repoName: r.name })));
     this.lastState = {
@@ -201,7 +201,7 @@ export class CommitView implements vscode.WebviewViewProvider {
       setSettings: async (p: Partial<ViewSettings>) => {
         await this.ctx.extension.workspaceState.update(SETTINGS_KEY, { ...this.settings, ...p });
         if (p.showIgnored !== undefined) {
-          await vscode.workspace.getConfiguration('rebased').update('showIgnoredFiles', p.showIgnored, vscode.ConfigurationTarget.Workspace);
+          await vscode.workspace.getConfiguration('ideagittool').update('showIgnoredFiles', p.showIgnored, vscode.ConfigurationTarget.Workspace);
         }
         this.schedulePush();
       },
@@ -257,15 +257,15 @@ export class CommitView implements vscode.WebviewViewProvider {
         const c = this.changeByKey.get(p.key);
         const uri = c ? vscode.Uri.file(path.join(c.root, c.path)) : undefined;
         const cmd = { show: 'showHistory', selection: 'showSelectionHistory', project: 'showProjectHistory', label: 'putLabel', recent: 'recentChanges' }[p.action];
-        return vscode.commands.executeCommand(`rebased.localHistory.${cmd}`, uri);
+        return vscode.commands.executeCommand(`ideagittool.localHistory.${cmd}`, uri);
       },
       showHistory: (p: { key: string }) => {
         const c = this.changeByKey.get(p.key);
-        if (c) return vscode.commands.executeCommand('rebased.showFileHistory', { root: c.root, path: c.path });
+        if (c) return vscode.commands.executeCommand('ideagittool.showFileHistory', { root: c.root, path: c.path });
       },
       annotate: (p: { key: string }) => {
         const c = this.changeByKey.get(p.key);
-        if (c) return vscode.commands.executeCommand('rebased.annotate', vscode.Uri.file(path.join(c.root, c.path)));
+        if (c) return vscode.commands.executeCommand('ideagittool.annotate', vscode.Uri.file(path.join(c.root, c.path)));
       },
       resolveConflicts: (p: { root?: string }) => this.conflicts.show(p.root),
       acceptYours: (p: { keys: string[] }) => this.accept(p.keys, true),
@@ -275,7 +275,7 @@ export class CommitView implements vscode.WebviewViewProvider {
         if (c) return this.conflicts.openMergeEditor(c);
       },
       operation: (p: { action: 'continue' | 'abort' | 'skip'; root: string }) =>
-        vscode.commands.executeCommand(p.action === 'continue' ? 'rebased.continueOperation' : p.action === 'abort' ? 'rebased.abortOperation' : 'rebased.skipCommit', { root: p.root }),
+        vscode.commands.executeCommand(p.action === 'continue' ? 'ideagittool.continueOperation' : p.action === 'abort' ? 'ideagittool.abortOperation' : 'ideagittool.skipCommit', { root: p.root }),
       gitCommand: (p: { command: string; args?: { $uri?: string } }) =>
         vscode.commands.executeCommand(p.command, p.args?.$uri ? vscode.Uri.file(p.args.$uri) : p.args),
       activeFileKey: () => {
@@ -319,8 +319,8 @@ export class CommitView implements vscode.WebviewViewProvider {
       stashApply: (p: { root: string; ref: string; pop: boolean; index?: boolean }) => this.stashApply(p.root, p.ref, p.pop, !!p.index),
       stashDrop: (p: { root: string; ref: string; message: string }) => this.stashDrop(p.root, p.ref, p.message),
       stashClear: (p: { root: string }) => this.stashClear(p.root),
-      unstashAs: (p: { root: string; ref: string }) => vscode.commands.executeCommand('rebased.unstash', { root: p.root, ref: p.ref }),
-      stashChanges: () => vscode.commands.executeCommand('rebased.stash'),
+      unstashAs: (p: { root: string; ref: string }) => vscode.commands.executeCommand('ideagittool.unstash', { root: p.root, ref: p.ref }),
+      stashChanges: () => vscode.commands.executeCommand('ideagittool.stash'),
     });
   }
 
@@ -368,7 +368,7 @@ export class CommitView implements vscode.WebviewViewProvider {
       if (!a) return { ok: false };
     }
     const o = this.options;
-    const cfg = vscode.workspace.getConfiguration('rebased.commit');
+    const cfg = vscode.workspace.getConfiguration('ideagittool.commit');
     const opts = {
       amend: p.amend,
       author: o.author || undefined,
@@ -407,7 +407,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     const subject = message.split('\n')[0];
     void notifySuccess(`${n === 0 ? 'No files' : n === 1 ? '1 file' : `${n} files`} committed`, subject);
     if (p.push) {
-      for (const repo of committed) await vscode.commands.executeCommand('rebased.push', { root: repo.root });
+      for (const repo of committed) await vscode.commands.executeCommand('ideagittool.push', { root: repo.root });
     }
     return { ok: true };
   }

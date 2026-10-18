@@ -1,6 +1,6 @@
 # Architecture
 
-Rebased for VS Code re-creates the git UI of [Rebased](https://github.com/detachhead/rebased)
+IdeaGitTool re-creates the git UI of [Rebased](https://github.com/detachhead/rebased)
 (the IntelliJ platform git integration) as a VS Code extension.
 
 ## Layout
@@ -15,13 +15,13 @@ src/
   shared/mergeResolve.ts  MergeResolveUtil (magic resolve) and ByWord 3-way inner differences
   shared/intellijDiff.ts  Diff.buildChanges (Reindexer + MyersLCS), so line and word diffs match IntelliJ
   git/
-    exec.ts             runs git, mirrors every command into the "Rebased: Git Console" output
+    exec.ts             runs git, mirrors every command into the "IdeaGitTool: Git Console" output
     repository.ts       Repository: cached status / refs / remotes / stashes, file watching, onDidChange
     manager.ts          RepositoryManager: finds repositories, pick(), getForFile()
   host/
     webviewHost.ts      WebviewConnection: RPC between host and a webview bundle, theme, showError
     dialog.ts           showDialog(kind, props, opts): IntelliJ-style modal dialog in a webview panel
-    gitContent.ts       rebased-git: read-only file system (file at revision), openChangeDiff, openMultiDiff
+    gitContent.ts       ideagittool-git: read-only file system (file at revision), openChangeDiff, openMultiDiff
     ui.ts               withProgress, notifySuccess/Warning/Error, ask, confirmDialog, input
     output.ts           Git console output channel
   features/
@@ -44,7 +44,7 @@ media/icons/            IntelliJ New UI (expui) icons, Apache 2.0. `<dir>/<name>
 - Webviews talk to the host only through `call(method, params)` / `on(event)` (src/webview/lib/rpc.ts).
   Hosts register handlers with `WebviewConnection.handle()`. Errors thrown by a handler are shown as a notification.
 - Command arguments are plain JSON objects so that webviews, menus and other features can call them:
-  `vscode.commands.executeCommand('rebased.cherryPick', { root, hashes })`. When `root` is missing the
+  `vscode.commands.executeCommand('ideagittool.cherryPick', { root, hashes })`. When `root` is missing the
   command picks a repository with `ctx.repos.pick()`.
 - Use `repo.batch(fn)` for multi-step operations, then the UI refreshes once.
 - UI text follows IntelliJ's GitBundle / VcsBundle wording exactly.
@@ -62,12 +62,12 @@ Commands other features may call (argument object in braces):
 
 | Feature | Commands |
 |-|-|
-| log | `rebased.showLog {root?, branch?, path?}`, `rebased.log.selectCommit {root, hash}`, `rebased.showFileHistory (uri \| {root, path})`, `rebased.showHistoryForSelection`, `rebased.annotate (uri)`, `rebased.compareWithRevision (uri)`, `rebased.compareWithBranch (uri)`, `rebased.compareRefs {root, ref, with?}` (commits + files between two refs), `rebased.showCommitDiff {root, hash, path?}`, `rebased.showRepositoryAtRevision {root, hash}` |
-| commit | `rebased.commit`, `rebased.commitAndPush`, `rebased.resolveConflicts {root?}`, `rebased.stash {root?}`, `rebased.unstash {root?}`, `rebased.shelve`, `rebased.unshelve`, `rebased.rollback (uri?)`, `rebased.addToVcs (uri)`, `rebased.addToGitignore (uri)`, `rebased.showLocalDiff (uri)`, `rebased.refreshChanges` |
-| commit (more) | `rebased.shelveSilently {root, name}` (shelves all local changes, returns the shelf id), `rebased.unshelveSilently {id}` (returns `{ok, conflicts}`), `rebased.createPatchFromChanges {keys? \| changes? \| root+hashes}` (Create Patch dialog), `rebased.rollbackFile (uri)`, `rebased.removeFromVcs (uri)`, `rebased.revertResolved (uri?)`, `rebased.copyPath {kind}` |
-| localHistory | `rebased.localHistory.showHistory (uri?)`, `.showSelectionHistory`, `.showProjectHistory`, `.recentChanges`, `.putLabel`, `rebased.localHistory.putSystemLabel {root?, label}` (labels such as "Before Update" around git operations) |
-| ops | `rebased.updateForcePushedBranch {root?}`, `rebased.resetToRemoteBranch {root?}`, `rebased.worktrees.<action>` (create {root?, ref?}, show, refresh, open {root, path?, branch?}, delete, prune, lock, unlock), `rebased.branches {root?, single?}`, `rebased.mainMenu`, `rebased.updateProject {root?}`, `rebased.pull {root?}`, `rebased.fetch {root?}`, `rebased.push {root?, upTo?}`, `rebased.merge {root?}`, `rebased.rebase {root?}`, `rebased.resetHead {root?, hash?}`, `rebased.createBranch {root?, startPoint?}`, `rebased.createTag {root?, hash?}`, `rebased.checkoutRevision {root, hash}`, `rebased.cherryPick {root, hashes}`, `rebased.revertCommits {root, hashes}`, `rebased.undoCommit {root, hash}`, `rebased.rewordCommit {root, hash}`, `rebased.fixupCommit {root, hash, squash?}`, `rebased.squashCommits {root, hashes}`, `rebased.dropCommits {root, hashes}`, `rebased.interactiveRebase {root, hash}`, `rebased.createPatch {root, hashes?, changes?}`, `rebased.applyPatch`, `rebased.abortOperation {root?}`, `rebased.continueOperation {root?}`, `rebased.skipCommit {root?}`, `rebased.remotes {root?}`, `rebased.clone`, `rebased.init`, `rebased.unshallow {root?}`, `rebased.branch.<action> {root, name, type}` where action is checkout, newBranchFrom, checkoutAndRebase, compare, showDiffWithWorkingTree, rebaseCurrentOnto, mergeIntoCurrent, pullRebase, pullMerge, push, update, rename, delete, toggleFavorite, trackRemote; `rebased.tag.<action> {root, name}` (checkout, mergeIntoCurrent, push, delete) |
+| log | `ideagittool.showLog {root?, branch?, path?}`, `ideagittool.log.selectCommit {root, hash}`, `ideagittool.showFileHistory (uri \| {root, path})`, `ideagittool.showHistoryForSelection`, `ideagittool.annotate (uri)`, `ideagittool.compareWithRevision (uri)`, `ideagittool.compareWithBranch (uri)`, `ideagittool.compareRefs {root, ref, with?}` (commits + files between two refs), `ideagittool.showCommitDiff {root, hash, path?}`, `ideagittool.showRepositoryAtRevision {root, hash}` |
+| commit | `ideagittool.commit`, `ideagittool.commitAndPush`, `ideagittool.resolveConflicts {root?}`, `ideagittool.stash {root?}`, `ideagittool.unstash {root?}`, `ideagittool.shelve`, `ideagittool.unshelve`, `ideagittool.rollback (uri?)`, `ideagittool.addToVcs (uri)`, `ideagittool.addToGitignore (uri)`, `ideagittool.showLocalDiff (uri)`, `ideagittool.refreshChanges` |
+| commit (more) | `ideagittool.shelveSilently {root, name}` (shelves all local changes, returns the shelf id), `ideagittool.unshelveSilently {id}` (returns `{ok, conflicts}`), `ideagittool.createPatchFromChanges {keys? \| changes? \| root+hashes}` (Create Patch dialog), `ideagittool.rollbackFile (uri)`, `ideagittool.removeFromVcs (uri)`, `ideagittool.revertResolved (uri?)`, `ideagittool.copyPath {kind}` |
+| localHistory | `ideagittool.localHistory.showHistory (uri?)`, `.showSelectionHistory`, `.showProjectHistory`, `.recentChanges`, `.putLabel`, `ideagittool.localHistory.putSystemLabel {root?, label}` (labels such as "Before Update" around git operations) |
+| ops | `ideagittool.updateForcePushedBranch {root?}`, `ideagittool.resetToRemoteBranch {root?}`, `ideagittool.worktrees.<action>` (create {root?, ref?}, show, refresh, open {root, path?, branch?}, delete, prune, lock, unlock), `ideagittool.branches {root?, single?}`, `ideagittool.mainMenu`, `ideagittool.updateProject {root?}`, `ideagittool.pull {root?}`, `ideagittool.fetch {root?}`, `ideagittool.push {root?, upTo?}`, `ideagittool.merge {root?}`, `ideagittool.rebase {root?}`, `ideagittool.resetHead {root?, hash?}`, `ideagittool.createBranch {root?, startPoint?}`, `ideagittool.createTag {root?, hash?}`, `ideagittool.checkoutRevision {root, hash}`, `ideagittool.cherryPick {root, hashes}`, `ideagittool.revertCommits {root, hashes}`, `ideagittool.undoCommit {root, hash}`, `ideagittool.rewordCommit {root, hash}`, `ideagittool.fixupCommit {root, hash, squash?}`, `ideagittool.squashCommits {root, hashes}`, `ideagittool.dropCommits {root, hashes}`, `ideagittool.interactiveRebase {root, hash}`, `ideagittool.createPatch {root, hashes?, changes?}`, `ideagittool.applyPatch`, `ideagittool.abortOperation {root?}`, `ideagittool.continueOperation {root?}`, `ideagittool.skipCommit {root?}`, `ideagittool.remotes {root?}`, `ideagittool.clone`, `ideagittool.init`, `ideagittool.unshallow {root?}`, `ideagittool.branch.<action> {root, name, type}` where action is checkout, newBranchFrom, checkoutAndRebase, compare, showDiffWithWorkingTree, rebaseCurrentOnto, mergeIntoCurrent, pullRebase, pullMerge, push, update, rename, delete, toggleFavorite, trackRemote; `ideagittool.tag.<action> {root, name}` (checkout, mergeIntoCurrent, push, delete) |
 
 Contracts used by ops and implemented by other features (ops falls back gracefully when they are missing):
-`rebased.shelveSilently {root, name}` → shelf id, `rebased.unshelveSilently {id}` → `{ok, conflicts}` (commit; "Clean working tree using Shelve"),
-`rebased.localHistory.putSystemLabel {root, label}` (Local History labels such as "Before Update"), `rebased.showShelf`, `rebased.showStashes`.
+`ideagittool.shelveSilently {root, name}` → shelf id, `ideagittool.unshelveSilently {id}` → `{ok, conflicts}` (commit; "Clean working tree using Shelve"),
+`ideagittool.localHistory.putSystemLabel {root, label}` (Local History labels such as "Before Update"), `ideagittool.showShelf`, `ideagittool.showStashes`.

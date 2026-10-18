@@ -49,11 +49,11 @@ export class LocalHistoryRecorder implements vscode.Disposable {
   }
 
   get retentionDays(): number {
-    return vscode.workspace.getConfiguration('rebased.localHistory').get<number>('retentionDays', 5);
+    return vscode.workspace.getConfiguration('ideagittool.localHistory').get<number>('retentionDays', 5);
   }
 
   get enabled(): boolean {
-    return vscode.workspace.getConfiguration('rebased.localHistory').get<boolean>('enabled', true);
+    return vscode.workspace.getConfiguration('ideagittool.localHistory').get<boolean>('enabled', true);
   }
 
   private hook() {

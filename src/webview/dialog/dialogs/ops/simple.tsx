@@ -40,7 +40,7 @@ registerDialog<{ operation: string; files: string[]; untracked: boolean }>('ops.
           <>Your local changes to the following files would be overwritten by {op}.</>
         )}
         <br />
-        Rebased can stash the changes, {op} and unstash them after that.
+        IdeaGitTool can stash the changes, {op} and unstash them after that.
       </div>
       <div class="panel-box file-list">
         {props.files.map(f => (

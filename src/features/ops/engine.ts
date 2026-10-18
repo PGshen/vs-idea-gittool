@@ -655,7 +655,7 @@ export function sequenceEditorCommand(todoFile: string, dir: string, mode: 'repl
   return { command: `"${node}" "${script.replace(/\\/g, '/')}"`, env: { ELECTRON_RUN_AS_NODE: '1' } };
 }
 
-export function tempDir(prefix = 'rebased-'): string {
+export function tempDir(prefix = 'ideagittool-'): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 

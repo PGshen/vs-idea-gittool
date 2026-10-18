@@ -42,7 +42,7 @@ const CASES = [
 ].filter(c => !only || `${c.bundle} ${c.fixture} ${JSON.stringify(c.env)}`.includes(only));
 
 // Build the base revision in a temporary worktree.
-const tmp = mkdtempSync(join(tmpdir(), 'rebased-layout-'));
+const tmp = mkdtempSync(join(tmpdir(), 'ideagittool-layout-'));
 const baseDir = join(tmp, 'base');
 execSync(`git worktree add --detach ${baseDir} ${base}`, { stdio: 'pipe' });
 try {

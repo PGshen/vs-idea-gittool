@@ -17,7 +17,7 @@ export function register(ctx: Ctx) {
   const view = new CommitView(ctx);
   initPatchDialog(ctx.extension.globalState);
   ctx.extension.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('rebased.commit', view, { webviewOptions: { retainContextWhenHidden: true } }),
+    vscode.window.registerWebviewViewProvider('ideagittool.commit', view, { webviewOptions: { retainContextWhenHidden: true } }),
     vscode.window.registerFileDecorationProvider(new StatusDecorations(ctx.repos)),
   );
 
@@ -54,12 +54,12 @@ export function register(ctx: Ctx) {
   };
 
   // Used by Undo Commit to put the message of the undone commit back into the commit panel.
-  ctx.command('rebased.setCommitMessage', async (arg: { root?: string; message: string }) => {
-    await ctx.extension.workspaceState.update('rebased.commit.draft', arg.message);
-    await vscode.commands.executeCommand('rebased.commit.focus');
+  ctx.command('ideagittool.setCommitMessage', async (arg: { root?: string; message: string }) => {
+    await ctx.extension.workspaceState.update('ideagittool.commit.draft', arg.message);
+    await vscode.commands.executeCommand('ideagittool.commit.focus');
     view.post('setMessage', arg.message);
   });
-  ctx.command('rebased.commit', async (uri?: unknown, uris?: vscode.Uri[]) => {
+  ctx.command('ideagittool.commit', async (uri?: unknown, uris?: vscode.Uri[]) => {
     await ctx.repos.ready();
     if (isUriArg(uri)) {
       const changes = changesFor(uri, uris);
@@ -68,16 +68,16 @@ export function register(ctx: Ctx) {
     await view.reveal('commit');
     view.post('focusMessage');
   });
-  ctx.command('rebased.commitAndPush', async () => {
+  ctx.command('ideagittool.commitAndPush', async () => {
     await view.reveal('commit');
     view.post('commitAndPush');
   });
-  ctx.command('rebased.resolveConflicts', (a?: { root?: string }) => view.conflicts.show(a?.root));
-  ctx.command('rebased.refreshChanges', async () => {
+  ctx.command('ideagittool.resolveConflicts', (a?: { root?: string }) => view.conflicts.show(a?.root));
+  ctx.command('ideagittool.refreshChanges', async () => {
     await ctx.repos.scan();
     await Promise.all(ctx.repos.repositories.map(r => r.refresh()));
   });
-  ctx.command('rebased.rollback', async (uri?: unknown, uris?: vscode.Uri[]) => {
+  ctx.command('ideagittool.rollback', async (uri?: unknown, uris?: vscode.Uri[]) => {
     await ctx.repos.ready();
     if (isUriArg(uri) || !uri) {
       const changes = changesFor(uri as vscode.Uri | undefined, uris).filter(c => c.status !== '?');
@@ -89,7 +89,7 @@ export function register(ctx: Ctx) {
     }
     return view.rollbackDialog([], true);
   });
-  ctx.command('rebased.addToVcs', async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
+  ctx.command('ideagittool.addToVcs', async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
     const changes = changesFor(uri, uris).filter(c => c.status === '?');
     const byRepo = new Map<Repository, string[]>();
     for (const c of changes) {
@@ -98,7 +98,7 @@ export function register(ctx: Ctx) {
     }
     for (const [r, paths] of byRepo) await r.batch(() => addFiles(r, paths, true));
   });
-  ctx.command('rebased.addToGitignore', async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
+  ctx.command('ideagittool.addToGitignore', async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
     const targets = uris?.length ? uris : uri ? [uri] : vscode.window.activeTextEditor ? [vscode.window.activeTextEditor.document.uri] : [];
     for (const u of targets) {
       const repo = ctx.repos.getForFile(u.fsPath);
@@ -107,7 +107,7 @@ export function register(ctx: Ctx) {
       await repo.refresh();
     }
   });
-  ctx.command('rebased.showLocalDiff', async (uri?: vscode.Uri) => {
+  ctx.command('ideagittool.showLocalDiff', async (uri?: vscode.Uri) => {
     const u = uri instanceof vscode.Uri ? uri : vscode.window.activeTextEditor?.document.uri;
     if (!u || u.scheme !== 'file') return;
     const repo = ctx.repos.getForFile(u.fsPath);
@@ -116,7 +116,7 @@ export function register(ctx: Ctx) {
     const c = [...repo.status.changes, ...repo.status.unversioned].find(x => x.path === rel) ?? { root: repo.root, path: rel, status: 'M' as const };
     await openChangeDiff(c, repo.info.empty ? REV_EMPTY : 'HEAD', 'WORKTREE');
   });
-  ctx.command('rebased.shelve', async (uri?: unknown, uris?: vscode.Uri[]) => {
+  ctx.command('ideagittool.shelve', async (uri?: unknown, uris?: vscode.Uri[]) => {
     await ctx.repos.ready();
     const keys = isUriArg(uri) ? changesFor(uri, uris).map(changeKey) : [];
     if (isUriArg(uri)) view.buildState();
@@ -124,32 +124,32 @@ export function register(ctx: Ctx) {
   });
   // Swallows shortcuts that the Commit view handles itself, so that VS Code does not run its own
   // command for them too (Ctrl+Shift+H would open Replace in Files).
-  ctx.command('rebased.noop', () => undefined);
+  ctx.command('ideagittool.noop', () => undefined);
   // Toolbar: shelve the included changes. API for Update Project: {root, name} shelves all local changes
   // of the repository and returns the shelf id (undefined when there is nothing to shelve).
-  ctx.command('rebased.shelveSilently', (arg?: unknown) => {
+  ctx.command('ideagittool.shelveSilently', (arg?: unknown) => {
     if (arg && typeof arg === 'object' && 'root' in arg && typeof (arg as { root: unknown }).root === 'string') {
       const a = arg as { root: string; name?: string };
       return view.shelveAll(a.root, a.name ?? 'Uncommitted changes before Update');
     }
     return view.shelveSilently([]);
   });
-  ctx.command('rebased.unshelveSilently', (arg?: { id?: string }) => {
+  ctx.command('ideagittool.unshelveSilently', (arg?: { id?: string }) => {
     if (arg?.id) return view.unshelveAll(arg.id);
     return view.reveal('shelf');
   });
-  ctx.command('rebased.removeFromVcs', async (uri?: unknown, uris?: vscode.Uri[]) => {
+  ctx.command('ideagittool.removeFromVcs', async (uri?: unknown, uris?: vscode.Uri[]) => {
     await ctx.repos.ready();
     view.buildState();
     return view.removeFromVcs(trackedKeys(uri, uris));
   });
-  ctx.command('rebased.revertResolved', async (uri?: unknown, uris?: vscode.Uri[]) => {
+  ctx.command('ideagittool.revertResolved', async (uri?: unknown, uris?: vscode.Uri[]) => {
     await ctx.repos.ready();
     view.buildState();
     return view.revertResolved(isUriArg(uri) ? keysUnder(uri, uris) : undefined);
   });
   // Rollback File…: the Rollback Changes dialog for the selected files only.
-  ctx.command('rebased.rollbackFile', async (uri?: unknown, uris?: vscode.Uri[]) => {
+  ctx.command('ideagittool.rollbackFile', async (uri?: unknown, uris?: vscode.Uri[]) => {
     await ctx.repos.ready();
     const keys = changesFor(isUriArg(uri) ? uri : undefined, uris)
       .filter(c => c.status !== '?')
@@ -161,7 +161,7 @@ export function register(ctx: Ctx) {
     view.buildState();
     return view.rollbackDialog(keys);
   });
-  ctx.command('rebased.copyPath', async (arg?: { kind?: CopyPathKind } | vscode.Uri, uris?: vscode.Uri[], kindArg?: CopyPathKind) => {
+  ctx.command('ideagittool.copyPath', async (arg?: { kind?: CopyPathKind } | vscode.Uri, uris?: vscode.Uri[], kindArg?: CopyPathKind) => {
     // From menus: (uri, uris) with the kind bound by the command id; from code: {kind}.
     const kind = kindArg ?? (arg && !(arg instanceof vscode.Uri) ? arg.kind : undefined) ?? 'absolute';
     const editor = vscode.window.activeTextEditor;
@@ -172,22 +172,22 @@ export function register(ctx: Ctx) {
     await copyPaths(files, kind, ctx, line);
   });
   for (const kind of ['absolute', 'name', 'lineNumber', 'contentRoot', 'repo', 'reference'] as CopyPathKind[]) {
-    ctx.command(`rebased.copyPath.${kind}`, (uri?: vscode.Uri, uris?: vscode.Uri[]) => vscode.commands.executeCommand('rebased.copyPath', uri, uris, kind));
+    ctx.command(`ideagittool.copyPath.${kind}`, (uri?: vscode.Uri, uris?: vscode.Uri[]) => vscode.commands.executeCommand('ideagittool.copyPath', uri, uris, kind));
   }
-  ctx.command('rebased.createPatchFromChanges', async (arg?: { keys?: string[]; changes?: Change[]; root?: string; hashes?: string[] } | vscode.Uri, uris?: vscode.Uri[]) => {
+  ctx.command('ideagittool.createPatchFromChanges', async (arg?: { keys?: string[]; changes?: Change[]; root?: string; hashes?: string[] } | vscode.Uri, uris?: vscode.Uri[]) => {
     await ctx.repos.ready();
     view.buildState();
     if (arg instanceof vscode.Uri || !arg) return view.createPatchFile(arg ? changesFor(arg, uris) : []);
     if (arg.hashes?.length && arg.root) return createPatchFromCommits(ctx, arg.root, arg.hashes, arg.changes);
     return view.createPatchFile(arg.changes ?? view.changes(arg.keys ?? []));
   });
-  ctx.command('rebased.unshelve', () => view.reveal('shelf'));
-  ctx.command('rebased.showShelf', () => view.reveal('shelf'));
-  ctx.command('rebased.showStashes', () => view.reveal('stash'));
-  ctx.command('rebased.newChangelist', () => view.newChangelist());
-  ctx.command('rebased.importPatches', () => view.importPatches());
+  ctx.command('ideagittool.unshelve', () => view.reveal('shelf'));
+  ctx.command('ideagittool.showShelf', () => view.reveal('shelf'));
+  ctx.command('ideagittool.showStashes', () => view.reveal('stash'));
+  ctx.command('ideagittool.newChangelist', () => view.newChangelist());
+  ctx.command('ideagittool.importPatches', () => view.importPatches());
 
-  ctx.command('rebased.stash', async (a?: { root?: string }) => {
+  ctx.command('ideagittool.stash', async (a?: { root?: string }) => {
     await ctx.repos.ready();
     const repos = ctx.repos.repositories;
     if (!repos.length) return;
@@ -208,7 +208,7 @@ export function register(ctx: Ctx) {
     await withProgress(`Stashing changes from '${repo.name}'…`, () => repo.batch(() => repo.exec(args)), { location: 'window' });
   });
 
-  ctx.command('rebased.unstash', async (a?: { root?: string; ref?: string }) => {
+  ctx.command('ideagittool.unstash', async (a?: { root?: string; ref?: string }) => {
     await ctx.repos.ready();
     const repos = ctx.repos.repositories;
     if (!repos.length) return;
@@ -261,8 +261,8 @@ export function register(ctx: Ctx) {
   // Keep the explorer context keys for menus in sync.
   const updateContext = () => {
     const hasConflicts = ctx.repos.repositories.some(r => r.status.conflicts.length > 0);
-    void vscode.commands.executeCommand('setContext', 'rebased.hasConflicts', hasConflicts);
-    void vscode.commands.executeCommand('setContext', 'rebased.inOperation', ctx.repos.repositories.some(r => r.info.operation !== 'none'));
+    void vscode.commands.executeCommand('setContext', 'ideagittool.hasConflicts', hasConflicts);
+    void vscode.commands.executeCommand('setContext', 'ideagittool.inOperation', ctx.repos.repositories.some(r => r.info.operation !== 'none'));
   };
   ctx.repos.onDidChangeRepository(updateContext);
 }

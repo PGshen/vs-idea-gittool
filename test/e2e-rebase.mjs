@@ -74,7 +74,7 @@ export async function run({ window, shot, command, sleep, workspace }) {
   console.log('status after start:', status.split('\n').slice(0, 3).join(' | '));
   if (!/rebase in progress|interactive rebase in progress/.test(status)) throw new Error('rebase did not stop at the edit entry');
   await window.keyboard.press('Escape');
-  await command('Rebased: Continue Rebase');
+  await command('IdeaGitTool: Continue Rebase');
   await sleep(4000);
   const afterFirst = subjects(workspace);
   console.log('after 1st rebase:', afterFirst);

@@ -48,7 +48,7 @@ export async function run({ window, shot, command, sleep, workspace }) {
   const unmerged = () => sh(workspace, 'git diff --name-only --diff-filter=U').trim().split('\n').filter(Boolean);
   const file = f => readFileSync(`${workspace}/${f}`, 'utf8');
   await sleep(4000);
-  await command('Rebased: Resolve Conflicts');
+  await command('IdeaGitTool: Resolve Conflicts');
   await sleep(2500);
   let dlg = await findFrame(window, '.dialog', 'Conflicts');
   await shot('conflicts-dialog');

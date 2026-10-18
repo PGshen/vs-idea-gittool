@@ -4,15 +4,15 @@ import { RepositoryManager } from '../../git/manager';
 import { ChangeStatus } from '../../shared/types';
 
 const COLORS: Partial<Record<ChangeStatus, { color: string; tooltip: string }>> = {
-  M: { color: 'rebased.fileStatus.modified', tooltip: 'Modified' },
-  R: { color: 'rebased.fileStatus.modified', tooltip: 'Renamed' },
-  T: { color: 'rebased.fileStatus.modified', tooltip: 'Type changed' },
-  C: { color: 'rebased.fileStatus.added', tooltip: 'Copied' },
-  A: { color: 'rebased.fileStatus.added', tooltip: 'Added' },
-  D: { color: 'rebased.fileStatus.deleted', tooltip: 'Deleted' },
-  U: { color: 'rebased.fileStatus.conflict', tooltip: 'Merged with conflicts' },
-  '?': { color: 'rebased.fileStatus.unknown', tooltip: 'Unversioned' },
-  '!': { color: 'rebased.fileStatus.ignored', tooltip: 'Ignored' },
+  M: { color: 'ideagittool.fileStatus.modified', tooltip: 'Modified' },
+  R: { color: 'ideagittool.fileStatus.modified', tooltip: 'Renamed' },
+  T: { color: 'ideagittool.fileStatus.modified', tooltip: 'Type changed' },
+  C: { color: 'ideagittool.fileStatus.added', tooltip: 'Copied' },
+  A: { color: 'ideagittool.fileStatus.added', tooltip: 'Added' },
+  D: { color: 'ideagittool.fileStatus.deleted', tooltip: 'Deleted' },
+  U: { color: 'ideagittool.fileStatus.conflict', tooltip: 'Merged with conflicts' },
+  '?': { color: 'ideagittool.fileStatus.unknown', tooltip: 'Unversioned' },
+  '!': { color: 'ideagittool.fileStatus.ignored', tooltip: 'Ignored' },
 };
 
 /**
@@ -27,7 +27,7 @@ export class StatusDecorations implements vscode.FileDecorationProvider {
   constructor(private readonly repos: RepositoryManager) {
     repos.onDidChangeRepository(() => this.rebuild());
     repos.onDidChangeRepositories(() => this.rebuild());
-    vscode.workspace.onDidChangeConfiguration(e => e.affectsConfiguration('rebased.fileStatusColors') && this.rebuild());
+    vscode.workspace.onDidChangeConfiguration(e => e.affectsConfiguration('ideagittool.fileStatusColors') && this.rebuild());
   }
 
   private rebuild() {
@@ -44,7 +44,7 @@ export class StatusDecorations implements vscode.FileDecorationProvider {
   }
 
   provideFileDecoration(uri: vscode.Uri): vscode.FileDecoration | undefined {
-    if (uri.scheme !== 'file' || !vscode.workspace.getConfiguration('rebased').get<boolean>('fileStatusColors', true)) return undefined;
+    if (uri.scheme !== 'file' || !vscode.workspace.getConfiguration('ideagittool').get<boolean>('fileStatusColors', true)) return undefined;
     const st = this.map.get(uri.fsPath);
     if (!st) return undefined;
     const c = COLORS[st];

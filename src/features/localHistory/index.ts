@@ -47,9 +47,9 @@ export function register(ctx: Ctx) {
     return { mode: dir ? 'dir' : 'file', path: p };
   };
 
-  ctx.command('rebased.localHistory.showHistory', (uri?: unknown) => open(targetOf(uri)));
-  ctx.command('rebased.localHistory.showProjectHistory', () => open({ mode: 'project' }));
-  ctx.command('rebased.localHistory.showSelectionHistory', (uri?: unknown) => {
+  ctx.command('ideagittool.localHistory.showHistory', (uri?: unknown) => open(targetOf(uri)));
+  ctx.command('ideagittool.localHistory.showProjectHistory', () => open({ mode: 'project' }));
+  ctx.command('ideagittool.localHistory.showSelectionHistory', (uri?: unknown) => {
     const editor = vscode.window.activeTextEditor;
     if (!editor || editor.document.uri.scheme !== 'file') {
       void vscode.window.showInformationMessage('Open a file and select lines to see their history');
@@ -60,18 +60,18 @@ export function register(ctx: Ctx) {
     const end = sel.end.character === 0 && sel.end.line > sel.start.line ? sel.end.line : sel.end.line + 1;
     open({ mode: 'selection', path: normPath(editor.document.uri.fsPath), selection: [sel.start.line, end] });
   });
-  ctx.command('rebased.localHistory.putLabel', async () => {
+  ctx.command('ideagittool.localHistory.putLabel', async () => {
     const name = await vscode.window.showInputBox({ title: 'Put Label', prompt: 'Label name:', ignoreFocusOut: true, validateInput: v => (v.trim() ? undefined : 'Label name is empty') });
     if (!name?.trim()) return;
     rec.putLabel(name.trim());
     void vscode.window.setStatusBarMessage(`Label ${name.trim()} created`, 4000);
   });
   // For other features: "Before Update", "Before Rebase", … labels recorded around git operations.
-  ctx.command('rebased.localHistory.putSystemLabel', (arg?: { root?: string; label: string } | string) => {
+  ctx.command('ideagittool.localHistory.putSystemLabel', (arg?: { root?: string; label: string } | string) => {
     const label = typeof arg === 'string' ? arg : arg?.label;
     if (label) rec.putLabel(label, true);
   });
-  ctx.command('rebased.localHistory.recentChanges', async () => {
+  ctx.command('ideagittool.localHistory.recentChanges', async () => {
     const picks = { items: [] as { id: number; label: string; description: string; detail?: string }[] };
     // Reuse the project grouping of the view without opening it.
     const groups = new Map<number, number[]>();

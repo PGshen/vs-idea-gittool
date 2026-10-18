@@ -1,6 +1,6 @@
 // Fixture for `node scripts/preview.mjs commit test/fixtures/commit.mjs out.png --size=360x900`.
-// Mirrors the Rebased screenshot: "Changes 2 files" with README.md and screenshot.png, "Unversioned Files 2 files".
-const root = '/home/user/rebased';
+// Mirrors the IdeaGitTool screenshot: "Changes 2 files" with README.md and screenshot.png, "Unversioned Files 2 files".
+const root = '/home/user/ideagittool';
 const ch = (path, status) => ({ root, path, status, index: '.', workTree: 'M' });
 const changes = [ch('README.md', 'M'), ch('screenshot.png', 'M')];
 const unversioned = [
@@ -11,7 +11,7 @@ const key = c => `${c.root}\u0000${c.path}`;
 const now = Math.floor(Date.now() / 1000);
 
 export const state = {
-  repos: [{ root, name: 'rebased', branch: 'master', headHash: 'c1c9c29a', operation: process.env.OP ?? 'none', operationTarget: 'abc12345', rebaseHeadName: 'master' }],
+  repos: [{ root, name: 'ideagittool', branch: 'master', headHash: 'c1c9c29a', operation: process.env.OP ?? 'none', operationTarget: 'abc12345', rebaseHeadName: 'master' }],
   changelists: [{ id: 'default', name: 'Changes', isDefault: true, files: changes.map(key), changes }],
   unversioned,
   ignored: [],
@@ -24,8 +24,8 @@ export const state = {
     { id: 's2', root, name: 'Old experiment', date: now - 86400 * 9, deleted: true, files: [{ root, path: 'README.md', status: 'M' }] },
   ],
   stashes: [
-    { index: 0, ref: 'stash@{0}', hash: 'a'.repeat(40), message: 'fix zizmor errors', branch: 'master', date: now - 7200, root, repoName: 'rebased' },
-    { index: 1, ref: 'stash@{1}', hash: 'b'.repeat(40), message: 'try new toolbar', branch: 'feature/ui', date: now - 86400 * 3, root, repoName: 'rebased' },
+    { index: 0, ref: 'stash@{0}', hash: 'a'.repeat(40), message: 'fix zizmor errors', branch: 'master', date: now - 7200, root, repoName: 'ideagittool' },
+    { index: 1, ref: 'stash@{1}', hash: 'b'.repeat(40), message: 'try new toolbar', branch: 'feature/ui', date: now - 86400 * 3, root, repoName: 'ideagittool' },
   ],
   messageHistory: ['update readme screenshot', 'fix `test.cmd` command'],
   loading: false,

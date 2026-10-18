@@ -1,10 +1,10 @@
-// Preview fixture for the log webview: a history resembling the Rebased screenshot.
+// Preview fixture for the log webview: a history resembling the IdeaGitTool screenshot.
 import * as esbuild from 'esbuild';
 
 const built = await esbuild.build({ entryPoints: ['src/git/graph.ts'], bundle: true, write: false, format: 'esm', platform: 'neutral' });
 const { GraphLayout } = await import('data:text/javascript;base64,' + Buffer.from(built.outputFiles[0].text).toString('base64'));
 
-const root = '/home/user/rebased';
+const root = '/home/user/ideagittool';
 const t0 = Date.UTC(2026, 5, 17, 18, 56) / 1000;
 let h = 0;
 const hash = () => (++h).toString(16).padStart(8, '0') + 'c1c9c29a5b0d4e1f2a3b4c5d6e7f8091'.slice(0, 32);
@@ -71,7 +71,7 @@ export const initial = {
   tabId: 'log1',
   mode: 'log',
   title: 'Log: HEAD',
-  repos: [{ root, name: 'rebased' }],
+  repos: [{ root, name: 'ideagittool' }],
   root,
   refs,
   head: { branch: 'master', hash: H(0), detached: false, operation: 'none' },
@@ -106,13 +106,13 @@ export const initial = {
 const files = [
   '.github/actions/upload_ide/action.yml',
   '.github/workflows/ide_build_and_upload.yml',
-  'build/idea-community-images/linux/icon_rebased_128.png',
+  'build/idea-community-images/linux/icon_ideagittool_128.png',
   'build/idea-community-images/linux/product_128.png',
   'build/idea-community-images/mac/product.icns',
-  'build/idea-community-images/mac/rebased.icns',
+  'build/idea-community-images/mac/ideagittool.icns',
   'build/idea-community-images/win/product.ico',
-  'build/idea-community-images/win/rebased.ico',
-  'build/src/org/jetbrains/intellij/build/RebasedProperties.kt',
+  'build/idea-community-images/win/ideagittool.ico',
+  'build/src/org/jetbrains/intellij/build/IdeaGitToolProperties.kt',
   'images/resources/META-INF/plugin.xml',
   'platform/a/README.md',
   'platform/b/Main.java',

@@ -10,7 +10,7 @@ import { rebasePatchPaths, reversePatch } from '../src/features/commit/patchDial
 import { revertableResolvedFiles } from '../src/features/commit/view';
 
 function makeRepo() {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'rebased-gaps-test-')));
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ideagittool-gaps-test-')));
   execSync('git init -q -b master && git config user.name t && git config user.email t@e.st', { cwd: dir });
   fs.mkdirSync(path.join(dir, 'src'));
   fs.writeFileSync(path.join(dir, 'src', 'a.txt'), 'one\ntwo\nthree\n');

@@ -30,7 +30,7 @@ export async function updateWithSavedChanges(
   return { ...res, saver };
 }
 
-/** `rebased.updateProject {root?, method?}`: VcsUpdateDialog + GitUpdateProcess. */
+/** `ideagittool.updateProject {root?, method?}`: VcsUpdateDialog + GitUpdateProcess. */
 export async function updateProjectCommand(ctx: Ctx, arg?: RootArg & { method?: UpdateMethod }) {
   await ctx.repos.ready();
   const repos = arg?.root ? [await repoFor(ctx, arg)] : ctx.repos.repositories;
@@ -84,7 +84,7 @@ export async function updateProjectCommand(ctx: Ctx, arg?: RootArg & { method?: 
         `${res.forcePushed.upstream} was force-pushed: the tracked branch was rewritten on the remote. Update the current branch by resetting it to ${res.forcePushed.upstream} and cherry-picking the local commits?`,
         'Update Force-Pushed Branch',
       )
-      .then(a => a && vscode.commands.executeCommand('rebased.updateForcePushedBranch', { root: repo.root }));
+      .then(a => a && vscode.commands.executeCommand('ideagittool.updateForcePushedBranch', { root: repo.root }));
   }
   if (failed.length) return;
   if (skipped.length === results.length) {
@@ -109,7 +109,7 @@ export async function updateProjectCommand(ctx: Ctx, arg?: RootArg & { method?: 
   }
   const first = results.find(r => r.res.commits > 0)!;
   const a = await vscode.window.showInformationMessage(`${title}: ${updateSummary(files, commits)}${skippedText}`, 'View Commits');
-  if (a) void vscode.commands.executeCommand('rebased.compareRefs', { root: first.repo.root, ref: first.res.after, with: first.res.before });
+  if (a) void vscode.commands.executeCommand('ideagittool.compareRefs', { root: first.repo.root, ref: first.res.after, with: first.res.before });
 }
 
 /** "Reset to the Remote Branch" (left button of the Update dialog). */
@@ -147,7 +147,7 @@ export async function resetToRemoteCommand(ctx: Ctx, arg?: RootArg) {
   void vscode.window.showInformationMessage(res.before === res.after ? 'All files are up-to-date' : `Project updated: ${branch} was reset to ${upstream}`);
 }
 
-/** `rebased.updateForcePushedBranch {root?}`: IntelliJ's "Update Force-Pushed Branch". */
+/** `ideagittool.updateForcePushedBranch {root?}`: IntelliJ's "Update Force-Pushed Branch". */
 export async function updateForcePushedBranchCommand(ctx: Ctx, arg?: RootArg) {
   await ctx.repos.ready();
   const repos = arg?.root ? [await repoFor(ctx, arg)] : ctx.repos.repositories;

@@ -11,7 +11,7 @@ export async function fileFromArg(ctx: Ctx, arg: any): Promise<{ repo: Repositor
     return repo ? { repo, path: arg.path } : undefined;
   }
   let uri: vscode.Uri | undefined = arg instanceof vscode.Uri ? arg : arg?.resourceUri instanceof vscode.Uri ? arg.resourceUri : vscode.window.activeTextEditor?.document.uri;
-  if (uri?.scheme === 'rebased-git') {
+  if (uri?.scheme === 'ideagittool-git') {
     const q = JSON.parse(uri.query);
     const repo = ctx.repos.get(q.root);
     return repo ? { repo, path: q.path } : undefined;

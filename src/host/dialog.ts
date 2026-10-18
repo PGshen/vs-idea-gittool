@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { getExtensionUri, Handler, WebviewConnection } from './webviewHost';
 
 export interface DialogOptions {
-  /** Window title, e.g. "Push Commits to rebased". */
+  /** Window title, e.g. "Push Commits to ideagittool". */
   title: string;
   /** Extra RPC handlers the dialog can call while open (e.g. to load commits). */
   handlers?: Record<string, Handler>;
@@ -25,7 +25,7 @@ let openDialogs = 0;
 export function showDialog<T = any>(kind: string, props: unknown, opts: DialogOptions): Promise<T | undefined> {
   return new Promise<T | undefined>(resolve => {
     const panel = vscode.window.createWebviewPanel(
-      'rebased.dialog',
+      'ideagittool.dialog',
       opts.title,
       { viewColumn: vscode.ViewColumn.Active, preserveFocus: false },
       { retainContextWhenHidden: true, enableFindWidget: false },

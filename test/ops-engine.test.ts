@@ -28,7 +28,7 @@ function sh(cwd: string, cmd: string) {
   return execSync(cmd, { cwd, env, stdio: 'pipe' }).toString();
 }
 function tmp() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'rebased-ops-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'ideagittool-ops-test-'));
 }
 function makeRepo(commits = ['a', 'b', 'c', 'd']) {
   const dir = tmp();

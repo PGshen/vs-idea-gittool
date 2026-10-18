@@ -74,7 +74,7 @@ export function syncControl(ctx: Ctx) {
   return ctx.repos.repositories.length > 1 && settings().get<boolean>('branches.syncControl', true);
 }
 
-/** `rebased.branches`: the Git branches popup (GitBranchesTreePopup). */
+/** `ideagittool.branches`: the Git branches popup (GitBranchesTreePopup). */
 export async function branchesPopup(ctx: Ctx, arg?: RootArg & { single?: boolean }) {
   await ctx.repos.ready();
   if (!arg?.single && syncControl(ctx)) return syncBranchesPopup(ctx);
@@ -111,8 +111,8 @@ export async function branchesPopup(ctx: Ctx, arg?: RootArg & { single?: boolean
         },
       });
     }
-    // Rebased: Update Project and Push are on the toolbar; only Commit… remains at the top.
-    items.push({ label: 'Commit…', iconPath: ijIcon('vcs/commit'), alwaysShow: false, run: () => vscode.commands.executeCommand('rebased.commit') });
+    // IdeaGitTool: Update Project and Push are on the toolbar; only Commit… remains at the top.
+    items.push({ label: 'Commit…', iconPath: ijIcon('vcs/commit'), alwaysShow: false, run: () => vscode.commands.executeCommand('ideagittool.commit') });
     items.push({ label: '', kind: SEP });
     for (const a of ongoingActions(r)) items.push({ ...a, alwaysShow: true });
     items.push({ label: 'New Branch…', iconPath: ijIcon('general/add'), description: 'Ctrl+Alt+N', run: () => newBranchCommand(ctx, { root: r.root }) });
@@ -209,19 +209,19 @@ function ongoingActions(repo: Repository): PopupItem[] {
   switch (repo.detectOperation()) {
     case 'rebase':
       return [
-        { label: 'Abort Rebase', iconPath: ijIcon('vcs/abort'), run: run('rebased.abortOperation') },
-        { label: 'Continue Rebase', iconPath: ijIcon('dvcs/resolveContinue'), run: run('rebased.continueOperation') },
-        { label: 'Skip Commit', iconPath: ijIcon('dvcs/skipCommit'), run: run('rebased.skipCommit') },
+        { label: 'Abort Rebase', iconPath: ijIcon('vcs/abort'), run: run('ideagittool.abortOperation') },
+        { label: 'Continue Rebase', iconPath: ijIcon('dvcs/resolveContinue'), run: run('ideagittool.continueOperation') },
+        { label: 'Skip Commit', iconPath: ijIcon('dvcs/skipCommit'), run: run('ideagittool.skipCommit') },
       ];
     case 'merge':
-      return [{ label: 'Abort Merge', iconPath: ijIcon('vcs/abort'), run: run('rebased.abortOperation') }];
+      return [{ label: 'Abort Merge', iconPath: ijIcon('vcs/abort'), run: run('ideagittool.abortOperation') }];
     case 'cherry-pick':
       return [
-        { label: 'Abort Cherry-Pick', iconPath: ijIcon('vcs/abort'), run: run('rebased.abortOperation') },
-        { label: 'Continue Cherry-Pick', iconPath: ijIcon('dvcs/resolveContinue'), run: run('rebased.continueOperation') },
+        { label: 'Abort Cherry-Pick', iconPath: ijIcon('vcs/abort'), run: run('ideagittool.abortOperation') },
+        { label: 'Continue Cherry-Pick', iconPath: ijIcon('dvcs/resolveContinue'), run: run('ideagittool.continueOperation') },
       ];
     case 'revert':
-      return [{ label: 'Abort Revert', iconPath: ijIcon('vcs/abort'), run: run('rebased.abortOperation') }];
+      return [{ label: 'Abort Revert', iconPath: ijIcon('vcs/abort'), run: run('ideagittool.abortOperation') }];
     default:
       return [];
   }
@@ -234,46 +234,46 @@ export function refActions(ctx: Ctx, repo: Repository, ref: Ref, otherWorktree?:
   const arg = { root: repo.root, name: ref.name, type: ref.type as RefKind };
   // Synchronous branch control: the action runs in every repository (root by root, like IntelliJ).
   const cmd = (id: string) => async () => {
-    if (id === 'rebased.branch.newBranchFrom' && roots) return newBranchCommand(ctx, { roots, startPoint: ref.name, title: `Create Branch from ${ref.name}` });
+    if (id === 'ideagittool.branch.newBranchFrom' && roots) return newBranchCommand(ctx, { roots, startPoint: ref.name, title: `Create Branch from ${ref.name}` });
     for (const root of roots ?? [repo.root]) await vscode.commands.executeCommand(id, { ...arg, root });
   };
   const items: PopupItem[] = [];
   const sep = () => items.push({ label: '', kind: SEP });
   const isTag = ref.type === 'tag';
-  const ns = isTag ? 'rebased.tag' : 'rebased.branch';
+  const ns = isTag ? 'ideagittool.tag' : 'ideagittool.branch';
   if (!current) items.push({ label: 'Checkout', run: cmd(`${ns}.checkout`) });
-  if (otherWorktree && !roots) items.push({ label: 'Open Worktree…', run: () => vscode.commands.executeCommand('rebased.worktrees.open', { root: repo.root, branch: ref.name }) });
-  items.push({ label: `New Branch from '${ref.name}'…`, iconPath: ijIcon('general/add'), run: cmd('rebased.branch.newBranchFrom') });
-  if (!current && !isTag && cur) items.push({ label: `Checkout and Rebase onto '${cur}'`, run: cmd('rebased.branch.checkoutAndRebase') });
-  if (ref.type === 'local' && !current && ref.upstream) items.push({ label: 'Checkout and Update', run: cmd('rebased.branch.checkoutAndUpdate') });
+  if (otherWorktree && !roots) items.push({ label: 'Open Worktree…', run: () => vscode.commands.executeCommand('ideagittool.worktrees.open', { root: repo.root, branch: ref.name }) });
+  items.push({ label: `New Branch from '${ref.name}'…`, iconPath: ijIcon('general/add'), run: cmd('ideagittool.branch.newBranchFrom') });
+  if (!current && !isTag && cur) items.push({ label: `Checkout and Rebase onto '${cur}'`, run: cmd('ideagittool.branch.checkoutAndRebase') });
+  if (ref.type === 'local' && !current && ref.upstream) items.push({ label: 'Checkout and Update', run: cmd('ideagittool.branch.checkoutAndUpdate') });
   if (!current && !otherWorktree && !roots) {
     items.push({
       label: `New Worktree from '${ref.name}'…`,
-      run: () => vscode.commands.executeCommand('rebased.worktrees.create', { root: repo.root, ref: ref.name }),
+      run: () => vscode.commands.executeCommand('ideagittool.worktrees.create', { root: repo.root, ref: ref.name }),
     });
   }
   sep();
-  if (!current && cur) items.push({ label: `Compare with '${cur}'`, run: cmd('rebased.branch.compare') });
-  items.push({ label: 'Show Diff with Working Tree', iconPath: ijIcon('vcs/diff'), run: cmd('rebased.branch.showDiffWithWorkingTree') });
+  if (!current && cur) items.push({ label: `Compare with '${cur}'`, run: cmd('ideagittool.branch.compare') });
+  items.push({ label: 'Show Diff with Working Tree', iconPath: ijIcon('vcs/diff'), run: cmd('ideagittool.branch.showDiffWithWorkingTree') });
   sep();
   if (!current && cur) {
-    items.push({ label: `Rebase '${cur}' onto '${ref.name}'`, run: cmd('rebased.branch.rebaseCurrentOnto') });
-    items.push({ label: `Merge '${ref.name}' into '${cur}'`, iconPath: ijIcon('vcs/merge'), run: cmd(isTag ? 'rebased.tag.mergeIntoCurrent' : 'rebased.branch.mergeIntoCurrent') });
+    items.push({ label: `Rebase '${cur}' onto '${ref.name}'`, run: cmd('ideagittool.branch.rebaseCurrentOnto') });
+    items.push({ label: `Merge '${ref.name}' into '${cur}'`, iconPath: ijIcon('vcs/merge'), run: cmd(isTag ? 'ideagittool.tag.mergeIntoCurrent' : 'ideagittool.branch.mergeIntoCurrent') });
   }
   sep();
   if (ref.type === 'local') {
-    if (ref.upstream || current) items.push({ label: 'Update', iconPath: ijIcon('vcs/update'), run: cmd('rebased.branch.update') });
-    items.push({ label: 'Push…', iconPath: ijIcon('vcs/push'), description: 'Ctrl+Shift+K', run: cmd('rebased.branch.push') });
-    items.push({ label: ref.upstream ? `Tracked Branch '${ref.upstream}'…` : 'Set Tracked Branch…', run: cmd('rebased.branch.trackRemote') });
+    if (ref.upstream || current) items.push({ label: 'Update', iconPath: ijIcon('vcs/update'), run: cmd('ideagittool.branch.update') });
+    items.push({ label: 'Push…', iconPath: ijIcon('vcs/push'), description: 'Ctrl+Shift+K', run: cmd('ideagittool.branch.push') });
+    items.push({ label: ref.upstream ? `Tracked Branch '${ref.upstream}'…` : 'Set Tracked Branch…', run: cmd('ideagittool.branch.trackRemote') });
   }
   if (ref.type === 'remote' && cur) {
-    items.push({ label: `Pull into '${cur}' Using Rebase`, run: cmd('rebased.branch.pullRebase') });
-    items.push({ label: `Pull into '${cur}' Using Merge`, run: cmd('rebased.branch.pullMerge') });
+    items.push({ label: `Pull into '${cur}' Using Rebase`, run: cmd('ideagittool.branch.pullRebase') });
+    items.push({ label: `Pull into '${cur}' Using Merge`, run: cmd('ideagittool.branch.pullMerge') });
   }
   sep();
-  if (isTag) items.push({ label: 'Push Tag', iconPath: ijIcon('vcs/push'), run: cmd('rebased.tag.push') });
+  if (isTag) items.push({ label: 'Push Tag', iconPath: ijIcon('vcs/push'), run: cmd('ideagittool.tag.push') });
   sep();
-  if (ref.type === 'local') items.push({ label: 'Rename…', description: 'F2', run: cmd('rebased.branch.rename') });
+  if (ref.type === 'local') items.push({ label: 'Rename…', description: 'F2', run: cmd('ideagittool.branch.rename') });
   if (!current) items.push({ label: 'Delete', iconPath: ijIcon('general/delete'), description: 'Delete', run: cmd(`${ns}.delete`) });
   // Drop leading / trailing / doubled separators.
   return items.filter((it, i, all) => it.kind !== SEP || (i > 0 && i < all.length - 1 && all[i - 1].kind !== SEP));
@@ -329,7 +329,7 @@ async function syncBranchesPopup(ctx: Ctx) {
   };
   const build = () => {
     const items: PopupItem[] = [];
-    items.push({ label: 'Commit…', iconPath: ijIcon('vcs/commit'), run: () => vscode.commands.executeCommand('rebased.commit') });
+    items.push({ label: 'Commit…', iconPath: ijIcon('vcs/commit'), run: () => vscode.commands.executeCommand('ideagittool.commit') });
     items.push({ label: '', kind: SEP });
     items.push({ label: 'New Branch…', iconPath: ijIcon('general/add'), description: 'Ctrl+Alt+N', run: () => newBranchCommand(ctx, { roots }) });
     const branches = new Set(repos.map(r => r.info.branch ?? ''));
@@ -401,7 +401,7 @@ async function checkoutTagOrRevision(ctx: Ctx, repo: Repository) {
     validate: async (v: { ref: string }) => {
       const ok = await repo.exec(['rev-parse', '-q', '--verify', `${v.ref}^{commit}`], { allowFailure: true, quiet: true });
       if (ok.exitCode !== 0) return `Revision not found: ${v.ref}`;
-      setTimeout(() => void vscode.commands.executeCommand('rebased.checkoutRevision', { root: repo.root, hash: v.ref }), 0);
+      setTimeout(() => void vscode.commands.executeCommand('ideagittool.checkoutRevision', { root: repo.root, hash: v.ref }), 0);
       return true;
     },
   });
@@ -578,7 +578,7 @@ export async function checkoutAndUpdate(ctx: Ctx, arg: BranchArg) {
 
 export async function compareWithCurrent(ctx: Ctx, arg: BranchArg) {
   const repo = await repoFor(ctx, arg);
-  await vscode.commands.executeCommand('rebased.compareRefs', { root: repo.root, ref: arg.name, with: repo.info.branch ?? 'HEAD' });
+  await vscode.commands.executeCommand('ideagittool.compareRefs', { root: repo.root, ref: arg.name, with: repo.info.branch ?? 'HEAD' });
 }
 
 export async function showDiffWithWorkingTree(ctx: Ctx, arg: BranchArg) {
@@ -734,7 +734,7 @@ export async function toggleFavorite(ctx: Ctx, arg: BranchArg) {
 // ------------------------------------------------------------------ tag commands
 
 export async function checkoutTag(ctx: Ctx, arg: BranchArg) {
-  await vscode.commands.executeCommand('rebased.checkoutRevision', { root: arg.root, hash: `refs/tags/${arg.name}` });
+  await vscode.commands.executeCommand('ideagittool.checkoutRevision', { root: arg.root, hash: `refs/tags/${arg.name}` });
 }
 
 export async function mergeTag(ctx: Ctx, arg: BranchArg) {

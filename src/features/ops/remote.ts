@@ -51,7 +51,7 @@ function defaultRemote(repo: Repository): string | undefined {
   return repo.remotes.find(r => r.name === 'origin')?.name ?? repo.remotes[0]?.name;
 }
 
-/** `rebased.push {root?, upTo?, branch?}`: the Push Commits dialog. */
+/** `ideagittool.push {root?, upTo?, branch?}`: the Push Commits dialog. */
 export async function pushCommand(ctx: Ctx, arg?: RootArg & { upTo?: string; branch?: string }) {
   await ctx.repos.ready();
   let repos: Repository[];
@@ -203,14 +203,14 @@ export async function doPush(ctx: Ctx, repo: Repository, spec: PushSpec, isNew: 
       spec.force === 'lease' ? `Push rejected: Force-with-lease push ${spec.source} to ${spec.remote}/${spec.target} was rejected` : `Push rejected: Push to ${spec.remote}/${spec.target} was rejected\n${res.output}`,
       'Show Git Console',
     );
-    if (a) void vscode.commands.executeCommand('rebased.showConsole');
+    if (a) void vscode.commands.executeCommand('ideagittool.showConsole');
     return false;
   }
   showError(res.error ?? res.output, 'Push failed');
   return false;
 }
 
-/** `rebased.fetch {root?}`: fetches all remotes of all (or one) repositories. */
+/** `ideagittool.fetch {root?}`: fetches all remotes of all (or one) repositories. */
 export async function fetchCommand(ctx: Ctx, arg?: RootArg) {
   await ctx.repos.ready();
   const repos = arg?.root ? [await repoFor(ctx, arg)] : ctx.repos.repositories;
@@ -231,7 +231,7 @@ export async function fetchCommand(ctx: Ctx, arg?: RootArg) {
   else void vscode.window.showInformationMessage('Fetch successful');
 }
 
-/** `rebased.pull {root?}`: the Pull dialog. */
+/** `ideagittool.pull {root?}`: the Pull dialog. */
 export async function pullCommand(ctx: Ctx, arg?: RootArg & { remote?: string; branch?: string; options?: string[] }) {
   const repo = await repoFor(ctx, arg);
   const repos = arg?.root ? [repo] : ctx.repos.repositories;
@@ -283,7 +283,7 @@ export async function pull(repo: Repository, remote: string, branch: string, opt
     }
     const files = (await repo.execText(['diff', '--name-only', before, after], { quiet: true })).split('\n').filter(Boolean).length;
     const a = await vscode.window.showInformationMessage(`Project updated: ${updateSummary(files, commits)}`, 'View Commits');
-    if (a) void vscode.commands.executeCommand('rebased.compareRefs', { root: repo.root, ref: after, with: before });
+    if (a) void vscode.commands.executeCommand('ideagittool.compareRefs', { root: repo.root, ref: after, with: before });
     return;
   }
   await reportOutcome(repo, outcome, { operation: 'pull', failedTitle: 'Pull failed' });

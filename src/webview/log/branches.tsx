@@ -202,7 +202,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
       <Toolbar vertical class="branches-toolbar">
         <ActionButton icon="general/chevronLeft" tip="Hide Git Branches" onClick={onHide} />
         <span class="toolbar-separator" style={{ width: '18px', height: '1px', margin: '4px 0' }} />
-        <ActionButton icon="general/add" tip="New Branch" shortcut="Ctrl+Alt+N" onClick={() => send('command', { id: 'rebased.createBranch', args: { root: store.root, startPoint: one?.name } })} />
+        <ActionButton icon="general/add" tip="New Branch" shortcut="Ctrl+Alt+N" onClick={() => send('command', { id: 'ideagittool.createBranch', args: { root: store.root, startPoint: one?.name } })} />
         <ActionButton
           icon="vcs/update"
           tip="Update Selected"
@@ -220,7 +220,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
             store.updateSettings({ showMyBranches: !settings.showMyBranches });
           }}
         />
-        <ActionButton icon="vcs/fetch" tip="Fetch" onClick={() => (store.init.multi ? store.repos : [{ root: store.root }]).forEach(r => send('command', { id: 'rebased.fetch', args: { root: r.root } }))} />
+        <ActionButton icon="vcs/fetch" tip="Fetch" onClick={() => (store.init.multi ? store.repos : [{ root: store.root }]).forEach(r => send('command', { id: 'ideagittool.fetch', args: { root: r.root } }))} />
         <ActionButton icon="nodes/star" tip="Mark/Unmark As Favorite" disabled={!sel.length || sel.some(r => r.type === 'tag')} onClick={() => sel.forEach(r => send('branchAction', { id: 'toggleFavorite', name: r.name, type: r.type, root: r.root }))} />
         <ActionButton
           icon="general/locate"
@@ -289,28 +289,28 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
                 [
                   { label: 'Update Branch Filter', action: () => void store.setFilters({ ...store.filters, branches: refs.map(x => x.name) }) },
                   { separator: true },
-                  { label: 'Compare Branches', disabled: !pair, action: () => pair && send('command', { id: 'rebased.compareRefs', args: { root: pairRoot, ...pair } }) },
-                  { label: 'Show Files Diff', disabled: !pair, action: () => pair && send('command', { id: 'rebased.compareRefs.files', args: { root: pairRoot, ...pair } }) },
+                  { label: 'Compare Branches', disabled: !pair, action: () => pair && send('command', { id: 'ideagittool.compareRefs', args: { root: pairRoot, ...pair } }) },
+                  { label: 'Show Files Diff', disabled: !pair, action: () => pair && send('command', { id: 'ideagittool.compareRefs.files', args: { root: pairRoot, ...pair } }) },
                   { label: 'Update Selected', icon: 'vcs/update', disabled: !refs.some(x => x.type === 'local'), action: () => refs.filter(x => x.type === 'local').forEach(x => send('branchAction', { id: 'update', name: x.name, type: x.type, root: x.root })) },
                   { label: 'Delete Branches', icon: 'general/delete', action: () => refs.filter(x => !x.current).forEach(x => send('branchAction', { id: 'delete', name: x.name, type: x.type, root: x.root })) },
                 ],
                 anchorAt(e),
               );
             } else if (selected[0]?.key === 'remote') {
-              showMenu([{ label: 'Manage Remotes…', action: () => send('command', { id: 'rebased.remotes', args: { root: store.root } }) }], anchorAt(e));
+              showMenu([{ label: 'Manage Remotes…', action: () => send('command', { id: 'ideagittool.remotes', args: { root: store.root } }) }], anchorAt(e));
             } else if (selected[0]?.data?.remote) {
               const root = selected[0].data.root ?? store.root;
               showMenu(
                 [
                   { label: 'Update Branch Filter', action: () => filterBy(selected[0]) },
                   { separator: true },
-                  { label: 'Edit Remote…', action: () => send('command', { id: 'rebased.remotes', args: { root } }) },
-                  { label: 'Remove Remote', action: () => send('command', { id: 'rebased.remotes', args: { root } }) },
+                  { label: 'Edit Remote…', action: () => send('command', { id: 'ideagittool.remotes', args: { root } }) },
+                  { label: 'Remove Remote', action: () => send('command', { id: 'ideagittool.remotes', args: { root } }) },
                 ],
                 anchorAt(e),
               );
             } else if (selected[0]?.key === 'head') {
-              showMenu([{ label: 'Update Branch Filter', action: () => filterBy(selected[0]) }, { label: 'New Branch…', action: () => send('command', { id: 'rebased.createBranch', args: { root: store.root } }) }], anchorAt(e));
+              showMenu([{ label: 'Update Branch Filter', action: () => filterBy(selected[0]) }, { label: 'New Branch…', action: () => send('command', { id: 'ideagittool.createBranch', args: { root: store.root } }) }], anchorAt(e));
             }
           }}
         />

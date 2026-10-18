@@ -1,12 +1,12 @@
 {
   "configuration": {
     "properties": {
-      "rebased.localHistory.enabled": {
+      "ideagittool.localHistory.enabled": {
         "type": "boolean",
         "default": true,
         "description": "Record Local History: file saves, creations, deletions, renames and external changes (git operations)."
       },
-      "rebased.localHistory.retentionDays": {
+      "ideagittool.localHistory.retentionDays": {
         "type": "number",
         "default": 5,
         "minimum": 1,
@@ -15,78 +15,78 @@
     }
   },
   "commands": [
-    { "command": "rebased.localHistory.showHistory", "title": "Show History…", "category": "Rebased: Local History", "icon": "$(history)" },
-    { "command": "rebased.localHistory.showSelectionHistory", "title": "Show History for Selection…", "category": "Rebased: Local History" },
-    { "command": "rebased.localHistory.showProjectHistory", "title": "Show Project History…", "category": "Rebased: Local History" },
-    { "command": "rebased.localHistory.recentChanges", "title": "Recent Changes", "category": "Rebased: Local History" },
-    { "command": "rebased.localHistory.putLabel", "title": "Put Label…", "category": "Rebased: Local History" },
-    { "command": "rebased.localHistory.putSystemLabel", "title": "Put System Label", "category": "Rebased: Local History" },
-    { "command": "rebased.rollbackFile", "title": "Rollback File…", "category": "Rebased" },
-    { "command": "rebased.removeFromVcs", "title": "Remove from VCS", "category": "Rebased" },
-    { "command": "rebased.revertResolved", "title": "Revert Resolved", "category": "Rebased" },
-    { "command": "rebased.createPatchFromChanges", "title": "Create Patch from Local Changes…", "category": "Rebased" },
-    { "command": "rebased.unshelveSilently", "title": "Unshelve Silently", "category": "Rebased" },
-    { "command": "rebased.copyPath", "title": "Copy Path", "category": "Rebased" },
-    { "command": "rebased.noop", "title": "No Operation", "category": "Rebased" },
-    { "command": "rebased.copyPath.absolute", "title": "Absolute Path" },
-    { "command": "rebased.copyPath.name", "title": "File Name" },
-    { "command": "rebased.copyPath.lineNumber", "title": "Path with Line Number" },
-    { "command": "rebased.copyPath.contentRoot", "title": "Path from Content Root" },
-    { "command": "rebased.copyPath.repo", "title": "Path From Repository Root" },
-    { "command": "rebased.copyPath.reference", "title": "Copy Reference" }
+    { "command": "ideagittool.localHistory.showHistory", "title": "Show History…", "category": "IdeaGitTool: Local History", "icon": "$(history)" },
+    { "command": "ideagittool.localHistory.showSelectionHistory", "title": "Show History for Selection…", "category": "IdeaGitTool: Local History" },
+    { "command": "ideagittool.localHistory.showProjectHistory", "title": "Show Project History…", "category": "IdeaGitTool: Local History" },
+    { "command": "ideagittool.localHistory.recentChanges", "title": "Recent Changes", "category": "IdeaGitTool: Local History" },
+    { "command": "ideagittool.localHistory.putLabel", "title": "Put Label…", "category": "IdeaGitTool: Local History" },
+    { "command": "ideagittool.localHistory.putSystemLabel", "title": "Put System Label", "category": "IdeaGitTool: Local History" },
+    { "command": "ideagittool.rollbackFile", "title": "Rollback File…", "category": "IdeaGitTool" },
+    { "command": "ideagittool.removeFromVcs", "title": "Remove from VCS", "category": "IdeaGitTool" },
+    { "command": "ideagittool.revertResolved", "title": "Revert Resolved", "category": "IdeaGitTool" },
+    { "command": "ideagittool.createPatchFromChanges", "title": "Create Patch from Local Changes…", "category": "IdeaGitTool" },
+    { "command": "ideagittool.unshelveSilently", "title": "Unshelve Silently", "category": "IdeaGitTool" },
+    { "command": "ideagittool.copyPath", "title": "Copy Path", "category": "IdeaGitTool" },
+    { "command": "ideagittool.noop", "title": "No Operation", "category": "IdeaGitTool" },
+    { "command": "ideagittool.copyPath.absolute", "title": "Absolute Path" },
+    { "command": "ideagittool.copyPath.name", "title": "File Name" },
+    { "command": "ideagittool.copyPath.lineNumber", "title": "Path with Line Number" },
+    { "command": "ideagittool.copyPath.contentRoot", "title": "Path from Content Root" },
+    { "command": "ideagittool.copyPath.repo", "title": "Path From Repository Root" },
+    { "command": "ideagittool.copyPath.reference", "title": "Copy Reference" }
   ],
   "submenus": [
-    { "id": "rebased.localHistory", "label": "Local History" },
-    { "id": "rebased.copyReference", "label": "Copy Path/Reference…" }
+    { "id": "ideagittool.localHistory", "label": "Local History" },
+    { "id": "ideagittool.copyReference", "label": "Copy Path/Reference…" }
   ],
   "menus": {
-    "rebased.localHistory": [
-      { "command": "rebased.localHistory.showHistory", "group": "1_show@1" },
-      { "command": "rebased.localHistory.showSelectionHistory", "group": "1_show@2", "when": "editorTextFocus || editorHasSelection" },
-      { "command": "rebased.localHistory.showProjectHistory", "group": "2_project@1" },
-      { "command": "rebased.localHistory.recentChanges", "group": "2_project@2" },
-      { "command": "rebased.localHistory.putLabel", "group": "2_project@3" }
+    "ideagittool.localHistory": [
+      { "command": "ideagittool.localHistory.showHistory", "group": "1_show@1" },
+      { "command": "ideagittool.localHistory.showSelectionHistory", "group": "1_show@2", "when": "editorTextFocus || editorHasSelection" },
+      { "command": "ideagittool.localHistory.showProjectHistory", "group": "2_project@1" },
+      { "command": "ideagittool.localHistory.recentChanges", "group": "2_project@2" },
+      { "command": "ideagittool.localHistory.putLabel", "group": "2_project@3" }
     ],
-    "rebased.copyReference": [
-      { "command": "rebased.copyPath.absolute", "group": "1_file@1" },
-      { "command": "rebased.copyPath.name", "group": "1_file@2" },
-      { "command": "rebased.copyPath.lineNumber", "group": "2_path@1", "when": "editorTextFocus" },
-      { "command": "rebased.copyPath.contentRoot", "group": "2_path@2" },
-      { "command": "rebased.copyPath.repo", "group": "2_path@3", "when": "rebased.hasRepository" },
-      { "command": "rebased.copyPath.reference", "group": "3_reference@1" }
+    "ideagittool.copyReference": [
+      { "command": "ideagittool.copyPath.absolute", "group": "1_file@1" },
+      { "command": "ideagittool.copyPath.name", "group": "1_file@2" },
+      { "command": "ideagittool.copyPath.lineNumber", "group": "2_path@1", "when": "editorTextFocus" },
+      { "command": "ideagittool.copyPath.contentRoot", "group": "2_path@2" },
+      { "command": "ideagittool.copyPath.repo", "group": "2_path@3", "when": "ideagittool.hasRepository" },
+      { "command": "ideagittool.copyPath.reference", "group": "3_reference@1" }
     ],
-    "rebased.git.file": [
-      { "command": "rebased.rollbackFile", "group": "3_rollback@2" },
-      { "command": "rebased.revertResolved", "group": "4_conflicts@2", "when": "rebased.inOperation" }
+    "ideagittool.git.file": [
+      { "command": "ideagittool.rollbackFile", "group": "3_rollback@2" },
+      { "command": "ideagittool.revertResolved", "group": "4_conflicts@2", "when": "ideagittool.inOperation" }
     ],
     "explorer/context": [
-      { "submenu": "rebased.localHistory", "group": "7_modification@8", "when": "workspaceFolderCount > 0" }
+      { "submenu": "ideagittool.localHistory", "group": "7_modification@8", "when": "workspaceFolderCount > 0" }
     ],
     "editor/context": [
-      { "submenu": "rebased.localHistory", "group": "1_modification@8", "when": "resourceScheme == file" },
-      { "submenu": "rebased.copyReference", "group": "9_cutcopypaste@9", "when": "resourceScheme == file" }
+      { "submenu": "ideagittool.localHistory", "group": "1_modification@8", "when": "resourceScheme == file" },
+      { "submenu": "ideagittool.copyReference", "group": "9_cutcopypaste@9", "when": "resourceScheme == file" }
     ],
     "editor/title/context": [
-      { "submenu": "rebased.localHistory", "group": "2_files@8", "when": "resourceScheme == file" },
-      { "submenu": "rebased.copyReference", "group": "1_copypath@9", "when": "resourceScheme == file" }
+      { "submenu": "ideagittool.localHistory", "group": "2_files@8", "when": "resourceScheme == file" },
+      { "submenu": "ideagittool.copyReference", "group": "1_copypath@9", "when": "resourceScheme == file" }
     ],
     "commandPalette": [
-      { "command": "rebased.localHistory.putSystemLabel", "when": "false" },
-      { "command": "rebased.noop", "when": "false" },
-      { "command": "rebased.copyPath", "when": "false" },
-      { "command": "rebased.copyPath.absolute", "when": "false" },
-      { "command": "rebased.copyPath.name", "when": "false" },
-      { "command": "rebased.copyPath.lineNumber", "when": "false" },
-      { "command": "rebased.copyPath.contentRoot", "when": "false" },
-      { "command": "rebased.copyPath.repo", "when": "false" },
-      { "command": "rebased.copyPath.reference", "when": "false" },
-      { "command": "rebased.revertResolved", "when": "rebased.inOperation" }
+      { "command": "ideagittool.localHistory.putSystemLabel", "when": "false" },
+      { "command": "ideagittool.noop", "when": "false" },
+      { "command": "ideagittool.copyPath", "when": "false" },
+      { "command": "ideagittool.copyPath.absolute", "when": "false" },
+      { "command": "ideagittool.copyPath.name", "when": "false" },
+      { "command": "ideagittool.copyPath.lineNumber", "when": "false" },
+      { "command": "ideagittool.copyPath.contentRoot", "when": "false" },
+      { "command": "ideagittool.copyPath.repo", "when": "false" },
+      { "command": "ideagittool.copyPath.reference", "when": "false" },
+      { "command": "ideagittool.revertResolved", "when": "ideagittool.inOperation" }
     ]
   },
   "keybindings": [
-    { "command": "rebased.noop", "key": "ctrl+shift+h", "mac": "cmd+shift+h", "when": "focusedView == rebased.commit" },
-    { "command": "rebased.noop", "key": "ctrl+alt+a", "mac": "alt+cmd+a", "when": "focusedView == rebased.commit" },
-    { "command": "rebased.localHistory.recentChanges", "key": "alt+shift+c", "when": "config.rebased.intellijShortcuts && !filesExplorerFocus" },
-    { "command": "rebased.copyPath.reference", "key": "ctrl+alt+shift+c", "mac": "alt+shift+cmd+c", "when": "config.rebased.intellijShortcuts && editorTextFocus" }
+    { "command": "ideagittool.noop", "key": "ctrl+shift+h", "mac": "cmd+shift+h", "when": "focusedView == ideagittool.commit" },
+    { "command": "ideagittool.noop", "key": "ctrl+alt+a", "mac": "alt+cmd+a", "when": "focusedView == ideagittool.commit" },
+    { "command": "ideagittool.localHistory.recentChanges", "key": "alt+shift+c", "when": "config.ideagittool.intellijShortcuts && !filesExplorerFocus" },
+    { "command": "ideagittool.copyPath.reference", "key": "ctrl+alt+shift+c", "mac": "alt+shift+cmd+c", "when": "config.ideagittool.intellijShortcuts && editorTextFocus" }
   ]
 }

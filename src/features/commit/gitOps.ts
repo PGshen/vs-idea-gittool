@@ -58,7 +58,7 @@ export async function commitChanges(repo: Repository, changes: Change[], message
     // The old paths are gone from HEAD now; only the new paths remain to commit.
     paths = [...new Set(changes.map(c => c.path))];
   }
-  const msgFile = tmpFile('rebased-commit-msg', message);
+  const msgFile = tmpFile('ideagittool-commit-msg', message);
   try {
     const args = ['commit', '-F', msgFile];
     if (opts.amend) args.push('--amend');
@@ -90,7 +90,7 @@ export async function commitChanges(repo: Repository, changes: Change[], message
 export async function commitMovements(repo: Repository, changes: Change[]): Promise<boolean> {
   const renames = changes.filter(c => c.status === 'R' && c.oldPath);
   if (!renames.length || !(await hasHead(repo))) return false;
-  const index = tmpFile('rebased-move-index');
+  const index = tmpFile('ideagittool-move-index');
   const env = { GIT_INDEX_FILE: index };
   try {
     await repo.exec(['read-tree', 'HEAD'], { env, quiet: true });
@@ -181,7 +181,7 @@ export interface PatchFile {
  * the real index (a temporary index is used). Returns the patch and per-file blob ids.
  */
 export async function createPatch(repo: Repository, changes: Change[], opts: { reverse?: boolean } = {}): Promise<{ patch: string; files: PatchFile[] }> {
-  const index = tmpFile('rebased-index');
+  const index = tmpFile('ideagittool-index');
   const env = { GIT_INDEX_FILE: index };
   const head = (await hasHead(repo)) ? 'HEAD' : EMPTY_TREE;
   const paths = changePaths(changes);
@@ -254,7 +254,7 @@ function unquote(s: string) {
  */
 export async function applyPatch(repo: Repository, patch: string, files: PatchFile[]): Promise<{ conflicts: boolean }> {
   if (!patch.trim()) return { conflicts: false };
-  const f = tmpFile('rebased-patch', patch);
+  const f = tmpFile('ideagittool-patch', patch);
   let conflicts = false;
   try {
     const r = await repo.exec(['apply', '--binary', '--whitespace=nowarn', f], { allowFailure: true });
@@ -346,7 +346,7 @@ export async function resolveSimpleConflict(repo: Repository, c: Change): Promis
   if (`${c.index}${c.workTree}` !== 'UU') return false;
   const stages = await Promise.all([':1', ':2', ':3'].map(s => repo.show(s, c.path)));
   if (stages.some(b => b.includes(0))) return false;
-  const files = stages.map((b, i) => tmpFile(`rebased-merge-${i}`, b));
+  const files = stages.map((b, i) => tmpFile(`ideagittool-merge-${i}`, b));
   try {
     const r = await repo.exec(['merge-file', '-p', files[1], files[0], files[2]], { allowFailure: true, binary: true });
     if (r.exitCode !== 0) return false;

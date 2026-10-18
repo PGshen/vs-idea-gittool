@@ -44,7 +44,7 @@ ${varsArg ? `<style>${readFileSync(resolve(`test/vscode-theme-${varsArg}.css`), 
 <script type="application/json" id="boot">${JSON.stringify(boot).replace(/</g, '\\u003c')}</script>
 <script src="${pathToFileURL(resolve(dist, `webview/${bundle}.js`)).href}"></script>
 </body></html>`;
-const dir = mkdtempSync(resolve(tmpdir(), 'rebased-preview-'));
+const dir = mkdtempSync(resolve(tmpdir(), 'ideagittool-preview-'));
 writeFileSync(`${dir}/index.html`, html);
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM ?? '/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell', args: ['--allow-file-access-from-files'] });

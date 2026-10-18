@@ -305,7 +305,7 @@ export function LogTable() {
             <>
               No changes committed.
               <br />
-              <span class="link" onClick={() => void call('command', { id: 'rebased.commit' })}>
+              <span class="link" onClick={() => void call('command', { id: 'ideagittool.commit' })}>
                 Commit local changes
               </span>
             </>

@@ -9,10 +9,10 @@ import { FEATURES } from './features';
 
 export async function activate(extension: vscode.ExtensionContext) {
   initWebviewHost(extension);
-  const cfg = () => vscode.workspace.getConfiguration('rebased');
+  const cfg = () => vscode.workspace.getConfiguration('ideagittool');
   setGitPath(cfg().get<string>('gitPath'));
   vscode.workspace.onDidChangeConfiguration(e => {
-    if (e.affectsConfiguration('rebased.gitPath')) setGitPath(cfg().get<string>('gitPath'));
+    if (e.affectsConfiguration('ideagittool.gitPath')) setGitPath(cfg().get<string>('gitPath'));
   }, null, extension.subscriptions);
 
   const repos = new RepositoryManager(extension);
@@ -37,11 +37,11 @@ export async function activate(extension: vscode.ExtensionContext) {
     },
   };
 
-  ctx.command('rebased.showConsole', () => getOutputChannel().show());
+  ctx.command('ideagittool.showConsole', () => getOutputChannel().show());
 
   const updateContext = () => {
-    void vscode.commands.executeCommand('setContext', 'rebased.hasRepository', repos.repositories.length > 0);
-    void vscode.commands.executeCommand('setContext', 'rebased.multipleRepositories', repos.repositories.length > 1);
+    void vscode.commands.executeCommand('setContext', 'ideagittool.hasRepository', repos.repositories.length > 0);
+    void vscode.commands.executeCommand('setContext', 'ideagittool.multipleRepositories', repos.repositories.length > 1);
   };
   repos.onDidChangeRepositories(updateContext);
 

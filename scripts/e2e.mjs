@@ -11,8 +11,8 @@ import { execSync } from 'node:child_process';
 const [scenarioPath, workspaceArg] = process.argv.slice(2);
 const code = resolve('.vscode-test/vscode-linux-x64-1.95.3/code');
 const workspace = workspaceArg ? resolve(workspaceArg) : makeSampleRepo();
-const userData = mkdtempSync(resolve(tmpdir(), 'rebased-e2e-user-'));
-const extDir = mkdtempSync(resolve(tmpdir(), 'rebased-e2e-ext-'));
+const userData = mkdtempSync(resolve(tmpdir(), 'ideagittool-e2e-user-'));
+const extDir = mkdtempSync(resolve(tmpdir(), 'ideagittool-e2e-ext-'));
 const outDir = process.env.SHOTS ?? resolve('test/shots');
 execSync(`mkdir -p ${outDir}`);
 
@@ -102,7 +102,7 @@ try {
 }
 
 function makeSampleRepo() {
-  const dir = mkdtempSync(resolve(tmpdir(), 'rebased-sample-'));
+  const dir = mkdtempSync(resolve(tmpdir(), 'ideagittool-sample-'));
   const sh = cmd => execSync(cmd, { cwd: dir, stdio: 'pipe', env: { ...process.env, GIT_AUTHOR_NAME: 'detachhead', GIT_AUTHOR_EMAIL: 'detachhead@users.noreply.github.com', GIT_COMMITTER_NAME: 'detachhead', GIT_COMMITTER_EMAIL: 'detachhead@users.noreply.github.com' } });
   sh('git init -q -b master && git config user.name detachhead && git config user.email detachhead@users.noreply.github.com');
   let n = 0;

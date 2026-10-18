@@ -1,11 +1,11 @@
 // Dialog previews: KIND=commit.rollback|commit.conflicts|commit.unstash|commit.stash|commit.shelve|commit.changelist
-const root = '/home/user/rebased';
+const root = '/home/user/ideagittool';
 const files = [
   { root, path: 'README.md', status: 'M' },
   { root, path: 'src/added.ts', status: 'A' },
   { root, path: 'src/old/gone.ts', status: 'D' },
 ];
-const repos = [{ root, name: 'rebased', branch: 'master' }];
+const repos = [{ root, name: 'ideagittool', branch: 'master' }];
 const stashes = [
   { index: 0, ref: 'stash@{0}', hash: 'a'.repeat(40), message: 'fix zizmor errors', branch: 'master', date: 0 },
   { index: 1, ref: 'stash@{1}', hash: 'b'.repeat(40), message: 'try new toolbar', branch: 'feature/ui', date: 0 },
@@ -13,7 +13,7 @@ const stashes = [
 const row = (path, kind, yours = 'Modified', theirs = 'Modified', badge, reviewed = false) => ({
   key: path,
   root,
-  repoName: 'rebased',
+  repoName: 'ideagittool',
   path,
   kind,
   yours,

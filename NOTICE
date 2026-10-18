@@ -1,9 +1,9 @@
-Rebased for VS Code
+IdeaGitTool
 
 This extension re-creates the git UI of Rebased (https://github.com/detachhead/rebased),
 which is based on the IntelliJ Platform (https://github.com/JetBrains/intellij-community).
 
-The icons in media/icons and media/rebased*.svg are copied from those projects:
+The icons in media/icons and media/ideagittool*.svg are copied from those projects:
   Copyright 2000-2026 JetBrains s.r.o. and contributors.
   Licensed under the Apache License, Version 2.0.
 UI texts follow GitBundle.properties / VcsBundle.properties of the IntelliJ Platform (Apache 2.0).

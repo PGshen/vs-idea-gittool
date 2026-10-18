@@ -16,7 +16,7 @@ export async function run({ window, shot, command, sleep }) {
   }
   await shot('log-context-menu');
   await window.keyboard.press('Escape');
-  await command('Rebased: Open New Git Log Tab');
+  await command('IdeaGitTool: Open New Git Log Tab');
   await sleep(1500);
   await shot('log-new-tab');
   await command('Go to File');
@@ -24,10 +24,10 @@ export async function run({ window, shot, command, sleep }) {
   await sleep(500);
   await window.keyboard.press('Enter');
   await sleep(1000);
-  await command('Rebased: Annotate with Git Blame');
+  await command('IdeaGitTool: Annotate with Git Blame');
   await sleep(1500);
   await shot('annotate');
-  await command('Rebased: Show History');
+  await command('IdeaGitTool: Show History');
   await sleep(2500);
   await shot('file-history');
 }

@@ -195,7 +195,7 @@ export async function undoCommitCommand(ctx: Ctx, arg: CommitArg) {
   void r;
   // Restore the message as a draft for the next commit (IntelliJ keeps it in the commit message field).
   const [c] = await commitMessages(repo, [hash]).catch(() => []);
-  if (c) void vscode.commands.executeCommand('rebased.setCommitMessage', { root: repo.root, message: c.body }).then(undefined, () => undefined);
+  if (c) void vscode.commands.executeCommand('ideagittool.setCommitMessage', { root: repo.root, message: c.body }).then(undefined, () => undefined);
   void vscode.window.showInformationMessage('Undo commit successful');
 }
 
@@ -289,7 +289,7 @@ export async function continueCommand(ctx: Ctx, arg?: RootArg) {
   }
   if (repo.status.conflicts.length) {
     const a = await vscode.window.showWarningMessage(`Cannot continue ${op}: there are unresolved conflicts`, 'Resolve conflicts…');
-    if (a) void vscode.commands.executeCommand('rebased.resolveConflicts', { root: repo.root });
+    if (a) void vscode.commands.executeCommand('ideagittool.resolveConflicts', { root: repo.root });
     return;
   }
   const args = op === 'merge' ? ['commit', '--no-edit'] : op === 'am' ? ['am', '--continue'] : [op, '--continue'];
@@ -383,7 +383,7 @@ export async function merge(repo: Repository, branch: string, options: string[] 
     }
     const isLocal = repo.refs.some(r => r.type === 'local' && r.name === branch);
     const a = await vscode.window.showInformationMessage(`Merged ${branch} to ${currentName(repo)}`, ...(isLocal ? [`Delete ${branch}`] : []));
-    if (a) void vscode.commands.executeCommand('rebased.branch.delete', { root: repo.root, name: branch, type: 'local' });
+    if (a) void vscode.commands.executeCommand('ideagittool.branch.delete', { root: repo.root, name: branch, type: 'local' });
     return;
   }
   await reportOutcome(repo, outcome, { operation: 'merge', failedTitle: `Could Not Merge ${branch}` });
@@ -471,7 +471,7 @@ export async function createTagCommand(ctx: Ctx, arg?: RootArg & { hash?: string
       const args = ['tag'];
       if (v.force) args.push('-f');
       if (v.message.trim()) {
-        const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'rebased-tag-')), 'msg');
+        const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'ideagittool-tag-')), 'msg');
         fs.writeFileSync(f, v.message);
         args.push('-a', '-F', f);
       }
@@ -543,7 +543,7 @@ export async function applyPatchCommand(ctx: Ctx, arg?: RootArg & { clipboard?: 
   const r = await repo.batch(() => repo.exec(args, { input, allowFailure: true }));
   if (r.exitCode === 0) void vscode.window.showInformationMessage('Patch applied');
   else if (/conflict/i.test(r.stderr)) {
-    void vscode.commands.executeCommand('rebased.resolveConflicts', { root: repo.root }).then(undefined, () => undefined);
+    void vscode.commands.executeCommand('ideagittool.resolveConflicts', { root: repo.root }).then(undefined, () => undefined);
     void vscode.window.showWarningMessage('Patch applied with conflicts');
   } else showError(r.stderr, 'Patch was not applied');
 }

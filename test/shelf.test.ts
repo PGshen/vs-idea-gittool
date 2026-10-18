@@ -10,7 +10,7 @@ import { ChangeLists } from '../src/features/commit/changelists';
 import { changeKey } from '../src/shared/commitProtocol';
 
 function makeRepo() {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'rebased-shelf-test-')));
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'ideagittool-shelf-test-')));
   execSync('git init -q -b master && git config user.name t && git config user.email t@e.st', { cwd: dir });
   fs.writeFileSync(path.join(dir, 'a.txt'), 'a\n');
   fs.writeFileSync(path.join(dir, 'b.txt'), 'b\n');
@@ -20,7 +20,7 @@ function makeRepo() {
 
 test('shelve, partially unshelve, applied files go to Recently Deleted', async () => {
   const { dir, repo } = makeRepo();
-  const storage = fs.mkdtempSync(path.join(os.tmpdir(), 'rebased-shelf-storage-'));
+  const storage = fs.mkdtempSync(path.join(os.tmpdir(), 'ideagittool-shelf-storage-'));
   const shelf = new Shelf({ fsPath: storage } as never);
   fs.writeFileSync(path.join(dir, 'a.txt'), 'A\n');
   fs.writeFileSync(path.join(dir, 'b.txt'), 'B\n');

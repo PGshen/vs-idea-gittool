@@ -58,8 +58,8 @@ export async function reportOutcome(
       return true;
     case 'stopped': {
       const a = await vscode.window.showInformationMessage('Rebase stopped for editing', 'Continue', 'Abort');
-      if (a === 'Continue') await vscode.commands.executeCommand('rebased.continueOperation', { root: repo.root });
-      else if (a === 'Abort') await vscode.commands.executeCommand('rebased.abortOperation', { root: repo.root });
+      if (a === 'Continue') await vscode.commands.executeCommand('ideagittool.continueOperation', { root: repo.root });
+      else if (a === 'Abort') await vscode.commands.executeCommand('ideagittool.abortOperation', { root: repo.root });
       return false;
     }
     case 'conflicts': {
@@ -74,11 +74,11 @@ export async function reportOutcome(
               : op === 'merge'
                 ? 'Merge conflicts'
                 : `${capitalize(name)} was performed with conflicts`;
-      void vscode.commands.executeCommand('rebased.resolveConflicts', { root: repo.root });
+      void vscode.commands.executeCommand('ideagittool.resolveConflicts', { root: repo.root });
       const actions = op !== 'none' ? ['Resolve conflicts…', `Abort ${capitalize(op === 'cherry-pick' ? 'Cherry-Pick' : op)}`] : ['Resolve conflicts…'];
       const a = await vscode.window.showWarningMessage(`${title}${outcome.files.length ? `: ${outcome.files.length} conflicting ${outcome.files.length === 1 ? 'file' : 'files'}` : ''}`, ...actions);
-      if (a === 'Resolve conflicts…') await vscode.commands.executeCommand('rebased.resolveConflicts', { root: repo.root });
-      else if (a?.startsWith('Abort')) await vscode.commands.executeCommand('rebased.abortOperation', { root: repo.root });
+      if (a === 'Resolve conflicts…') await vscode.commands.executeCommand('ideagittool.resolveConflicts', { root: repo.root });
+      else if (a?.startsWith('Abort')) await vscode.commands.executeCommand('ideagittool.abortOperation', { root: repo.root });
       return false;
     }
     case 'localChanges':
@@ -132,14 +132,14 @@ export function upstreamOf(repo: Repository, branch: string): string | undefined
 }
 
 export function settings() {
-  return vscode.workspace.getConfiguration('rebased');
+  return vscode.workspace.getConfiguration('ideagittool');
 }
 
 // ------------------------------------------------------------------ preserving local changes
 
 /**
- * Shelf-based saver: uses the commit feature's shelf (`rebased.shelveSilently {root, name}` → shelf id,
- * `rebased.unshelveSilently {id}` → {ok, conflicts}). Falls back to the stash when the shelf commands fail.
+ * Shelf-based saver: uses the commit feature's shelf (`ideagittool.shelveSilently {root, name}` → shelf id,
+ * `ideagittool.unshelveSilently {id}` → {ok, conflicts}). Falls back to the stash when the shelf commands fail.
  */
 export class ShelveSaver implements ChangesSaver {
   method: 'stash' | 'shelve' = 'shelve';
@@ -152,7 +152,7 @@ export class ShelveSaver implements ChangesSaver {
     const name = `Uncommitted changes before ${capitalize(reason)} at ${new Date().toLocaleString()}`;
     if (!(await hasLocalChanges(repo, this.includeUntracked))) return false;
     try {
-      const id = await vscode.commands.executeCommand<string | undefined>('rebased.shelveSilently', { root: repo.root, name });
+      const id = await vscode.commands.executeCommand<string | undefined>('ideagittool.shelveSilently', { root: repo.root, name });
       this.id = typeof id === 'string' ? id : undefined;
       await repo.refresh();
       return !!this.id;
@@ -166,7 +166,7 @@ export class ShelveSaver implements ChangesSaver {
   async restore(repo: Repository): Promise<OperationOutcome> {
     if (this.fallback) return this.fallback.restore(repo);
     try {
-      const r = await vscode.commands.executeCommand<{ ok: boolean; conflicts?: string[] | number } | undefined>('rebased.unshelveSilently', { id: this.id, root: repo.root });
+      const r = await vscode.commands.executeCommand<{ ok: boolean; conflicts?: string[] | number } | undefined>('ideagittool.unshelveSilently', { id: this.id, root: repo.root });
       await repo.refresh();
       if (r?.ok) return { kind: 'success', output: '' };
       const files = Array.isArray(r?.conflicts) ? r!.conflicts : repo.status.conflicts.map(c => c.path);
@@ -178,7 +178,7 @@ export class ShelveSaver implements ChangesSaver {
   }
 }
 
-/** Saver for the "Clean working tree using Stash / Shelve" policy (rebased.update.saveChangesPolicy). */
+/** Saver for the "Clean working tree using Stash / Shelve" policy (ideagittool.update.saveChangesPolicy). */
 export function makeSaver(policy?: string, includeUntracked = false): ChangesSaver {
   const p = policy ?? settings().get<string>('update.saveChangesPolicy', 'stash');
   return p === 'shelve' ? new ShelveSaver(includeUntracked) : new StashSaver(includeUntracked);
@@ -190,14 +190,14 @@ export function makeSaver(policy?: string, includeUntracked = false): ChangesSav
  */
 export async function reportRestore(repo: Repository, saver: ChangesSaver, operation: string, restore: OperationOutcome | undefined, kept: boolean) {
   const where = saver.method === 'shelve' ? 'shelf' : 'stash';
-  const view = () => vscode.commands.executeCommand(saver.method === 'shelve' ? 'rebased.showShelf' : 'rebased.showStashes', { root: repo.root });
+  const view = () => vscode.commands.executeCommand(saver.method === 'shelve' ? 'ideagittool.showShelf' : 'ideagittool.showStashes', { root: repo.root });
   if (restore?.kind === 'conflicts') {
     const a = await vscode.window.showWarningMessage(
       `Local changes were restored with conflicts: Your uncommitted changes were saved to ${where}. ${saver.method === 'shelve' ? 'Unshelve' : 'Unstash'} is not complete, you have unresolved merges in your working tree. Resolve conflicts and ${saver.method === 'shelve' ? 'remove the shelved changes' : 'drop the stash'}.`,
       'Resolve conflicts…',
       'View saved changes…',
     );
-    if (a === 'Resolve conflicts…') await vscode.commands.executeCommand('rebased.resolveConflicts', { root: repo.root });
+    if (a === 'Resolve conflicts…') await vscode.commands.executeCommand('ideagittool.resolveConflicts', { root: repo.root });
     else if (a) await view();
   } else if (kept) {
     const a = await vscode.window.showWarningMessage(`Local changes were not restored: Before ${operation} your uncommitted changes were saved to ${where}.`, 'View saved changes…');
@@ -208,7 +208,7 @@ export async function reportRestore(repo: Repository, saver: ChangesSaver, opera
 /** Puts a system label into Local History before a working tree change (best effort). */
 export async function putLocalHistoryLabel(repo: Repository, label: string) {
   try {
-    await vscode.commands.executeCommand('rebased.localHistory.putSystemLabel', { root: repo.root, label });
+    await vscode.commands.executeCommand('ideagittool.localHistory.putSystemLabel', { root: repo.root, label });
   } catch {
     // Local History is optional.
   }

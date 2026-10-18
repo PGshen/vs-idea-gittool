@@ -55,18 +55,18 @@ export async function run({ window, shot, sleep, workspace }) {
   // The Git log opens on startup and takes the focus when it has loaded: wait for it first.
   await findFrame(window, '.log-row', sleep).catch(() => undefined);
   await sleep(2000);
-  await palette(window, sleep, 'Rebased: Commit…');
+  await palette(window, sleep, 'IdeaGitTool: Commit…');
   const frame = await findFrame(window, '.tw-tabs', sleep);
   await sleep(1000);
   await shot('commit-view');
 
   // 1. Commit only src/file1.ts.
   await frame.click('.tree-row:has-text("file1.ts") .tree-check');
-  await frame.fill('.message-box textarea', 'e2e commit from Rebased');
+  await frame.fill('.message-box textarea', 'e2e commit from IdeaGitTool');
   await frame.click('.commit-buttons .btn:has-text("Commit")');
   await sleep(3000);
   const log = git('log -1 --format=%s --name-only', workspace);
-  check(log.includes('e2e commit from Rebased') && log.includes('src/file1.ts') && !log.includes('README.md'), 'commit contains exactly the checked file');
+  check(log.includes('e2e commit from IdeaGitTool') && log.includes('src/file1.ts') && !log.includes('README.md'), 'commit contains exactly the checked file');
 
   // 2. Shelve README.md silently, then unshelve it from the Shelf tab.
   await frame.click('.tree-row:visible:has-text("README.md") .label');
@@ -95,7 +95,7 @@ export async function run({ window, shot, sleep, workspace }) {
   check(fs.readFileSync(path.join(workspace, 'README.md'), 'utf8') === 'readme\n', 'README.md rolled back');
 
   // 4. Stash and unstash docs/new.md (staged new file).
-  await palette(window, sleep, 'Rebased: Stash Changes…');
+  await palette(window, sleep, 'IdeaGitTool: Stash Changes…');
   const stash = await findFrame(window, '.dialog-title:has-text("Stash")', sleep);
   await stash.fill('.dialog input.text-field', 'e2e stash');
   await shot('commit-stash-dialog');
@@ -103,7 +103,7 @@ export async function run({ window, shot, sleep, workspace }) {
   await sleep(2500);
   check(git('stash list', workspace).includes('e2e stash'), 'stash created');
   check(!fs.existsSync(path.join(workspace, 'docs', 'new.md')), 'docs/new.md stashed');
-  await palette(window, sleep, 'Rebased: Unstash Changes…');
+  await palette(window, sleep, 'IdeaGitTool: Unstash Changes…');
   const unstash = await findFrame(window, '.dialog-title:has-text("Unstash Changes")', sleep);
   await sleep(800);
   await shot('commit-unstash-dialog');
@@ -112,7 +112,7 @@ export async function run({ window, shot, sleep, workspace }) {
   check(fs.existsSync(path.join(workspace, 'docs', 'new.md')), 'stash applied');
 
   // 5. Local History recorded the external changes (rollback, unshelve, stash).
-  await palette(window, sleep, 'Rebased: Local History: Show Project History…');
+  await palette(window, sleep, 'IdeaGitTool: Local History: Show Project History…');
   const lh = await findFrame(window, '.lh-list', sleep);
   await sleep(1500);
   const items = await lh.$$('.lh-item');

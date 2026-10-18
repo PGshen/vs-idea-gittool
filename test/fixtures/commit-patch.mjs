@@ -1,9 +1,9 @@
 // Create Patch dialog (node scripts/preview.mjs dialog test/fixtures/commit-patch.mjs out.png --size=900x760).
-const root = '/home/user/rebased';
+const root = '/home/user/ideagittool';
 const files = [
   { root, path: 'README.md', status: 'M', key: 'README.md' },
   { root, path: 'screenshot.png', status: 'M', key: 'screenshot.png' },
-  { root, path: 'build/src/org/jetbrains/intellij/build/RebasedProperties.kt', status: 'M', key: 'build/src/org/jetbrains/intellij/build/RebasedProperties.kt' },
+  { root, path: 'build/src/org/jetbrains/intellij/build/IdeaGitToolProperties.kt', status: 'M', key: 'build/src/org/jetbrains/intellij/build/IdeaGitToolProperties.kt' },
   { root, path: 'docs/new.md', status: 'A', key: 'docs/new.md' },
 ];
 export const initial = {
@@ -12,7 +12,7 @@ export const initial = {
   props: {
     files,
     selected: ['README.md', 'screenshot.png', 'docs/new.md'],
-    path: '/home/user/rebased/Local_Changes.patch',
+    path: '/home/user/ideagittool/Local_Changes.patch',
     basePath: root,
     toClipboard: false,
     reverse: false,

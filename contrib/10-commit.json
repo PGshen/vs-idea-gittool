@@ -1,9 +1,9 @@
 {
   "views": {
-    "rebased": [
+    "ideagittool": [
       {
         "type": "webview",
-        "id": "rebased.commit",
+        "id": "ideagittool.commit",
         "name": "Commit",
         "icon": "media/activity/commit.svg",
         "contextualTitle": "Commit"
@@ -12,93 +12,93 @@
   },
   "commands": [
     {
-      "command": "rebased.commit",
+      "command": "ideagittool.commit",
       "title": "Commit\u2026",
-      "category": "Rebased",
+      "category": "IdeaGitTool",
       "icon": "$(git-commit)"
     },
     {
-      "command": "rebased.commitAndPush",
+      "command": "ideagittool.commitAndPush",
       "title": "Commit and Push\u2026",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.resolveConflicts",
+      "command": "ideagittool.resolveConflicts",
       "title": "Resolve Conflicts\u2026",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.refreshChanges",
+      "command": "ideagittool.refreshChanges",
       "title": "Refresh",
-      "category": "Rebased",
+      "category": "IdeaGitTool",
       "icon": "$(refresh)"
     },
     {
-      "command": "rebased.rollback",
+      "command": "ideagittool.rollback",
       "title": "Rollback\u2026",
-      "category": "Rebased",
+      "category": "IdeaGitTool",
       "icon": "$(discard)"
     },
     {
-      "command": "rebased.addToVcs",
+      "command": "ideagittool.addToVcs",
       "title": "Add to VCS",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.addToGitignore",
+      "command": "ideagittool.addToGitignore",
       "title": "Add to .gitignore",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.showLocalDiff",
+      "command": "ideagittool.showLocalDiff",
       "title": "Compare with Same Repository Version",
-      "category": "Rebased",
+      "category": "IdeaGitTool",
       "icon": "$(diff)"
     },
     {
-      "command": "rebased.shelve",
+      "command": "ideagittool.shelve",
       "title": "Shelve Changes\u2026",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.shelveSilently",
+      "command": "ideagittool.shelveSilently",
       "title": "Shelve Silently",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.unshelve",
+      "command": "ideagittool.unshelve",
       "title": "Unshelve\u2026",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.showShelf",
+      "command": "ideagittool.showShelf",
       "title": "Show Shelf",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.showStashes",
+      "command": "ideagittool.showStashes",
       "title": "Show Stashes",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.stash",
+      "command": "ideagittool.stash",
       "title": "Stash Changes\u2026",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.unstash",
+      "command": "ideagittool.unstash",
       "title": "Unstash Changes\u2026",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.newChangelist",
+      "command": "ideagittool.newChangelist",
       "title": "New Changelist\u2026",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     },
     {
-      "command": "rebased.importPatches",
+      "command": "ideagittool.importPatches",
       "title": "Import Patches\u2026",
-      "category": "Rebased"
+      "category": "IdeaGitTool"
     }
   ],
   "menus": {
@@ -107,43 +107,43 @@
     "editor/title/context": [],
     "commandPalette": [
       {
-        "command": "rebased.addToVcs",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.addToVcs",
+        "when": "ideagittool.hasRepository"
       },
       {
-        "command": "rebased.addToGitignore",
-        "when": "rebased.hasRepository"
+        "command": "ideagittool.addToGitignore",
+        "when": "ideagittool.hasRepository"
       }
     ]
   },
   "keybindings": [
     {
-      "command": "rebased.commit",
+      "command": "ideagittool.commit",
       "key": "ctrl+k",
       "mac": "cmd+k",
-      "when": "focusedView == rebased.commit"
+      "when": "focusedView == ideagittool.commit"
     },
     {
-      "command": "rebased.commitAndPush",
+      "command": "ideagittool.commitAndPush",
       "key": "ctrl+alt+k",
       "mac": "alt+cmd+k",
-      "when": "config.rebased.intellijShortcuts"
+      "when": "config.ideagittool.intellijShortcuts"
     },
     {
-      "command": "rebased.rollback",
+      "command": "ideagittool.rollback",
       "key": "ctrl+alt+z",
       "mac": "alt+cmd+z",
-      "when": "config.rebased.intellijShortcuts && !editorTextFocus && focusedView != rebased.commit"
+      "when": "config.ideagittool.intellijShortcuts && !editorTextFocus && focusedView != ideagittool.commit"
     },
     {
-      "command": "rebased.unshelve",
+      "command": "ideagittool.unshelve",
       "key": "ctrl+shift+u",
-      "when": "focusedView == rebased.commit"
+      "when": "focusedView == ideagittool.commit"
     }
   ],
   "colors": [
     {
-      "id": "rebased.fileStatus.modified",
+      "id": "ideagittool.fileStatus.modified",
       "description": "Modified file (IntelliJ FILESTATUS_MODIFIED)",
       "defaults": {
         "dark": "#70AEFF",
@@ -153,7 +153,7 @@
       }
     },
     {
-      "id": "rebased.fileStatus.added",
+      "id": "ideagittool.fileStatus.added",
       "description": "Added file (FILESTATUS_ADDED)",
       "defaults": {
         "dark": "#73BD79",
@@ -163,7 +163,7 @@
       }
     },
     {
-      "id": "rebased.fileStatus.deleted",
+      "id": "ideagittool.fileStatus.deleted",
       "description": "Deleted file (FILESTATUS_DELETED)",
       "defaults": {
         "dark": "#6F737A",
@@ -173,7 +173,7 @@
       }
     },
     {
-      "id": "rebased.fileStatus.unknown",
+      "id": "ideagittool.fileStatus.unknown",
       "description": "Unversioned file (FILESTATUS_UNKNOWN)",
       "defaults": {
         "dark": "#E88F89",
@@ -183,7 +183,7 @@
       }
     },
     {
-      "id": "rebased.fileStatus.ignored",
+      "id": "ideagittool.fileStatus.ignored",
       "description": "Ignored file (FILESTATUS_IDEA_FILESTATUS_IGNORED)",
       "defaults": {
         "dark": "#D69A6B",
@@ -193,7 +193,7 @@
       }
     },
     {
-      "id": "rebased.fileStatus.conflict",
+      "id": "ideagittool.fileStatus.conflict",
       "description": "File with merge conflicts (FILESTATUS_MERGED_WITH_CONFLICTS)",
       "defaults": {
         "dark": "#DE6A66",
@@ -205,37 +205,37 @@
   ],
   "configuration": {
     "properties": {
-      "rebased.fileStatusColors": {
+      "ideagittool.fileStatusColors": {
         "type": "boolean",
         "default": true,
         "description": "Color file names in the Explorer and editor tabs by their Git status, like IntelliJ."
       },
-      "rebased.commit.gpgSign": {
+      "ideagittool.commit.gpgSign": {
         "type": "boolean",
         "default": false,
         "description": "Sign commits with GPG key (git commit -S). Like IntelliJ, this is a setting, not a commit option."
       },
-      "rebased.commit.includeActiveChangelist": {
+      "ideagittool.commit.includeActiveChangelist": {
         "type": "boolean",
         "default": false,
         "description": "Include new changes of the active changelist into the commit automatically (check them in the Commit tool window)."
       },
-      "rebased.commit.skipHooks": {
+      "ideagittool.commit.skipHooks": {
         "type": "boolean",
         "default": false,
         "description": "Do not run Git commit hooks (commit always runs with '--no-verify')."
       },
-      "rebased.intellijShortcuts": {
+      "ideagittool.intellijShortcuts": {
         "type": "boolean",
         "default": true,
         "description": "Enable IntelliJ keyboard shortcuts that do not conflict with common VS Code chords (Ctrl+Alt+K Commit and Push, Ctrl+Alt+Z Rollback)."
       },
-      "rebased.merge.useVsCodeMergeEditor": {
+      "ideagittool.merge.useVsCodeMergeEditor": {
         "type": "boolean",
         "default": false,
         "description": "Resolve Manually\u2026 opens VS Code's merge editor instead of the IntelliJ-style three-pane merge window."
       },
-      "rebased.merge.contextLines": {
+      "ideagittool.merge.contextLines": {
         "type": "number",
         "enum": [1, 2, 4, 8, -1],
         "enumDescriptions": ["1 line", "2 lines", "4 lines", "8 lines", "Do not collapse"],
