@@ -5,6 +5,40 @@ English | [简体中文](README.zh-CN.md)
 A VS Code extension that re-creates [Rebased](https://github.com/detachhead/rebased), the standalone git client built on the
 IntelliJ platform. It keeps the IntelliJ git workflow, menu wording, keyboard shortcuts, icons and New UI look.
 
+## Installation
+
+**Requirements:** VS Code 1.90 or later, and Git 2.25 or later on your `PATH` (or set `ideagittool.gitPath`). The log actions that edit commits without touching the working tree (Drop / Extract Selected Changes, Add Commits to Remote Branch) need Git 2.40 or later, and the `--update-refs` rebase option needs Git 2.38 or later.
+
+### From the .vsix package (recommended)
+
+1. Download [`ideagittool-0.2.0.vsix`](https://github.com/PGshen/vs-idea-gittool/raw/master/releases/ideagittool-0.2.0.vsix) from the `releases/` folder of this repository.
+2. Install it in one of these ways:
+   - In VS Code, open the Extensions view (Ctrl+Shift+X / Cmd+Shift+X), click the `⋯` menu at the top, choose **Install from VSIX…** and select the file.
+   - Or from a terminal:
+     ```
+     code --install-extension ideagittool-0.2.0.vsix
+     ```
+3. Reload the window if VS Code asks you to.
+
+To update, install the newer .vsix the same way. To uninstall, find **IdeaGitTool** in the Extensions view and choose **Uninstall**.
+
+### From source
+
+```
+git clone https://github.com/PGshen/vs-idea-gittool.git
+cd vs-idea-gittool
+npm install
+npm run package                                  # builds ideagittool-<version>.vsix
+code --install-extension ideagittool-*.vsix
+```
+
+### First steps
+
+- Open a folder that contains a Git repository. The Git log opens in the editor, and the **IdeaGitTool** icon appears in the activity bar (Commit / Shelf / Stash).
+- The status bar shows Update Project ↙, Push ↗ and the current branch; click the branch to open the branches popup.
+- IdeaGitTool works next to VS Code's built-in Git extension; nothing has to be disabled.
+- IntelliJ shortcuts are on by default and replace some VS Code shortcuts (for example Ctrl+T). Turn off `ideagittool.intellijShortcuts` to keep the VS Code ones (see Settings).
+
 ## Features
 
 **Git log** (opens in the editor, like Rebased; `ideagittool.log.showInEditor` moves it to the bottom panel)

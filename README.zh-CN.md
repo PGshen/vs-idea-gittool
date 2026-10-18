@@ -7,6 +7,40 @@
 
 > 插件界面沿用 IntelliJ 的英文文案，下文提到的菜单、按钮名称都按界面上的原文写出。
 
+## 安装
+
+**环境要求：** VS Code 1.90 或更高版本；Git 2.25 或更高版本，并已加入 `PATH`（也可以在设置 `ideagittool.gitPath` 里指定 git 路径）。Log 里不动工作区直接改提交的操作（Drop / Extract Selected Changes、Add Commits to Remote Branch）需要 Git 2.40 或更高版本；Rebase 的 `--update-refs` 选项需要 Git 2.38 或更高版本。
+
+### 用 .vsix 安装包安装（推荐）
+
+1. 从本仓库的 `releases/` 目录下载 [`ideagittool-0.2.0.vsix`](https://github.com/PGshen/vs-idea-gittool/raw/master/releases/ideagittool-0.2.0.vsix)。
+2. 任选一种方式安装：
+   - 在 VS Code 里打开扩展视图（Ctrl+Shift+X / Cmd+Shift+X），点顶部的 `⋯` 菜单，选 **Install from VSIX…**（从 VSIX 安装），再选中下载的文件。
+   - 或者在终端里运行：
+     ```
+     code --install-extension ideagittool-0.2.0.vsix
+     ```
+3. 如果 VS Code 提示重新加载窗口，点确定即可。
+
+升级时用同样的方式安装新版本的 .vsix。卸载时在扩展视图里找到 **IdeaGitTool**，选择 **卸载**。
+
+### 从源码构建安装
+
+```
+git clone https://github.com/PGshen/vs-idea-gittool.git
+cd vs-idea-gittool
+npm install
+npm run package                                  # 生成 ideagittool-<version>.vsix
+code --install-extension ideagittool-*.vsix
+```
+
+### 开始使用
+
+- 打开一个包含 Git 仓库的文件夹。Git 日志会在编辑器区域自动打开，活动栏里会出现 **IdeaGitTool** 图标（Commit / Shelf / Stash）。
+- 状态栏显示 Update Project ↙、Push ↗ 和当前分支，点击分支名可打开分支弹出菜单。
+- IdeaGitTool 可以和 VS Code 自带的 Git 扩展同时使用，不需要禁用任何东西。
+- IntelliJ 快捷键默认开启，会覆盖部分 VS Code 快捷键（例如 Ctrl+T）。想保留 VS Code 的快捷键，关闭设置 `ideagittool.intellijShortcuts` 即可（见"设置"一节）。
+
 ## 功能
 
 **Git 日志**（和 Rebased 一样在编辑器区域打开；设置 `ideagittool.log.showInEditor` 可改为放在底部面板）
