@@ -51,6 +51,11 @@
       "category": "IdeaGitTool"
     },
     {
+      "command": "ideagittool.checkoutTagOrRevision",
+      "title": "Checkout Tag or Revision…",
+      "category": "IdeaGitTool"
+    },
+    {
       "command": "ideagittool.merge",
       "title": "Merge…",
       "category": "IdeaGitTool"
@@ -334,11 +339,6 @@
       "command": "ideagittool.checkoutRevision",
       "title": "Checkout Revision",
       "category": "IdeaGitTool"
-    },
-    {
-      "command": "ideagittool.ops.pickToolbarRepository",
-      "title": "Select Toolbar Repository",
-      "category": "IdeaGitTool"
     }
   ],
   "menus": {
@@ -460,10 +460,6 @@
         "when": "false"
       },
       {
-        "command": "ideagittool.ops.pickToolbarRepository",
-        "when": "false"
-      },
-      {
         "command": "ideagittool.push",
         "when": "ideagittool.hasRepository"
       },
@@ -485,6 +481,10 @@
       },
       {
         "command": "ideagittool.createBranch",
+        "when": "ideagittool.hasRepository"
+      },
+      {
+        "command": "ideagittool.checkoutTagOrRevision",
         "when": "ideagittool.hasRepository"
       },
       {
@@ -742,22 +742,32 @@
       "ideagittool.branches.showRecent": {
         "type": "boolean",
         "default": true,
-        "description": "Show recent branches in the branches popup."
+        "description": "Show recent branches in the Branches tab."
       },
       "ideagittool.branches.showTags": {
         "type": "boolean",
         "default": true,
-        "description": "Show tags in the branches popup."
+        "description": "Show tags in the Branches tab."
+      },
+      "ideagittool.branches.groupByDirectory": {
+        "type": "boolean",
+        "default": true,
+        "description": "Branches tab: group branches by directory (\"feature/x\" under a \"feature\" folder)."
+      },
+      "ideagittool.branches.groupByRepository": {
+        "type": "boolean",
+        "default": true,
+        "description": "Branches tab: group branches by repository when the workspace has several repositories."
+      },
+      "ideagittool.branches.searchActions": {
+        "type": "boolean",
+        "default": true,
+        "description": "Branches tab: include actions (Update Project…, Commit…, …) in the search results."
       },
       "ideagittool.branches.syncControl": {
         "type": "boolean",
         "default": true,
-        "description": "Execute branch operations on all roots: with several repositories, branches that exist in all of them are shown once in the branches popup and their actions run in every repository."
-      },
-      "ideagittool.statusBar.enabled": {
-        "type": "boolean",
-        "default": true,
-        "description": "Show the Git toolbar widgets (Update Project, Push, branch, merge/rebase actions) in the status bar."
+        "description": "Execute branch operations on all roots: with several repositories, branches that exist in all of them are shown once in the Branches tab and their actions run in every repository."
       }
     }
   },

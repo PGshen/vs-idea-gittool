@@ -15,6 +15,7 @@ import { CommitView, copyPaths, CopyPathKind } from './view';
 
 export function register(ctx: Ctx) {
   const view = new CommitView(ctx);
+  ctx.commitView = view;
   initPatchDialog(ctx.extension.globalState);
   ctx.extension.subscriptions.push(
     vscode.window.registerWebviewViewProvider('ideagittool.commit', view, { webviewOptions: { retainContextWhenHidden: true } }),

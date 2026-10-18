@@ -3,13 +3,13 @@
     "properties": {
       "ideagittool.log.showInEditor": {
         "type": "boolean",
-        "default": true,
-        "description": "Show the log in the editor window (IdeaGitTool default). When off, the log is shown in the \"Git\" panel at the bottom, like in JetBrains IDEs."
+        "default": false,
+        "description": "Show the log in the editor window, like Rebased. When off (the default), the log is shown in the \"Git\" panel at the bottom, like in JetBrains IDEs."
       },
       "ideagittool.log.openOnStartup": {
         "type": "boolean",
         "default": true,
-        "description": "Open the Git log when a workspace with a Git repository is opened."
+        "description": "Show the Git log when a workspace with a Git repository is opened (in the \"Git\" panel, or in the editor with ideagittool.log.showInEditor)."
       },
       "ideagittool.annotate.showAuthor": {
         "type": "boolean",

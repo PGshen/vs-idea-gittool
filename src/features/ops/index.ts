@@ -5,21 +5,22 @@ import { repoFor } from './common';
 import * as h from './history';
 import { registerMainMenu } from './mainMenu';
 import * as r from './remote';
-import { StatusBarWidgets } from './statusBar';
+import { BranchesTab } from './branchesTab';
+import { activeRepo } from './common';
 import * as u from './update';
 import * as w from './worktrees';
 
 /**
- * Git operations: branches popup, toolbar widgets, push / update / pull / fetch, merge / rebase,
+ * Git operations: Branches tab, push / update / pull / fetch, merge / rebase,
  * interactive rebase and commit editing, reset, tags, remotes, clone and patches.
  */
 export function register(ctx: Ctx) {
-  const bar = new StatusBarWidgets(ctx);
-  ctx.extension.subscriptions.push(bar);
+  // IntelliJ's branches popup lives in the Branches tab of the Commit tool window.
+  const branchesTab = new BranchesTab(ctx);
+  ctx.extension.subscriptions.push(branchesTab);
   const c = ctx.command.bind(ctx);
 
-  c('ideagittool.ops.pickToolbarRepository', () => bar.pickProjectRepo());
-  registerMainMenu(ctx, () => bar.activeRepo());
+  registerMainMenu(ctx, () => activeRepo(ctx));
 
   // Remote operations
   c('ideagittool.push', (arg?: { root?: string; upTo?: string; branch?: string }) => r.pushCommand(ctx, normalize(arg)));
@@ -34,7 +35,8 @@ export function register(ctx: Ctx) {
   c('ideagittool.unshallow', (arg?: { root?: string }) => r.unshallowCommand(ctx, normalize(arg)));
 
   // Branches
-  c('ideagittool.branches', (arg?: { root?: string }) => b.branchesPopup(ctx, normalize(arg) ?? (bar.activeRepo() ? { root: bar.activeRepo()!.root } : undefined)));
+  c('ideagittool.branches', () => ctx.commitView?.reveal('branches'));
+  c('ideagittool.checkoutTagOrRevision', async (arg?: { root?: string }) => b.checkoutTagOrRevision(ctx, await repoFor(ctx, normalize(arg) ?? (activeRepo(ctx) ? { root: activeRepo(ctx)!.root } : undefined))));
   c('ideagittool.createBranch', (arg?: { root?: string; startPoint?: string }) => b.newBranchCommand(ctx, normalize(arg)));
   c('ideagittool.branch.checkout', (arg: b.BranchArg) => b.checkoutRef(ctx, arg));
   c('ideagittool.branch.newBranchFrom', (arg: b.BranchArg) => b.newBranchFrom(ctx, arg));

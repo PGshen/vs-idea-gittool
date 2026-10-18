@@ -34,14 +34,14 @@ code --install-extension ideagittool-*.vsix
 
 ### First steps
 
-- Open a folder that contains a Git repository. The Git log opens in the editor, and the **IdeaGitTool** icon appears in the activity bar (Commit / Shelf / Stash).
-- The status bar shows Update Project ↙, Push ↗ and the current branch; click the branch to open the branches popup.
+- Open a folder that contains a Git repository. The Git log opens in the **Git** panel at the bottom, and the **IdeaGitTool** icon appears in the activity bar (Commit / Shelf / Stash / Branches).
+- The **Branches** tab (Ctrl+Shift+`) holds IntelliJ's branches popup: Update Project…, Commit…, Push…, New Branch…, and every local and remote branch and tag with its actions.
 - IdeaGitTool works next to VS Code's built-in Git extension; nothing has to be disabled.
 - IntelliJ shortcuts are on by default and replace some VS Code shortcuts (for example Ctrl+T). Turn off `ideagittool.intellijShortcuts` to keep the VS Code ones (see Settings).
 
 ## Features
 
-**Git log** (opens in the editor, like Rebased; `ideagittool.log.showInEditor` moves it to the bottom panel)
+**Git log** (in the **Git** panel at the bottom; `ideagittool.log.showInEditor` opens it in the editor, like Rebased)
 - Commit graph with IntelliJ lane colors, ref labels, current-branch highlight, lazy loading.
 - Filter bar: *Text or hash* (regex, match case), Branch, User, Date, Paths; Graph Options (By Commit Date / Topologically, First Parent, No Merges); View Options; Go to Hash/Branch/Tag; extra tabs (Alt+G).
 - Branches pane: HEAD / Local / Remote / Tags, favorites, ahead/behind, group by directory, full branch context menu.
@@ -52,7 +52,7 @@ code --install-extension ideagittool-*.vsix
 - Multi-repository log with root colors, Group by Repository; Drop / Extract Selected Changes, Add Commits to Remote Branch.
 
 **Commit tool window** (activity bar)
-- Commit / Shelf / Stash tabs. Changelists, Unversioned Files, Merge Conflicts, checkboxes, Group By, speed search, drag & drop.
+- Commit / Shelf / Stash / Branches tabs. Changelists, Unversioned Files, Merge Conflicts, checkboxes, Group By, speed search, drag & drop.
 - Amend (also of older commits), commit message history, Commit / Commit and Push…, commit options (Author, Sign-off, extra commit for file movements). Commits exactly the checked files, without the staging area.
 - Shelve / Unshelve (untracked files included), Stash / Unstash dialogs, Rollback, Add to VCS, Add to .gitignore.
 - Conflicts dialog in IntelliJ's iterative mode (Rebased default): Unresolved / Resolved groups with `resolved/total` badges, inline Accept buttons, Accept ‘Yours’ / ‘Theirs’ and Revert Conflict Resolution in the context menu, Resolve All Simple Conflicts with its status, Group by directory, Close / Accept and Finish / Resolve Manually (Review Changes). Partially merged files are saved by the merge window's *Save and Close* and continue where they were left when reopened; files are marked resolved in git by *Accept and Finish*.
@@ -65,8 +65,7 @@ code --install-extension ideagittool-*.vsix
 - Show History, Show History for Selection, Show Project History, Recent Changes (Alt+Shift+C), Put Label…, revert and create patch.
 
 **Toolbar and operations**
-- Status bar in Rebased order: Update Project ↙, Push ↗, branch widget (↓↑ counts), merge/rebase widget with Continue / Abort.
-- Branches popup (Ctrl+Shift+`) with Recent / Local / Remote / Tags and the per-branch actions (Checkout, New Branch from, Checkout and Rebase, Compare, Show Diff with Working Tree, Rebase onto, Merge into, Pull using Rebase/Merge, Update, Push, Rename, Delete, …), smart checkout.
+- **Branches** tab of the Commit tool window (Ctrl+Shift+`), laid out like IntelliJ's branches popup: search field ("Search for branches and actions", matches highlighted) with Fetch and settings (Group by Directory, Show Recent Branches, Show Tags, …); Update Project…, Commit…, Push…, the Abort / Continue actions of an ongoing merge or rebase, New Branch…, Checkout Tag or Revision…; then Recent / Local / Remote / Tags grouped by directory, with the current branch, favorites (click the star), incoming / outgoing counts and a `›` that opens the branch actions (Checkout, New Branch from, Checkout and Rebase, Compare, Show Diff with Working Tree, Rebase onto, Merge into, Pull using Rebase/Merge, Update, Push, Rename, Delete, …). Double-click checks a branch out; smart checkout when local changes are in the way.
 - Dialogs: Push (Force Push, push tags, Run Git hooks), Push Rejected, Update Project, Pull, Fetch, Merge, Rebase, interactive rebase (Rebasing Commits), Reset HEAD, New Branch, Tag, Remotes, Clone, Edit Commit Message, Create Patch.
 - Git menu (`IdeaGitTool: Git Menu…`) and VCS Operations Popup (Alt+`).
 - Update Project cleans the working tree using Stash or Shelve; Reset to the Remote Branch and Update Force-Pushed Branch.
@@ -76,13 +75,13 @@ code --install-extension ideagittool-*.vsix
 ## Settings
 
 - `ideagittool.appearance`: `vscode` (the default) draws every view and dialog like native VS Code: buttons, inputs, checkboxes, lists, menus, hovers, scrollbars, fonts and colors come from your VS Code theme, and monochrome icons take the theme's icon color. `intellij` keeps the IntelliJ New UI look (IntelliJ light/dark palette and widget shapes). The layout and the features are the same in both; `scripts/layout-check.mjs` verifies that no element moves.
-- `ideagittool.log.showInEditor`, `ideagittool.log.openOnStartup`, `ideagittool.commit.gpgSign`, `ideagittool.commit.skipHooks`, `ideagittool.updateMethod`, `ideagittool.push.*`, `ideagittool.annotate.*`, `ideagittool.statusBar.enabled`. Open the Settings editor and search for "ideagittool" to see all of them.
+- `ideagittool.log.showInEditor`, `ideagittool.log.openOnStartup`, `ideagittool.commit.gpgSign`, `ideagittool.commit.skipHooks`, `ideagittool.updateMethod`, `ideagittool.push.*`, `ideagittool.annotate.*`, `ideagittool.branches.*`. Open the Settings editor and search for "ideagittool" to see all of them.
 - `ideagittool.intellijShortcuts` (default on): Ctrl+T Update Project, Ctrl+Shift+K Push, Ctrl+Shift+` Branches, Alt+` VCS Operations Popup, Ctrl+Alt+N New Branch, Alt+9 Git log, Ctrl+K Commit (only while the Commit view has focus). These replace the VS Code defaults on the same keys (for example Ctrl+T *Go to Symbol in Workspace* and Ctrl+Shift+` *New Terminal*). Turn the setting off to keep the VS Code shortcuts.
 
 ## Differences from Rebased
 
 VS Code has no floating windows or gutter menus, so:
-- Dialogs open as editor tabs that look like IntelliJ dialogs; popups such as the branches popup are VS Code quick picks.
+- Dialogs open as editor tabs that look like IntelliJ dialogs; the branches popup is the Branches tab of the Commit tool window, and the actions of the toolbar (Update Project, Push, branch widget) are there too instead of in the status bar.
 - Diffs use the VS Code diff editor; merges use an IntelliJ-style three-pane merge window built on CodeMirror.
 - Annotation options live in the hover and the line-number context menu.
 

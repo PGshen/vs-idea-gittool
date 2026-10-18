@@ -213,3 +213,13 @@ export async function putLocalHistoryLabel(repo: Repository, label: string) {
     // Local History is optional.
   }
 }
+
+/** The repository Git actions without an explicit root work on: the one of the active editor, else the first. */
+export function activeRepo(ctx: Ctx): Repository | undefined {
+  const doc = vscode.window.activeTextEditor?.document.uri;
+  if (doc?.scheme === 'file') {
+    const r = ctx.repos.getForFile(doc.fsPath);
+    if (r) return r;
+  }
+  return ctx.repos.repositories[0];
+}

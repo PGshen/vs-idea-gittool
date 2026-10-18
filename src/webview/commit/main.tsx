@@ -5,27 +5,31 @@ import './commit.css';
 import { boot, call, on, persist, persisted, send } from '../lib/rpc';
 import { ActionButton } from '../lib/components';
 import { CommitViewState } from '../../shared/commitProtocol';
+import { BranchesTab } from './branchesTab';
 import { CommitTab } from './commitTab';
 import { ShelfTab } from './shelfTab';
 import { StashTab } from './stashTab';
 
-export type TabId = 'commit' | 'shelf' | 'stash';
+export type TabId = 'commit' | 'shelf' | 'stash' | 'branches';
 
 function App() {
   const [state, setState] = useState<CommitViewState>(boot.initial.state);
   const [tab, setTab] = useState<TabId>(() => persisted<TabId>('tab', 'commit'));
+  /** Bumped when the Branches tab is opened by a command (Ctrl+Shift+`): focuses its search field. */
+  const [branchesFocus, setBranchesFocus] = useState(0);
+  const show = (t: TabId) => {
+    setTab(t);
+    persist('tab', t);
+    if (t === 'branches') setBranchesFocus(n => n + 1);
+  };
   useEffect(() => on('state', setState), []);
-  useEffect(
-    () =>
-      on('selectTab', (t: TabId) => {
-        setTab(t);
-        persist('tab', t);
-      }),
-    [],
-  );
+  useEffect(() => on('selectTab', (t: TabId) => show(t)), []);
   useEffect(() => {
     // The view may have been created before the repositories were scanned.
-    call<{ state: CommitViewState }>('ready').then(r => setState(r.state));
+    call<{ state: CommitViewState; tab?: TabId }>('ready').then(r => {
+      setState(r.state);
+      if (r.tab) show(r.tab);
+    });
   }, []);
   const hasStashes = state.stashes.length > 0;
   const current: TabId = tab === 'stash' && !hasStashes ? 'commit' : tab;
@@ -47,6 +51,9 @@ function App() {
             Stash
           </span>
         )}
+        <span class={`tw-tab ${current === 'branches' ? 'selected' : ''}`} onClick={() => select('branches')}>
+          Branches
+        </span>
         <span style={{ flex: 1 }} />
         <ActionButton
           icon="general/moreVertical"
@@ -78,6 +85,9 @@ function App() {
           <StashTab state={state} />
         </div>
       )}
+      <div class="tab-body" style={{ display: current === 'branches' ? 'flex' : 'none' }}>
+        <BranchesTab visible={current === 'branches'} focusToken={branchesFocus} />
+      </div>
     </>
   );
 }

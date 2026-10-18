@@ -36,14 +36,14 @@ code --install-extension ideagittool-*.vsix
 
 ### 开始使用
 
-- 打开一个包含 Git 仓库的文件夹。Git 日志会在编辑器区域自动打开，活动栏里会出现 **IdeaGitTool** 图标（Commit / Shelf / Stash）。
-- 状态栏显示 Update Project ↙、Push ↗ 和当前分支，点击分支名可打开分支弹出菜单。
+- 打开一个包含 Git 仓库的文件夹。Git 日志会在底部的 **Git** 面板中自动打开，活动栏里会出现 **IdeaGitTool** 图标（Commit / Shelf / Stash / Branches）。
+- **Branches** 标签页（Ctrl+Shift+`）就是 IntelliJ 的分支弹出菜单：Update Project…、Commit…、Push…、New Branch…，以及所有本地、远程分支和标签及其操作。
 - IdeaGitTool 可以和 VS Code 自带的 Git 扩展同时使用，不需要禁用任何东西。
 - IntelliJ 快捷键默认开启，会覆盖部分 VS Code 快捷键（例如 Ctrl+T）。想保留 VS Code 的快捷键，关闭设置 `ideagittool.intellijShortcuts` 即可（见"设置"一节）。
 
 ## 功能
 
-**Git 日志**（和 Rebased 一样在编辑器区域打开；设置 `ideagittool.log.showInEditor` 可改为放在底部面板）
+**Git 日志**（默认在底部的 **Git** 面板中；设置 `ideagittool.log.showInEditor` 可改为像 Rebased 一样在编辑器区域打开）
 - 提交图：IntelliJ 的分支线配色、分支/标签标记、当前分支高亮，滚动时按需加载。
 - 过滤栏：*Text or hash*（支持正则、区分大小写），Branch、User、Date、Paths 过滤；Graph Options（By Commit Date / Topologically、First Parent、No Merges）；View Options；Go to Hash/Branch/Tag；可开多个日志标签页（Alt+G）。
 - 分支面板：HEAD / Local / Remote / Tags，收藏、领先/落后计数、按目录分组，完整的分支右键菜单。
@@ -54,7 +54,7 @@ code --install-extension ideagittool-*.vsix
 - 多仓库合并日志（按仓库着色）、按仓库分组；在提交的文件列表里直接丢弃或拆分部分改动（Drop / Extract Selected Changes）、Add Commits to Remote Branch。
 
 **Commit 工具窗口**（活动栏）
-- Commit / Shelf / Stash 三个标签页。支持 changelist、未跟踪文件、合并冲突分组、复选框、Group By、快速搜索、拖放。
+- Commit / Shelf / Stash / Branches 四个标签页。支持 changelist、未跟踪文件、合并冲突分组、复选框、Group By、快速搜索、拖放。
 - Amend（也能修改更早的提交）、提交信息历史、Commit / Commit and Push…，提交选项（Author、Sign-off、为文件移动额外生成一个提交）。和 IntelliJ 一样不经过暂存区，只提交勾选的文件。
 - Shelve / Unshelve（未跟踪文件也能搁置）、Stash / Unstash 对话框、Rollback、Add to VCS、Add to .gitignore。
 - 冲突对话框采用 IntelliJ 的迭代模式（Rebased 的默认设置）：
@@ -80,8 +80,7 @@ code --install-extension ideagittool-*.vsix
 - Show History、Show History for Selection、Show Project History、Recent Changes（Alt+Shift+C）、Put Label…，可还原、可生成补丁。
 
 **工具栏与 Git 操作**
-- 状态栏按 Rebased 的顺序排列：Update Project ↙、Push ↗、分支组件（↓↑ 计数）、merge/rebase 进行中时的 Continue / Abort。
-- 分支弹出菜单（Ctrl+Shift+`）：Recent / Local / Remote / Tags 分组，以及每个分支的操作（Checkout、New Branch from、Checkout and Rebase、Compare、Show Diff with Working Tree、Rebase onto、Merge into、Pull using Rebase/Merge、Update、Push、Rename、Delete 等），支持智能签出（Smart Checkout）。
+- Commit 工具窗口的 **Branches** 标签页（Ctrl+Shift+`），布局与 IntelliJ 的分支弹出菜单一致：顶部是搜索框（"Search for branches and actions"，匹配的字符高亮），右侧有 Fetch 和设置（Group by Directory、Show Recent Branches、Show Tags 等）；下面是 Update Project…、Commit…、Push…，merge / rebase 进行中时的 Abort / Continue，New Branch…、Checkout Tag or Revision…；再往下是按目录分组的 Recent / Local / Remote / Tags，显示当前分支、收藏（点星标切换）、待拉取/待推送计数，行末的 `›` 打开分支操作（Checkout、New Branch from、Checkout and Rebase、Compare、Show Diff with Working Tree、Rebase onto、Merge into、Pull using Rebase/Merge、Update、Push、Rename、Delete 等）。双击分支即签出；有本地改动挡路时支持智能签出（Smart Checkout）。
 - 对话框：Push（Force Push、推送标签、Run Git hooks）、Push Rejected、Update Project、Pull、Fetch、Merge、Rebase、交互式 Rebase（Rebasing Commits）、Reset HEAD、New Branch、Tag、Remotes、Clone、Edit Commit Message、Create Patch。
 - Git 菜单（`IdeaGitTool: Git Menu…`）和 VCS Operations Popup（Alt+`）。
 - Update Project 可用 Stash 或 Shelve 先清理工作区；支持 Reset to the Remote Branch 和 Update Force-Pushed Branch（上游被强推后的更新）。
@@ -94,13 +93,13 @@ code --install-extension ideagittool-*.vsix
   - `vscode`（默认）：所有视图和对话框都按 VS Code 原生样式绘制，按钮、输入框、复选框、列表、菜单、悬停提示、滚动条、字体和颜色都取自当前 VS Code 主题，单色图标使用主题的图标颜色。
   - `intellij`：保留 IntelliJ New UI 的外观（IntelliJ 的浅色/深色配色和控件形状）。
   - 两种外观的布局和功能完全相同，`scripts/layout-check.mjs` 会检查元素位置没有变化。
-- `ideagittool.log.showInEditor`、`ideagittool.log.openOnStartup`、`ideagittool.commit.gpgSign`、`ideagittool.commit.skipHooks`、`ideagittool.updateMethod`、`ideagittool.push.*`、`ideagittool.annotate.*`、`ideagittool.statusBar.enabled` 等。在设置编辑器里搜索 "ideagittool" 可以看到全部设置。
+- `ideagittool.log.showInEditor`、`ideagittool.log.openOnStartup`、`ideagittool.commit.gpgSign`、`ideagittool.commit.skipHooks`、`ideagittool.updateMethod`、`ideagittool.push.*`、`ideagittool.annotate.*`、`ideagittool.branches.*` 等。在设置编辑器里搜索 "ideagittool" 可以看到全部设置。
 - `ideagittool.intellijShortcuts`（默认开启）：Ctrl+T 更新项目、Ctrl+Shift+K 推送、Ctrl+Shift+` 分支菜单、Alt+` VCS Operations Popup、Ctrl+Alt+N 新建分支、Alt+9 打开 Git 日志、Ctrl+K 提交（仅在 Commit 视图有焦点时）。这些快捷键会覆盖 VS Code 在同样按键上的默认功能（例如 Ctrl+T 的"转到工作区中的符号"、Ctrl+Shift+` 的"新建终端"）。关闭此设置即可恢复 VS Code 的快捷键。
 
 ## 与 Rebased 的差异
 
 VS Code 没有浮动窗口，也不能在行号栏加菜单，因此：
-- 对话框以编辑器标签页的形式打开，外观做成 IntelliJ 对话框的样子；分支弹出菜单这类弹窗使用 VS Code 的快速选择框。
+- 对话框以编辑器标签页的形式打开，外观做成 IntelliJ 对话框的样子；分支弹出菜单做成了 Commit 工具窗口里的 Branches 标签页，原本在工具栏上的操作（Update Project、Push、分支组件）也都放在这里，不再放在状态栏。
 - Diff 使用 VS Code 的 diff 编辑器；合并使用基于 CodeMirror 实现的 IntelliJ 风格三栏合并窗口。
 - Blame 注解的选项放在悬停提示和行号区的右键菜单里。
 

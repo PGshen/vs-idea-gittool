@@ -92,7 +92,7 @@ export async function run({ window, shot, command, sleep, workspace }) {
   await r.click();
   await window.keyboard.press('Delete');
   await sleep(300);
-  await (await rowByText(dlg, 'button', 'Start Rebasing')).click();
+  await (await rowByText(dlg, 'button', 'Start Rebasing')).evaluate(b => b.click()); // the dialog closes during the click
   await sleep(5000);
   const afterSecond = subjects(workspace);
   console.log('after 2nd rebase:', afterSecond);

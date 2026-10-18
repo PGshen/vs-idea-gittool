@@ -4,12 +4,14 @@ import { Repository } from '../../git/repository';
 import { showDialog } from '../../host/dialog';
 import { openMultiDiff } from '../../host/gitContent';
 import { withProgress } from '../../host/ui';
-import { CancelledError, showError } from '../../host/webviewHost';
+import { showError } from '../../host/webviewHost';
+import { ActionItem } from '../../shared/branchesProtocol';
 import { Ref } from '../../shared/types';
+import { NEW_WORKTREE, OPEN_WORKTREE, refActionModel } from './branchActions';
 import { diffChanges } from './changes';
-import { currentName, putLocalHistoryLabel, remoteOf, repoFor, reportOutcome, RootArg, settings, withSmartOperation } from './common';
+import { putLocalHistoryLabel, remoteOf, repoFor, reportOutcome, RootArg, settings, withSmartOperation } from './common';
 import { checkWorktreeConflict } from './worktrees';
-import { checkout, countCommits, fetch, isAncestor, runConflictAware, validateNewBranch, worktreeOfBranch } from './engine';
+import { checkout, isAncestor, validateNewBranch, worktreeOfBranch } from './engine';
 import { merge, rebase } from './history';
 import { ijIcon } from './icons';
 import { pull, pushCommand } from './remote';
@@ -22,17 +24,10 @@ export interface BranchArg extends RootArg {
   type?: RefKind;
 }
 
-// ------------------------------------------------------------------ branches popup
-
-interface PopupItem extends vscode.QuickPickItem {
-  run?: () => unknown;
-  ref?: Ref;
-}
-
-const SEP = vscode.QuickPickItemKind.Separator;
+// ------------------------------------------------------------------ branches tab helpers
 
 /** Branches checked out recently, from the HEAD reflog ("checkout: moving from A to B"). */
-async function recentBranches(repo: Repository, limit = 5): Promise<string[]> {
+export async function recentBranches(repo: Repository, limit = 5): Promise<string[]> {
   const out = await repo.execText(['reflog', 'show', '--format=%gs', '-n', '300', 'HEAD', '--'], { quiet: true, allowFailure: true });
   const seen: string[] = [];
   for (const line of out.split('\n')) {
@@ -47,354 +42,30 @@ async function recentBranches(repo: Repository, limit = 5): Promise<string[]> {
   return seen;
 }
 
-function refIcon(ref: Ref) {
-  if (ref.type === 'tag') return ijIcon('nodes/tag');
-  if (ref.current) return ijIcon(ref.favorite ? 'dvcs/currentBranchFavoriteLabel' : 'dvcs/currentBranchLabel');
-  if (ref.favorite) return ijIcon('nodes/star');
-  return ijIcon('general/vcs');
-}
-
-function refDescription(ref: Ref) {
-  const parts: string[] = [];
-  if (ref.behind) parts.push(`↓${ref.behind}`);
-  if (ref.ahead) parts.push(`↑${ref.ahead}`);
-  if (ref.upstream) parts.push(ref.upstream);
-  return parts.join('  ');
-}
-
-function refTooltip(ref: Ref) {
-  const tips: string[] = [];
-  if (ref.behind) tips.push(`${ref.behind} incoming ${ref.behind === 1 ? 'commit' : 'commits'}`);
-  if (ref.ahead) tips.push(`${ref.ahead} outgoing ${ref.ahead === 1 ? 'commit' : 'commits'}`);
-  return tips.join(', ');
-}
-
 /** Synchronous branch control (Settings | Git: "Execute branch operations on all roots"). */
 export function syncControl(ctx: Ctx) {
   return ctx.repos.repositories.length > 1 && settings().get<boolean>('branches.syncControl', true);
 }
 
-/** `ideagittool.branches`: the Git branches popup (GitBranchesTreePopup). */
-export async function branchesPopup(ctx: Ctx, arg?: RootArg & { single?: boolean }) {
-  await ctx.repos.ready();
-  if (!arg?.single && syncControl(ctx)) return syncBranchesPopup(ctx);
-  let repo = await repoFor(ctx, arg);
-  const qp = vscode.window.createQuickPick<PopupItem>();
-  qp.matchOnDescription = false;
-  qp.placeholder = 'Search for branches and actions';
-  const fetchButton: vscode.QuickInputButton = { iconPath: ijIcon('vcs/fetch'), tooltip: 'Fetch' };
-  const settingsButton: vscode.QuickInputButton = { iconPath: ijIcon('general/moreVertical'), tooltip: 'Settings' };
-  qp.buttons = [fetchButton, settingsButton];
-  let disposed = false;
-
-  const build = async () => {
-    const r = repo;
-    qp.title = ctx.repos.repositories.length > 1 ? `Git Branches in ${r.name}` : 'Git Branches';
-    const items: PopupItem[] = [];
-    if (ctx.repos.repositories.length > 1) {
-      items.push({
-        label: `Repository: ${r.name}`,
-        description: 'Switch repository…',
-        iconPath: ijIcon('nodes/folder'),
-        alwaysShow: true,
-        run: async () => {
-          const picked = await vscode.window.showQuickPick(
-            ctx.repos.repositories.map(x => ({ label: x.name, description: currentName(x), detail: x.root, repo: x })),
-            { placeHolder: 'Select repository' },
-          );
-          if (picked) {
-            repo = picked.repo;
-            await build();
-          }
-          qp.show();
-          return 'keep';
-        },
-      });
-    }
-    // IdeaGitTool: Update Project and Push are on the toolbar; only Commit… remains at the top.
-    items.push({ label: 'Commit…', iconPath: ijIcon('vcs/commit'), alwaysShow: false, run: () => vscode.commands.executeCommand('ideagittool.commit') });
-    items.push({ label: '', kind: SEP });
-    for (const a of ongoingActions(r)) items.push({ ...a, alwaysShow: true });
-    items.push({ label: 'New Branch…', iconPath: ijIcon('general/add'), description: 'Ctrl+Alt+N', run: () => newBranchCommand(ctx, { root: r.root }) });
-    items.push({ label: 'Checkout Tag or Revision…', run: () => checkoutTagOrRevision(ctx, r) });
-    const showRecent = settings().get<boolean>('branches.showRecent', true);
-    const showTags = settings().get<boolean>('branches.showTags', true);
-    const locals = r.refs.filter(x => x.type === 'local');
-    const branchItem = (ref: Ref): PopupItem => ({
-      label: ref.name,
-      description: refDescription(ref),
-      detail: undefined,
-      iconPath: refIcon(ref),
-      ref,
-      tooltip: refTooltip(ref),
-      buttons: ref.type !== 'tag' ? [{ iconPath: ijIcon(ref.favorite ? 'nodes/star' : 'nodes/starEmpty'), tooltip: ref.favorite ? 'Remove from Favorites' : 'Add to Favorites' }] : [],
-    } as PopupItem);
-    if (showRecent) {
-      const recent = await recentBranches(r);
-      if (recent.length) {
-        items.push({ label: 'Recent', kind: SEP });
-        for (const b of recent) items.push({ ...branchItem(locals.find(x => x.name === b)!), id: `recent:${b}` } as PopupItem);
-      }
-    }
-    items.push({ label: 'Local', kind: SEP });
-    const sortRefs = (a: Ref, b: Ref) => (a.current ? -1 : b.current ? 1 : a.favorite !== b.favorite ? (a.favorite ? -1 : 1) : a.name.localeCompare(b.name));
-    for (const ref of [...locals].sort(sortRefs)) items.push(branchItem(ref));
-    const remotes = r.refs.filter(x => x.type === 'remote');
-    if (remotes.length) {
-      items.push({ label: 'Remote', kind: SEP });
-      for (const ref of [...remotes].sort(sortRefs)) items.push(branchItem(ref));
-    }
-    const tags = r.refs.filter(x => x.type === 'tag');
-    if (showTags && tags.length) {
-      items.push({ label: 'Tags', kind: SEP });
-      for (const ref of [...tags].sort((a, b) => (b.date ?? 0) - (a.date ?? 0))) items.push(branchItem(ref));
-    }
-    qp.items = items;
-  };
-
-  qp.onDidTriggerButton(async b => {
-    if (b === fetchButton) {
-      qp.busy = true;
-      await withProgress('Fetching…', (progress, token) => fetch(repo, 'all', { progress, token }), { location: 'window' });
-      await repo.refresh();
-      qp.busy = false;
-      await build();
-    } else if (b === settingsButton) {
-      const cfg = settings();
-      const toggles = [
-        { label: 'Show Recent Branches', key: 'branches.showRecent', picked: cfg.get('branches.showRecent', true) },
-        { label: 'Show Tags', key: 'branches.showTags', picked: cfg.get('branches.showTags', true) },
-      ];
-      const sel = await vscode.window.showQuickPick(toggles, { canPickMany: true, title: 'Branches Popup Settings' });
-      if (sel) for (const t of toggles) await cfg.update(t.key, sel.includes(t), vscode.ConfigurationTarget.Global);
-      await build();
-      qp.show();
-    }
-  });
-  qp.onDidTriggerItemButton(async e => {
-    if (e.item.ref) {
-      await ctx.repos.toggleFavorite(repo, e.item.ref.fullName);
-      await build();
-    }
-  });
-  qp.onDidAccept(async () => {
-    const item = qp.selectedItems[0];
-    if (!item) return;
-    if (item.ref) {
-      qp.hide();
-      await refActionsPopup(ctx, repo, item.ref, () => branchesPopup(ctx, { root: repo.root, single: true }));
-      return;
-    }
-    if (item.run) {
-      const keep = item.label.startsWith('Repository:');
-      if (!keep) qp.hide();
-      try {
-        await item.run();
-      } catch (e) {
-        showError(e);
-      }
-    }
-  });
-  qp.onDidHide(() => {
-    disposed = true;
-    qp.dispose();
-  });
-  await build();
-  if (!disposed) qp.show();
-}
-
-function ongoingActions(repo: Repository): PopupItem[] {
-  const root = { root: repo.root };
-  const run = (cmd: string) => () => vscode.commands.executeCommand(cmd, root);
-  switch (repo.detectOperation()) {
-    case 'rebase':
-      return [
-        { label: 'Abort Rebase', iconPath: ijIcon('vcs/abort'), run: run('ideagittool.abortOperation') },
-        { label: 'Continue Rebase', iconPath: ijIcon('dvcs/resolveContinue'), run: run('ideagittool.continueOperation') },
-        { label: 'Skip Commit', iconPath: ijIcon('dvcs/skipCommit'), run: run('ideagittool.skipCommit') },
-      ];
-    case 'merge':
-      return [{ label: 'Abort Merge', iconPath: ijIcon('vcs/abort'), run: run('ideagittool.abortOperation') }];
-    case 'cherry-pick':
-      return [
-        { label: 'Abort Cherry-Pick', iconPath: ijIcon('vcs/abort'), run: run('ideagittool.abortOperation') },
-        { label: 'Continue Cherry-Pick', iconPath: ijIcon('dvcs/resolveContinue'), run: run('ideagittool.continueOperation') },
-      ];
-    case 'revert':
-      return [{ label: 'Abort Revert', iconPath: ijIcon('vcs/abort'), run: run('ideagittool.abortOperation') }];
-    default:
-      return [];
-  }
-}
-
-/** Per-ref submenu (Git.Branch group), with labels per ref kind as in GitBranchPopupActions. */
-export function refActions(ctx: Ctx, repo: Repository, ref: Ref, otherWorktree?: string, roots?: string[]): PopupItem[] {
-  const cur = repo.info.branch;
-  const current = ref.type === 'local' && ref.current;
-  const arg = { root: repo.root, name: ref.name, type: ref.type as RefKind };
-  // Synchronous branch control: the action runs in every repository (root by root, like IntelliJ).
-  const cmd = (id: string) => async () => {
-    if (id === 'ideagittool.branch.newBranchFrom' && roots) return newBranchCommand(ctx, { roots, startPoint: ref.name, title: `Create Branch from ${ref.name}` });
-    for (const root of roots ?? [repo.root]) await vscode.commands.executeCommand(id, { ...arg, root });
-  };
-  const items: PopupItem[] = [];
-  const sep = () => items.push({ label: '', kind: SEP });
-  const isTag = ref.type === 'tag';
-  const ns = isTag ? 'ideagittool.tag' : 'ideagittool.branch';
-  if (!current) items.push({ label: 'Checkout', run: cmd(`${ns}.checkout`) });
-  if (otherWorktree && !roots) items.push({ label: 'Open Worktree…', run: () => vscode.commands.executeCommand('ideagittool.worktrees.open', { root: repo.root, branch: ref.name }) });
-  items.push({ label: `New Branch from '${ref.name}'…`, iconPath: ijIcon('general/add'), run: cmd('ideagittool.branch.newBranchFrom') });
-  if (!current && !isTag && cur) items.push({ label: `Checkout and Rebase onto '${cur}'`, run: cmd('ideagittool.branch.checkoutAndRebase') });
-  if (ref.type === 'local' && !current && ref.upstream) items.push({ label: 'Checkout and Update', run: cmd('ideagittool.branch.checkoutAndUpdate') });
-  if (!current && !otherWorktree && !roots) {
-    items.push({
-      label: `New Worktree from '${ref.name}'…`,
-      run: () => vscode.commands.executeCommand('ideagittool.worktrees.create', { root: repo.root, ref: ref.name }),
-    });
-  }
-  sep();
-  if (!current && cur) items.push({ label: `Compare with '${cur}'`, run: cmd('ideagittool.branch.compare') });
-  items.push({ label: 'Show Diff with Working Tree', iconPath: ijIcon('vcs/diff'), run: cmd('ideagittool.branch.showDiffWithWorkingTree') });
-  sep();
-  if (!current && cur) {
-    items.push({ label: `Rebase '${cur}' onto '${ref.name}'`, run: cmd('ideagittool.branch.rebaseCurrentOnto') });
-    items.push({ label: `Merge '${ref.name}' into '${cur}'`, iconPath: ijIcon('vcs/merge'), run: cmd(isTag ? 'ideagittool.tag.mergeIntoCurrent' : 'ideagittool.branch.mergeIntoCurrent') });
-  }
-  sep();
-  if (ref.type === 'local') {
-    if (ref.upstream || current) items.push({ label: 'Update', iconPath: ijIcon('vcs/update'), run: cmd('ideagittool.branch.update') });
-    items.push({ label: 'Push…', iconPath: ijIcon('vcs/push'), description: 'Ctrl+Shift+K', run: cmd('ideagittool.branch.push') });
-    items.push({ label: ref.upstream ? `Tracked Branch '${ref.upstream}'…` : 'Set Tracked Branch…', run: cmd('ideagittool.branch.trackRemote') });
-  }
-  if (ref.type === 'remote' && cur) {
-    items.push({ label: `Pull into '${cur}' Using Rebase`, run: cmd('ideagittool.branch.pullRebase') });
-    items.push({ label: `Pull into '${cur}' Using Merge`, run: cmd('ideagittool.branch.pullMerge') });
-  }
-  sep();
-  if (isTag) items.push({ label: 'Push Tag', iconPath: ijIcon('vcs/push'), run: cmd('ideagittool.tag.push') });
-  sep();
-  if (ref.type === 'local') items.push({ label: 'Rename…', description: 'F2', run: cmd('ideagittool.branch.rename') });
-  if (!current) items.push({ label: 'Delete', iconPath: ijIcon('general/delete'), description: 'Delete', run: cmd(`${ns}.delete`) });
-  // Drop leading / trailing / doubled separators.
-  return items.filter((it, i, all) => it.kind !== SEP || (i > 0 && i < all.length - 1 && all[i - 1].kind !== SEP));
-}
-
-async function refActionsPopup(ctx: Ctx, repo: Repository, ref: Ref, back: () => unknown, roots?: string[]) {
-  const qp = vscode.window.createQuickPick<PopupItem>();
-  qp.title = ref.type === 'tag' ? `Tag '${ref.name}'` : `Branch '${ref.name}'`;
-  if (roots) qp.title += ` in ${roots.length} repositories`;
-  const otherWorktree = ref.type === 'local' && !roots ? (await worktreeOfBranch(repo, ref.name))?.path : undefined;
-  qp.items = refActions(ctx, repo, ref, otherWorktree, roots);
-  qp.buttons = [vscode.QuickInputButtons.Back];
-  qp.placeholder = ref.upstream ? `Tracking ${ref.upstream}` : undefined;
-  let goBack = false;
-  qp.onDidTriggerButton(b => {
-    if (b === vscode.QuickInputButtons.Back) {
-      goBack = true;
-      qp.hide();
-    }
-  });
-  qp.onDidAccept(async () => {
-    const it = qp.selectedItems[0];
-    qp.hide();
-    try {
-      await it?.run?.();
-    } catch (e) {
-      showError(e);
-    }
-  });
-  qp.onDidHide(() => {
-    qp.dispose();
-    if (goBack) void back();
-  });
-  qp.show();
-}
-
 /**
- * Branches popup with synchronous branch control: branches that exist in every repository are listed once and
- * their actions run in all repositories; each repository has its own node for repository-specific branches.
+ * Runs one action of a ref submenu (see refActionModel). With `roots` (synchronous branch control) the action
+ * runs in every repository, root by root like IntelliJ; New Branch from… shows one dialog for all of them.
  */
-async function syncBranchesPopup(ctx: Ctx) {
-  const repos = ctx.repos.repositories;
-  const roots = repos.map(r => r.root);
-  const first = repos[0];
-  const qp = vscode.window.createQuickPick<PopupItem>();
-  qp.title = 'Git Branches';
-  qp.placeholder = 'Search for branches and actions';
-  const fetchButton: vscode.QuickInputButton = { iconPath: ijIcon('vcs/fetch'), tooltip: 'Fetch' };
-  qp.buttons = [fetchButton];
-  const common = (type: 'local' | 'remote' | 'tag') => {
-    const names = repos.map(r => new Set(r.refs.filter(x => x.type === type).map(x => x.name)));
-    return first.refs.filter(x => x.type === type && names.every(n => n.has(x.name)));
-  };
-  const build = () => {
-    const items: PopupItem[] = [];
-    items.push({ label: 'Commit…', iconPath: ijIcon('vcs/commit'), run: () => vscode.commands.executeCommand('ideagittool.commit') });
-    items.push({ label: '', kind: SEP });
-    items.push({ label: 'New Branch…', iconPath: ijIcon('general/add'), description: 'Ctrl+Alt+N', run: () => newBranchCommand(ctx, { roots }) });
-    const branches = new Set(repos.map(r => r.info.branch ?? ''));
-    const currentText = branches.size === 1 ? [...branches][0] : undefined;
-    const item = (ref: Ref): PopupItem => {
-      const current = ref.type === 'local' && repos.every(r => r.info.branch === ref.name);
-      return { label: ref.name, iconPath: current ? ijIcon('dvcs/currentBranchLabel') : ref.type === 'tag' ? ijIcon('nodes/tag') : ijIcon(ref.favorite ? 'nodes/star' : 'general/vcs'), ref: { ...ref, current } };
-    };
-    const locals = common('local');
-    if (locals.length) {
-      items.push({ label: 'Local', kind: SEP });
-      for (const ref of locals.sort((a, b) => (a.name === currentText ? -1 : b.name === currentText ? 1 : a.name.localeCompare(b.name)))) items.push(item(ref));
-    }
-    const remotes = common('remote');
-    if (remotes.length) {
-      items.push({ label: 'Remote', kind: SEP });
-      for (const ref of remotes.sort((a, b) => a.name.localeCompare(b.name))) items.push(item(ref));
-    }
-    if (settings().get<boolean>('branches.showTags', true)) {
-      const tags = common('tag');
-      if (tags.length) {
-        items.push({ label: 'Tags', kind: SEP });
-        for (const ref of tags) items.push(item(ref));
-      }
-    }
-    items.push({ label: 'Repositories', kind: SEP });
-    for (const r of repos) {
-      items.push({
-        label: r.name,
-        description: currentName(r),
-        detail: undefined,
-        iconPath: ijIcon('nodes/folder'),
-        alwaysShow: true,
-        run: () => branchesPopup(ctx, { root: r.root, single: true }),
-      });
-    }
-    qp.items = items;
-  };
-  qp.onDidTriggerButton(async b => {
-    if (b !== fetchButton) return;
-    qp.busy = true;
-    await withProgress('Fetching…', async (progress, token) => {
-      for (const r of repos) await fetch(r, 'all', { progress, token });
-    }, { location: 'window' });
-    await Promise.all(repos.map(r => r.refresh()));
-    qp.busy = false;
-    build();
-  });
-  qp.onDidAccept(async () => {
-    const it = qp.selectedItems[0];
-    if (!it) return;
-    qp.hide();
-    try {
-      if (it.ref) await refActionsPopup(ctx, first, it.ref, () => syncBranchesPopup(ctx), roots);
-      else await it.run?.();
-    } catch (e) {
-      showError(e);
-    }
-  });
-  qp.onDidHide(() => qp.dispose());
-  build();
-  qp.show();
+export async function runRefAction(ctx: Ctx, repo: Repository, ref: Ref, action: string, roots?: string[]) {
+  const arg = { root: repo.root, name: ref.name, type: ref.type as RefKind };
+  if (action === OPEN_WORKTREE) return vscode.commands.executeCommand('ideagittool.worktrees.open', { root: repo.root, branch: ref.name });
+  if (action === NEW_WORKTREE) return vscode.commands.executeCommand('ideagittool.worktrees.create', { root: repo.root, ref: ref.name });
+  if (action === 'ideagittool.branch.newBranchFrom' && roots) return newBranchCommand(ctx, { roots, startPoint: ref.name, title: `Create Branch from ${ref.name}` });
+  for (const root of roots ?? [repo.root]) await vscode.commands.executeCommand(action, { ...arg, root });
 }
 
-async function checkoutTagOrRevision(ctx: Ctx, repo: Repository) {
+/** The submenu of a ref, as shown by the Branches tab. */
+export async function refActionsFor(repo: Repository, ref: Ref, opts: { sync?: boolean; mac: boolean }): Promise<ActionItem[]> {
+  const otherWorktree = ref.type === 'local' && !opts.sync ? !!(await worktreeOfBranch(repo, ref.name)) : false;
+  return refActionModel(ref as Ref & { type: RefKind }, { currentBranch: repo.info.branch, otherWorktree, sync: opts.sync, mac: opts.mac });
+}
+
+export async function checkoutTagOrRevision(ctx: Ctx, repo: Repository) {
   const refs = repo.refs.map(r => ({ value: r.name, icon: r.type === 'tag' ? 'nodes/tag' : 'general/vcs', group: r.type === 'local' ? 'Local' : r.type === 'remote' ? 'Remote' : 'Tags' }));
   await showDialog('ops.checkoutRevision', { refs }, {
     title: 'Checkout Tag or Revision',

@@ -243,7 +243,7 @@ a:hover,
   justify-content: center;
   padding: 0;
   color: var(--fg);
-  cursor: default;
+  cursor: pointer;
   flex: none;
   position: relative;
 }
@@ -285,7 +285,7 @@ a:hover,
   background: var(--bg);
   color: var(--fg);
   font: inherit;
-  cursor: default;
+  cursor: pointer;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
@@ -363,7 +363,7 @@ select.combo {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  cursor: default;
+  cursor: pointer;
   min-height: 24px;
 }
 .checkbox input,
@@ -638,7 +638,7 @@ select.combo {
   align-items: center;
   gap: 4px;
   color: var(--fg);
-  cursor: default;
+  cursor: pointer;
 }
 .tw-tab:hover {
   background: var(--bg-action-hover);
@@ -725,4 +725,69 @@ select.combo {
 }
 .tree-row .tree-check {
   margin-right: 2px;
+}
+
+/* ---------- Cursors ----------
+ * Everything that reacts to a click shows the hand cursor; text inputs keep the text cursor, splitters their
+ * resize cursors, and disabled elements the arrow. Bundle-specific clickable classes are listed here too, so
+ * that one rule covers all webviews.
+ */
+a,
+button,
+select,
+summary,
+label.checkbox,
+label.radio,
+input[type='checkbox'],
+input[type='radio'],
+[role='button'],
+.link,
+.action-button,
+.btn,
+.tw-tab,
+.menu-item,
+.tree-row,
+.tree-row .chevron,
+.tree-check,
+.table tbody tr,
+.log-row,
+.ref-label,
+.graph-arrow,
+.filter-chip,
+.filter-chip .clear,
+.chip-close,
+.combo-arrow,
+.inline-toggle,
+.toolbar-button-text,
+.modify-options,
+.conflict-link,
+.amend-target,
+.stripe-label,
+.stripe-toggle,
+.branches-row,
+.push-row,
+.irebase-row,
+.irebase-action,
+.lh-item,
+.diff-gap,
+.mg-op,
+.mg-fold,
+.mg-text-action,
+.push-target .editable {
+  cursor: pointer;
+}
+input[type='text'],
+input[type='search'],
+input:not([type]),
+textarea,
+.text-field {
+  cursor: text;
+}
+:disabled,
+.disabled,
+.menu-item.disabled,
+.checkbox.disabled,
+.btn:disabled,
+.action-button:disabled {
+  cursor: default;
 }

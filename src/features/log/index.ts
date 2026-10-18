@@ -30,7 +30,7 @@ class LogTabs {
   constructor(private readonly ctx: Ctx) {}
 
   private get showInEditor() {
-    return vscode.workspace.getConfiguration('ideagittool.log').get<boolean>('showInEditor', true);
+    return vscode.workspace.getConfiguration('ideagittool.log').get<boolean>('showInEditor', false);
   }
 
   mainState(repo: Repository): LogTabState {
@@ -201,27 +201,35 @@ export function register(ctx: Ctx) {
   registerAnnotate(ctx);
   registerCompare(ctx, (repo, state) => tabs.newTab(repo, state));
 
-  // Open the log on startup, like IdeaGitTool opens it in the editor when a project is opened.
+  // Show the log on startup: in the "Git" panel at the bottom (default), or in the editor like Rebased.
   void (async () => {
     await ctx.repos.ready();
     const cfg = vscode.workspace.getConfiguration('ideagittool.log');
     const repo = ctx.repos.repositories[0];
-    if (!repo || !cfg.get<boolean>('openOnStartup', true) || !cfg.get<boolean>('showInEditor', true)) return;
+    if (!repo || !cfg.get<boolean>('openOnStartup', true)) return;
     // A restored panel (serializer) counts as opened.
     await new Promise(r => setTimeout(r, 1500));
-    if (!tabs.main()) await tabs.showMain(repo, true);
+    if (tabs.main()) return;
+    if (cfg.get<boolean>('showInEditor', false)) {
+      await tabs.showMain(repo, true);
+      return;
+    }
+    // Reveal the panel without taking the focus from the editor.
+    const hadEditor = !!vscode.window.activeTextEditor;
+    await vscode.commands.executeCommand('ideagittool.logView.focus');
+    if (hadEditor) await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
   })();
 
   vscode.workspace.onDidChangeConfiguration(
     e => {
       if (e.affectsConfiguration('ideagittool.log.showInEditor')) {
-        void vscode.commands.executeCommand('setContext', 'ideagittool.logInPanel', !vscode.workspace.getConfiguration('ideagittool.log').get<boolean>('showInEditor', true));
+        void vscode.commands.executeCommand('setContext', 'ideagittool.logInPanel', !vscode.workspace.getConfiguration('ideagittool.log').get<boolean>('showInEditor', false));
       }
     },
     null,
     ext.subscriptions,
   );
-  void vscode.commands.executeCommand('setContext', 'ideagittool.logInPanel', !vscode.workspace.getConfiguration('ideagittool.log').get<boolean>('showInEditor', true));
+  void vscode.commands.executeCommand('setContext', 'ideagittool.logInPanel', !vscode.workspace.getConfiguration('ideagittool.log').get<boolean>('showInEditor', false));
 }
 
 async function isDirectory(repo: Repository, rel: string): Promise<boolean> {

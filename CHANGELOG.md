@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- New **Branches** tab in the Commit tool window (next to Commit / Shelf / Stash) with the content and layout of IntelliJ's branches popup: search, Fetch, settings, Update Project… / Commit… / Push…, New Branch…, Checkout Tag or Revision…, Recent / Local / Remote / Tags grouped by directory, favorites, branch submenus. `Branches…` (Ctrl+Shift+`) opens it.
+- The status bar widgets (Update Project, Push, branch, merge/rebase actions) and the `ideagittool.statusBar.enabled` setting are removed; their actions are in the Branches tab, the Commit tab banner and the Git menu.
+- The Git log opens in the **Git** panel at the bottom by default (`ideagittool.log.showInEditor` is now off by default).
+- Clickable elements in all views and dialogs show the hand cursor.
+
 ## 0.2.0
 
 - Native VS Code look by default (`ideagittool.appearance`: `vscode`); the IntelliJ look stays available as `intellij`. Layout and features are unchanged.

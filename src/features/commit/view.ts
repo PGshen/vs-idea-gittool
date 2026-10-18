@@ -6,7 +6,7 @@ import { Repository } from '../../git/repository';
 import { openChangeDiff, REV_EMPTY, shortHash, toGitUri } from '../../host/gitContent';
 import { showDialog } from '../../host/dialog';
 import { ask, notifySuccess, notifyWarning, withProgress } from '../../host/ui';
-import { CancelledError, showError, WebviewConnection } from '../../host/webviewHost';
+import { CancelledError, Handler, showError, WebviewConnection } from '../../host/webviewHost';
 import { changeKey, CommitOptionsState, CommitRepoInfo, CommitViewState, StashInfo, ViewSettings } from '../../shared/commitProtocol';
 import { Change } from '../../shared/types';
 import { ChangeLists } from './changelists';
@@ -76,6 +76,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     this.conn?.dispose();
     this.conn = new WebviewConnection(view.webview, 'commit', () => ({ state: this.buildState(), draft: this.ctx.extension.workspaceState.get<string>(DRAFT_KEY, '') }), 'Commit');
     this.registerHandlers(this.conn);
+    this.conn.handleAll(this.extraHandlers);
     view.onDidDispose(() => {
       this.conn?.dispose();
       this.conn = undefined;
@@ -88,10 +89,23 @@ export class CommitView implements vscode.WebviewViewProvider {
     this.conn?.post(name, data);
   }
 
-  async reveal(tab?: 'commit' | 'shelf' | 'stash') {
+  /** RPC handlers added by other features (the Branches tab of the ops feature). */
+  private readonly extraHandlers: Record<string, Handler> = {};
+
+  addHandlers(handlers: Record<string, Handler>) {
+    Object.assign(this.extraHandlers, handlers);
+    this.conn?.handleAll(handlers);
+  }
+
+  /** Tab to select when the webview starts (reveal() before the page has loaded). */
+  private pendingTab: string | undefined;
+
+  async reveal(tab?: 'commit' | 'shelf' | 'stash' | 'branches') {
+    this.pendingTab = tab;
     await vscode.commands.executeCommand('ideagittool.commit.focus');
     if (tab) this.conn?.post('selectTab', tab);
   }
+
 
   schedulePush() {
     if (this.pushTimer) clearTimeout(this.pushTimer);
@@ -190,7 +204,11 @@ export class CommitView implements vscode.WebviewViewProvider {
 
   private registerHandlers(conn: WebviewConnection) {
     conn.handleAll({
-      ready: () => ({ state: this.buildState(), draft: this.ctx.extension.workspaceState.get<string>(DRAFT_KEY, '') }),
+      ready: () => {
+        const tab = this.pendingTab;
+        this.pendingTab = undefined;
+        return { state: this.buildState(), draft: this.ctx.extension.workspaceState.get<string>(DRAFT_KEY, ''), tab };
+      },
       refresh: async () => {
         await this.ctx.repos.scan();
         await Promise.all(this.ctx.repos.repositories.map(r => r.refresh()));

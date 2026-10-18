@@ -5,7 +5,7 @@ cmds = [
     ("ideagittool.push", "Push…"), ("ideagittool.fetch", "Fetch"), ("ideagittool.pull", "Pull…"),
     ("ideagittool.updateProject", "Update Project…"), ("ideagittool.remotes", "Manage Remotes…"),
     ("ideagittool.clone", "Clone…"), ("ideagittool.init", "Create Git Repository…"), ("ideagittool.unshallow", "Unshallow repository"),
-    ("ideagittool.branches", "Branches…"), ("ideagittool.createBranch", "New Branch…"),
+    ("ideagittool.branches", "Branches…"), ("ideagittool.createBranch", "New Branch…"), ("ideagittool.checkoutTagOrRevision", "Checkout Tag or Revision…"),
     ("ideagittool.merge", "Merge…"), ("ideagittool.rebase", "Rebase…"), ("ideagittool.resetHead", "Reset HEAD…"),
     ("ideagittool.createTag", "New Tag…"), ("ideagittool.createPatch", "Create Patch from Local Changes…"),
     ("ideagittool.applyPatch", "Apply Patch…"), ("ideagittool.applyPatchFromClipboard", "Apply Patch from Clipboard…"),
@@ -24,12 +24,12 @@ cmds = [
 hidden = ["ideagittool.branch." + a for a in "checkout newBranchFrom checkoutAndRebase checkoutAndUpdate compare showDiffWithWorkingTree rebaseCurrentOnto mergeIntoCurrent pullRebase pullMerge push update rename delete toggleFavorite trackRemote".split()]
 hidden += ["ideagittool.tag." + a for a in "checkout mergeIntoCurrent push delete".split()]
 hidden += ["ideagittool.cherryPick", "ideagittool.revertCommits", "ideagittool.undoCommit", "ideagittool.rewordCommit", "ideagittool.fixupCommit", "ideagittool.squashCommits",
-           "ideagittool.dropCommits", "ideagittool.interactiveRebase", "ideagittool.checkoutRevision", "ideagittool.ops.pickToolbarRepository"]
+           "ideagittool.dropCommits", "ideagittool.interactiveRebase", "ideagittool.checkoutRevision"]
 titles = {
     "ideagittool.cherryPick": "Cherry-Pick", "ideagittool.revertCommits": "Revert Commit", "ideagittool.undoCommit": "Undo Commit…",
     "ideagittool.rewordCommit": "Edit Commit Message…", "ideagittool.fixupCommit": "Fixup…", "ideagittool.squashCommits": "Squash Commits…",
     "ideagittool.dropCommits": "Drop Commits", "ideagittool.interactiveRebase": "Interactively Rebase from Here…",
-    "ideagittool.checkoutRevision": "Checkout Revision", "ideagittool.ops.pickToolbarRepository": "Select Toolbar Repository",
+    "ideagittool.checkoutRevision": "Checkout Revision",
 }
 def icon(name):
     return {"light": f"media/icons/{name}.svg", "dark": f"media/icons/{name}_dark.svg"}
@@ -42,7 +42,7 @@ icons = {
 commands = [{"command": c, "title": t, "category": "IdeaGitTool", **({"icon": icon(icons[c])} if c in icons else {})} for c, t in cmds]
 commands += [{"command": c, "title": titles.get(c, c.split('.', 1)[1]), "category": "IdeaGitTool"} for c in hidden]
 palette = [{"command": c, "when": "false"} for c in hidden]
-for c in ["ideagittool.push", "ideagittool.fetch", "ideagittool.pull", "ideagittool.updateProject", "ideagittool.branches", "ideagittool.createBranch", "ideagittool.merge",
+for c in ["ideagittool.push", "ideagittool.fetch", "ideagittool.pull", "ideagittool.updateProject", "ideagittool.branches", "ideagittool.createBranch", "ideagittool.checkoutTagOrRevision", "ideagittool.merge",
           "ideagittool.rebase", "ideagittool.resetHead", "ideagittool.createTag", "ideagittool.remotes", "ideagittool.unshallow", "ideagittool.copyBranchName",
           "ideagittool.createPatch", "ideagittool.applyPatch", "ideagittool.applyPatchFromClipboard",
           "ideagittool.updateForcePushedBranch", "ideagittool.resetToRemoteBranch", "ideagittool.worktrees.create", "ideagittool.worktrees.show",
@@ -71,10 +71,12 @@ config = {"title": "IdeaGitTool", "properties": {
     "ideagittool.push.runHooks": {"type": "boolean", "default": True, "description": "Run Git hooks on push."},
     "ideagittool.push.autoUpdateOnRejected": {"type": "string", "enum": ["", "merge", "rebase"], "default": "", "description": "Update method to use silently when a push is rejected. Empty: ask with the Push Rejected dialog."},
     "ideagittool.fetch.prune": {"type": "boolean", "default": False, "description": "Prune obsolete remote references on fetch."},
-    "ideagittool.branches.showRecent": {"type": "boolean", "default": True, "description": "Show recent branches in the branches popup."},
-    "ideagittool.branches.showTags": {"type": "boolean", "default": True, "description": "Show tags in the branches popup."},
-    "ideagittool.branches.syncControl": {"type": "boolean", "default": True, "description": "Execute branch operations on all roots: with several repositories, branches that exist in all of them are shown once in the branches popup and their actions run in every repository."},
-    "ideagittool.statusBar.enabled": {"type": "boolean", "default": True, "description": "Show the Git toolbar widgets (Update Project, Push, branch, merge/rebase actions) in the status bar."},
+    "ideagittool.branches.showRecent": {"type": "boolean", "default": True, "description": "Show recent branches in the Branches tab."},
+    "ideagittool.branches.showTags": {"type": "boolean", "default": True, "description": "Show tags in the Branches tab."},
+    "ideagittool.branches.groupByDirectory": {"type": "boolean", "default": True, "description": "Branches tab: group branches by directory (\"feature/x\" under a \"feature\" folder)."},
+    "ideagittool.branches.groupByRepository": {"type": "boolean", "default": True, "description": "Branches tab: group branches by repository when the workspace has several repositories."},
+    "ideagittool.branches.searchActions": {"type": "boolean", "default": True, "description": "Branches tab: include actions (Update Project…, Commit…, …) in the search results."},
+    "ideagittool.branches.syncControl": {"type": "boolean", "default": True, "description": "Execute branch operations on all roots: with several repositories, branches that exist in all of them are shown once in the Branches tab and their actions run in every repository."},
 }}
 wt = "view == ideagittool.worktrees"
 menus = {

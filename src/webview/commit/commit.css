@@ -167,3 +167,150 @@ body {
   flex-shrink: 0;
   max-width: 80%;
 }
+
+/* ---------- Branches tab (IntelliJ's GitBranchesTreePopup) ---------- */
+.branches-tab {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.branches-search {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 40px;
+  padding: 0 8px 0 14px;
+  flex: none;
+}
+.branches-search > .icon {
+  opacity: 0.85;
+}
+.branches-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  padding: 0 6px;
+}
+.branches-search-input::placeholder {
+  color: var(--fg-secondary);
+}
+.branches-fetching {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.branches-header-sep {
+  height: 1px;
+  background: var(--separator);
+  margin: 0 12px;
+  flex: none;
+}
+.branches-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  outline: none;
+  padding-top: 6px;
+}
+.branches-row {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.branches-row.action {
+  padding-left: 8px;
+  gap: 8px;
+}
+.branches-row:hover {
+  background: var(--bg-row-hover);
+}
+.branches-row.selected,
+.branches-list:focus .branches-row.selected,
+.branches-tab:focus-within .branches-row.selected {
+  background: var(--bg-selection);
+}
+.branches-row.empty {
+  color: var(--fg-secondary);
+  justify-content: center;
+  cursor: default;
+  background: none;
+}
+.branches-sep {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  height: 9px;
+}
+.branches-sep::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4px;
+  height: 1px;
+  background: var(--separator);
+}
+.branches-chevron,
+.branches-icon,
+.branches-more {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.branches-row.branch .branches-icon {
+  margin-right: 4px;
+}
+.branches-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.branches-label .match {
+  color: var(--fg-link);
+  font-weight: 600;
+}
+.branches-hint {
+  color: var(--fg-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 6px;
+  min-width: 0;
+}
+.branches-shortcut {
+  margin-left: auto;
+  color: var(--fg-secondary);
+  padding-left: 16px;
+}
+.branches-inout {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  color: var(--fg-info);
+  font-size: 11px;
+  margin-left: 4px;
+}
+.branches-spacer {
+  flex: 1;
+}
+.branches-more {
+  opacity: 0.8;
+}
