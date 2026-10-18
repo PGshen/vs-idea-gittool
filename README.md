@@ -48,6 +48,7 @@ code --install-extension ideagittool-*.vsix
 - Changed files of the selected commits and the commit details panel ("In N branches … Show all").
 - Commit context menu: Copy Revision Number, Create Patch, Cherry-Pick, Checkout, Show Repository at Revision, Compare, Reset Current Branch to Here, Revert, Undo Commit, Edit Commit Message, Fixup, Squash Into, Drop, Squash Commits, Interactively Rebase from Here, Push All up to Here, New Branch, New Tag, Go to Child/Parent.
 - File History, Show History for Selection, Annotate with Git Blame, Compare with Revision / Branch or Tag.
+- Inline blame: after the caret line, "author, date, time • commit subject" in a faded italic font, with a hover that links to the log and the diff (`ideagittool.inlineBlame.enabled`, command *Toggle Inline Git Blame*).
 - Long edges, GPG signature column, diff preview (side-by-side / unified), Collapse / Expand Linear Branches, Not Cherry-Picked Commits, Show My Branches.
 - Multi-repository log with root colors, Group by Repository; Drop / Extract Selected Changes, Add Commits to Remote Branch.
 
@@ -76,6 +77,7 @@ code --install-extension ideagittool-*.vsix
 
 - `ideagittool.appearance`: `vscode` (the default) draws every view and dialog like native VS Code: buttons, inputs, checkboxes, lists, menus, hovers, scrollbars, fonts and colors come from your VS Code theme, and monochrome icons take the theme's icon color. `intellij` keeps the IntelliJ New UI look (IntelliJ light/dark palette and widget shapes). The layout and the features are the same in both; `scripts/layout-check.mjs` verifies that no element moves.
 - `ideagittool.log.showInEditor`, `ideagittool.log.openOnStartup`, `ideagittool.commit.gpgSign`, `ideagittool.commit.skipHooks`, `ideagittool.updateMethod`, `ideagittool.push.*`, `ideagittool.annotate.*`, `ideagittool.branches.*`. Open the Settings editor and search for "ideagittool" to see all of them.
+- `ideagittool.inlineBlame.enabled` (default on): show the blame of the caret line at the end of the line. It is hidden while *Annotate with Git Blame* is on.
 - `ideagittool.dialogs.openInNewWindow` (default off): open dialogs and the merge window in their own window, like IntelliJ's floating dialogs, instead of an editor tab. The window closes with the dialog.
 - `ideagittool.intellijShortcuts` (default on): Ctrl+T Update Project, Ctrl+Shift+K Push, Ctrl+Shift+` Branches, Alt+` VCS Operations Popup, Ctrl+Alt+N New Branch, Alt+9 Git log, Ctrl+K Commit (only while the Commit view has focus). These replace the VS Code defaults on the same keys (for example Ctrl+T *Go to Symbol in Workspace* and Ctrl+Shift+` *New Terminal*). Turn the setting off to keep the VS Code shortcuts.
 

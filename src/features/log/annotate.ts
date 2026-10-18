@@ -4,7 +4,7 @@ import { Repository } from '../../git/repository';
 import { fromGitUri, GIT_SCHEME } from '../../host/gitContent';
 import { themeData } from '../../host/webviewHost';
 
-interface BlameCommit {
+export interface BlameCommit {
   hash: string;
   author: string;
   authorMail: string;
@@ -16,7 +16,7 @@ interface BlameCommit {
   filename: string;
 }
 
-interface BlameResult {
+export interface BlameResult {
   lines: (BlameCommit | undefined)[];
   commits: Map<string, BlameCommit>;
 }
@@ -342,6 +342,8 @@ class AnnotationController implements vscode.Disposable {
   updateContext() {
     const e = vscode.window.activeTextEditor;
     void vscode.commands.executeCommand('setContext', 'ideagittool.annotated', !!e && this.annotated.has(e.document.uri.toString()));
+    // Inline blame is hidden while annotations are shown.
+    void vscode.commands.executeCommand('ideagittool.inlineBlame.refresh').then(undefined, () => undefined);
   }
 
   async annotateRevision(root: string, hash: string, rel: string) {
@@ -361,7 +363,7 @@ function escapeMd(s: string) {
   return s.replace(/[\\`*_{}[\]()#+\-.!<>|]/g, m => `\\${m}`);
 }
 
-export function registerAnnotate(ctx: Ctx) {
+export function registerAnnotate(ctx: Ctx): { isAnnotated(uri: vscode.Uri): boolean } {
   const controller = new AnnotationController(ctx);
   ctx.extension.subscriptions.push(controller);
   ctx.command('ideagittool.annotate', async (uri?: vscode.Uri) => {
@@ -405,4 +407,5 @@ export function registerAnnotate(ctx: Ctx) {
     if (picked?.key) await c.update(picked.key, picked.value, vscode.ConfigurationTarget.Global);
   });
   ctx.command('ideagittool.copyText', (text: string) => vscode.env.clipboard.writeText(text));
+  return controller;
 }

@@ -4,6 +4,7 @@ import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { getExtensionUri } from '../../host/webviewHost';
 import { registerAnnotate } from './annotate';
+import { registerInlineBlame } from './inlineBlame';
 import { registerCompare } from './compare';
 import { EMPTY_FILTERS, LogFilters, LogOptions } from './filters';
 import { LogTab, LogTabState } from './logTab';
@@ -198,7 +199,7 @@ export function register(ctx: Ctx) {
     await tabs.newTab(f.repo, { mode: 'history', filters: { ...EMPTY_FILTERS, branches: ['HEAD'], lines: { path: f.path, start, end } } });
   });
 
-  registerAnnotate(ctx);
+  registerInlineBlame(ctx, registerAnnotate(ctx));
   registerCompare(ctx, (repo, state) => tabs.newTab(repo, state));
 
   // Show the log on startup: in the "Git" panel at the bottom (default), or in the editor like Rebased.

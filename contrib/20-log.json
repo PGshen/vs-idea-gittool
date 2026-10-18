@@ -67,6 +67,11 @@
         "type": "boolean",
         "default": false,
         "description": "Annotate with Git Blame: detect lines moved from other files (-C)."
+      },
+      "ideagittool.inlineBlame.enabled": {
+        "type": "boolean",
+        "default": true,
+        "description": "Show Git blame information inline: the author, date and subject of the last commit that changed the caret line, after the end of the line (like IntelliJ)."
       }
     }
   },
@@ -151,6 +156,11 @@
     {
       "command": "ideagittool.copyText",
       "title": "Copy",
+      "category": "IdeaGitTool"
+    },
+    {
+      "command": "ideagittool.toggleInlineBlame",
+      "title": "Toggle Inline Git Blame",
       "category": "IdeaGitTool"
     }
   ],
@@ -240,6 +250,17 @@
       "command": "ideagittool.annotateClose",
       "key": "ctrl+alt+shift+a",
       "when": "editorTextFocus && ideagittool.annotated"
+    }
+  ],
+  "colors": [
+    {
+      "id": "ideagittool.inlineBlame.foreground",
+      "description": "Text color of the inline Git blame after the caret line.",
+      "defaults": {
+        "dark": "editorCodeLens.foreground",
+        "light": "editorCodeLens.foreground",
+        "highContrast": "editorCodeLens.foreground"
+      }
     }
   ]
 }

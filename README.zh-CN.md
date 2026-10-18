@@ -50,6 +50,7 @@ code --install-extension ideagittool-*.vsix
 - 所选提交的变更文件列表，以及提交详情面板（"In N branches … Show all"）。
 - 提交右键菜单：Copy Revision Number、Create Patch、Cherry-Pick、Checkout、Show Repository at Revision、Compare、Reset Current Branch to Here、Revert、Undo Commit、Edit Commit Message、Fixup、Squash Into、Drop、Squash Commits、Interactively Rebase from Here、Push All up to Here、New Branch、New Tag、Go to Child/Parent。
 - 文件历史（File History）、Show History for Selection、Annotate with Git Blame、与指定版本 / 分支或标签比较。
+- 行内提交信息（Inline blame）：在光标所在行的行尾，用浅色斜体显示"提交者, 日期, 时间 • 提交描述"，鼠标悬停可跳到日志或查看 diff（设置 `ideagittool.inlineBlame.enabled`，命令 *Toggle Inline Git Blame*）。
 - 长连线折叠、GPG 签名列、diff 预览（并排 / 合并视图）、折叠 / 展开线性分支、Not Cherry-Picked Commits、Show My Branches。
 - 多仓库合并日志（按仓库着色）、按仓库分组；在提交的文件列表里直接丢弃或拆分部分改动（Drop / Extract Selected Changes）、Add Commits to Remote Branch。
 
@@ -94,6 +95,7 @@ code --install-extension ideagittool-*.vsix
   - `intellij`：保留 IntelliJ New UI 的外观（IntelliJ 的浅色/深色配色和控件形状）。
   - 两种外观的布局和功能完全相同，`scripts/layout-check.mjs` 会检查元素位置没有变化。
 - `ideagittool.log.showInEditor`、`ideagittool.log.openOnStartup`、`ideagittool.commit.gpgSign`、`ideagittool.commit.skipHooks`、`ideagittool.updateMethod`、`ideagittool.push.*`、`ideagittool.annotate.*`、`ideagittool.branches.*` 等。在设置编辑器里搜索 "ideagittool" 可以看到全部设置。
+- `ideagittool.inlineBlame.enabled`（默认开启）：在光标所在行的行尾显示该行最后一次提交的信息。打开 *Annotate with Git Blame* 时会自动隐藏。
 - `ideagittool.dialogs.openInNewWindow`（默认关闭）：对话框和合并窗口改为在独立窗口中打开，像 IntelliJ 的浮动对话框一样，而不是编辑器标签页。对话框关闭时窗口也随之关闭。
 - `ideagittool.intellijShortcuts`（默认开启）：Ctrl+T 更新项目、Ctrl+Shift+K 推送、Ctrl+Shift+` 分支菜单、Alt+` VCS Operations Popup、Ctrl+Alt+N 新建分支、Alt+9 打开 Git 日志、Ctrl+K 提交（仅在 Commit 视图有焦点时）。这些快捷键会覆盖 VS Code 在同样按键上的默认功能（例如 Ctrl+T 的"转到工作区中的符号"、Ctrl+Shift+` 的"新建终端"）。关闭此设置即可恢复 VS Code 的快捷键。
 
