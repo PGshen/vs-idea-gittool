@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- Monochrome IdeaGitTool logo for the activity bar, drawn like a codicon (16 grid, 1px outlines):
+       the main line, a branch that merges back, and HEAD (filled) at the bottom. -->
+  <g fill="none" stroke="#C5C5C5" stroke-width="1" stroke-linecap="round">
+    <circle cx="4.5" cy="2.5" r="1.5"/>
+    <path d="M4.5 4 V11.8"/>
+    <path d="M4.5 5.2 C4.5 7.2 10 6.2 10 7.4"/>
+    <circle cx="11.5" cy="8" r="1.5"/>
+    <path d="M10 8.6 C10 9.8 4.5 9.2 4.5 11.4"/>
+  </g>
+  <circle cx="4.5" cy="13.3" r="2" fill="#C5C5C5"/>
+</svg>
