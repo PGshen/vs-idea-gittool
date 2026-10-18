@@ -2,7 +2,7 @@
   "commands": [
     {
       "command": "ideagittool.push",
-      "title": "Push…",
+      "title": "Push\u2026",
       "category": "IdeaGitTool"
     },
     {
@@ -12,27 +12,27 @@
     },
     {
       "command": "ideagittool.pull",
-      "title": "Pull…",
+      "title": "Pull\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.updateProject",
-      "title": "Update Project…",
+      "title": "Update Project\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.remotes",
-      "title": "Manage Remotes…",
+      "title": "Manage Remotes\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.clone",
-      "title": "Clone…",
+      "title": "Clone\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.init",
-      "title": "Create Git Repository…",
+      "title": "Create Git Repository\u2026",
       "category": "IdeaGitTool"
     },
     {
@@ -42,52 +42,52 @@
     },
     {
       "command": "ideagittool.branches",
-      "title": "Branches…",
+      "title": "Branches\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.createBranch",
-      "title": "New Branch…",
+      "title": "New Branch\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.checkoutTagOrRevision",
-      "title": "Checkout Tag or Revision…",
+      "title": "Checkout Tag or Revision\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.merge",
-      "title": "Merge…",
+      "title": "Merge\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.rebase",
-      "title": "Rebase…",
+      "title": "Rebase\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.resetHead",
-      "title": "Reset HEAD…",
+      "title": "Reset HEAD\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.createTag",
-      "title": "New Tag…",
+      "title": "New Tag\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.createPatch",
-      "title": "Create Patch from Local Changes…",
+      "title": "Create Patch from Local Changes\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.applyPatch",
-      "title": "Apply Patch…",
+      "title": "Apply Patch\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.applyPatchFromClipboard",
-      "title": "Apply Patch from Clipboard…",
+      "title": "Apply Patch from Clipboard\u2026",
       "category": "IdeaGitTool"
     },
     {
@@ -107,17 +107,17 @@
     },
     {
       "command": "ideagittool.mainMenu",
-      "title": "Git Menu…",
+      "title": "Git Menu\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.vcsOperationsPopup",
-      "title": "VCS Operations Popup…",
+      "title": "VCS Operations Popup\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.currentFileMenu",
-      "title": "Git: Current File…",
+      "title": "Git: Current File\u2026",
       "category": "IdeaGitTool"
     },
     {
@@ -137,7 +137,7 @@
     },
     {
       "command": "ideagittool.worktrees.create",
-      "title": "New Worktree…",
+      "title": "New Worktree\u2026",
       "category": "IdeaGitTool",
       "icon": {
         "light": "media/icons/general/add.svg",
@@ -146,7 +146,7 @@
     },
     {
       "command": "ideagittool.worktrees.show",
-      "title": "Worktrees…",
+      "title": "Worktrees\u2026",
       "category": "IdeaGitTool"
     },
     {
@@ -169,7 +169,7 @@
     },
     {
       "command": "ideagittool.worktrees.open",
-      "title": "Open Worktree…",
+      "title": "Open Worktree\u2026",
       "category": "IdeaGitTool",
       "icon": {
         "light": "media/icons/general/open.svg",
@@ -178,7 +178,7 @@
     },
     {
       "command": "ideagittool.worktrees.delete",
-      "title": "Delete Worktree…",
+      "title": "Delete Worktree\u2026",
       "category": "IdeaGitTool",
       "icon": {
         "light": "media/icons/general/delete.svg",
@@ -307,22 +307,22 @@
     },
     {
       "command": "ideagittool.undoCommit",
-      "title": "Undo Commit…",
+      "title": "Undo Commit\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.rewordCommit",
-      "title": "Edit Commit Message…",
+      "title": "Edit Commit Message\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.fixupCommit",
-      "title": "Fixup…",
+      "title": "Fixup\u2026",
       "category": "IdeaGitTool"
     },
     {
       "command": "ideagittool.squashCommits",
-      "title": "Squash Commits…",
+      "title": "Squash Commits\u2026",
       "category": "IdeaGitTool"
     },
     {
@@ -332,7 +332,7 @@
     },
     {
       "command": "ideagittool.interactiveRebase",
-      "title": "Interactively Rebase from Here…",
+      "title": "Interactively Rebase from Here\u2026",
       "category": "IdeaGitTool"
     },
     {
@@ -762,7 +762,7 @@
       "ideagittool.branches.searchActions": {
         "type": "boolean",
         "default": true,
-        "description": "Branches tab: include actions (Update Project…, Commit…, …) in the search results."
+        "description": "Branches tab: include actions (Update Project\u2026, Commit\u2026, \u2026) in the search results."
       },
       "ideagittool.branches.syncControl": {
         "type": "boolean",
@@ -776,14 +776,15 @@
       {
         "id": "ideagittool.worktrees",
         "name": "Worktrees",
-        "when": "ideagittool.hasRepository"
+        "when": "ideagittool.hasRepository",
+        "visibility": "collapsed"
       }
     ]
   },
   "viewsWelcome": [
     {
       "view": "ideagittool.worktrees",
-      "contents": "No linked worktrees\n[Create worktree…](command:ideagittool.worktrees.create)\n[What is a Git worktree](https://git-scm.com/docs/git-worktree)"
+      "contents": "No linked worktrees\n[Create worktree\u2026](command:ideagittool.worktrees.create)\n[What is a Git worktree](https://git-scm.com/docs/git-worktree)"
     }
   ]
 }

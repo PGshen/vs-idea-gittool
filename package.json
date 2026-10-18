@@ -956,7 +956,8 @@
         {
           "id": "ideagittool.worktrees",
           "name": "Worktrees",
-          "when": "ideagittool.hasRepository"
+          "when": "ideagittool.hasRepository",
+          "visibility": "collapsed"
         }
       ]
     },
