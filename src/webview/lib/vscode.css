@@ -305,11 +305,25 @@ body.ij-vscode .log-row.selected::before,
   width: 2px;
   background: var(--sel-accent, var(--focus));
 }
+/* Accent of the selected commit. focusBorder is semi-transparent in some themes (Tokyo Night: #545c7e33),
+   list.highlightForeground (the color of matched text) is a solid accent in all common themes. */
+body.ij-vscode .log-table {
+  --log-accent: var(--vscode-list-highlightForeground, var(--vscode-focusBorder));
+}
 body.ij-vscode .log-row.selected::before {
-  --sel-accent: var(--vscode-focusBorder);
+  --sel-accent: var(--log-accent);
+}
+/* The theme's selection colors can be very close to the background (Tokyo Night Storm: #2c324a on #1f2335),
+   so the accent is mixed in to keep the selected commit readable in every theme. */
+body.ij-vscode .log-table:focus .log-row.selected {
+  --log-sel: color-mix(in srgb, var(--log-accent) 30%, var(--vscode-list-activeSelectionBackground));
+  background: var(--log-sel);
+  box-shadow:
+    -6px 0 0 var(--log-sel),
+    6px 0 0 var(--log-sel);
 }
 body.ij-vscode .log-table:not(:focus) .log-row.selected {
-  --log-sel: color-mix(in srgb, var(--vscode-focusBorder) 25%, var(--vscode-list-inactiveSelectionBackground));
+  --log-sel: color-mix(in srgb, var(--log-accent) 20%, var(--vscode-list-inactiveSelectionBackground));
   background: var(--log-sel);
   box-shadow:
     -6px 0 0 var(--log-sel),

@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Git log: the selected commit stays clearly visible when the log has no focus (accent bar on the left and a stronger selection color), and the current-branch highlight is lighter and only shown when the log also contains commits outside the current branch, like IntelliJ.
+- Git log: the selected commit stays clearly visible, also when the log has no focus and in themes with low-contrast selection colors such as Tokyo Night Storm (accent bar on the left, selection color mixed with the theme accent), and the current-branch highlight is lighter and only shown when the log also contains commits outside the current branch, like IntelliJ.
 
 ## 0.3.0
 
