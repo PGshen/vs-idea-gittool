@@ -74,4 +74,4 @@ See ARCHITECTURE.md for the code layout.
 
 ## License
 
-Apache 2.0. The icons are from the IntelliJ Platform and Rebased, see the NOTICE file.
+Apache 2.0. The UI icons are from the IntelliJ Platform, see the NOTICE file; the extension logo is original.
