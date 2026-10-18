@@ -6,3 +6,6 @@ out-test
 test/shots
 .vscode-test
 .claude
+
+# Released packages are kept in releases/
+!releases/*.vsix
