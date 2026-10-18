@@ -1,27 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16">
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- IdeaGitTool: a commit graph where a branch (green) leaves the main line (blue) and merges back into HEAD (amber). -->
   <defs>
-    <linearGradient id="bg" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="#FF7A1A"/>
-      <stop offset="0.55" stop-color="#FF5A00"/>
-      <stop offset="1" stop-color="#F23A00"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1F2433"/>
+      <stop offset="1" stop-color="#2E3650"/>
     </linearGradient>
   </defs>
-
-  <rect width="16" height="16" rx="2.5" fill="url(#bg)"/>
-
-  <path
-    d="M10.5 10.5L6 8L10.5 5.5L6 3V13"
-    fill="none"
-    stroke="#111"
-    stroke-width="1"
-    stroke-linejoin="round"
-    stroke-linecap="round"/>
-
-  <g fill="#111">
-    <circle cx="6" cy="3" r="1.7"/>
-    <circle cx="6" cy="8" r="1.7"/>
-    <circle cx="6" cy="13" r="1.7"/>
-    <circle cx="10.3" cy="5.5" r="1.7"/>
-    <circle cx="10.3" cy="10.5" r="1.7"/>
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#bg)"/>
+  <g fill="none" stroke-width="9" stroke-linecap="round">
+    <path d="M44 28 V100" stroke="#5B8CFF"/>
+    <path d="M44 42 C44 60 84 52 84 68 C84 84 44 80 44 98" stroke="#3DDC97"/>
   </g>
+  <circle cx="44" cy="28" r="10" fill="#5B8CFF"/>
+  <circle cx="84" cy="68" r="10.5" fill="#262C3F" stroke="#3DDC97" stroke-width="7"/>
+  <circle cx="44" cy="100" r="12" fill="#FFC53D"/>
 </svg>
