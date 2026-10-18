@@ -114,7 +114,13 @@ export function LogTable() {
   const cw = settings.columnWidths;
   const currentBranch = s.currentBranch;
   const filteredToHead = s.filters.branches.length === 1 && (s.filters.branches[0] === 'HEAD' || s.filters.branches[0] === currentBranch);
-  const highlightBranch = settings.highlightCurrentBranch && !filteredToHead && s.init.mode === 'log';
+  // Like IntelliJ, the current branch is only highlighted when the log also shows commits outside of it;
+  // when every loaded commit is in the current branch the highlight would only hide the selection.
+  const anyOutsideHead = useMemo(() => {
+    for (const r of s.rows.values()) if (!r.b) return true;
+    return false;
+  }, [s.rows.size, s.generation]);
+  const highlightBranch = settings.highlightCurrentBranch && !filteredToHead && s.init.mode === 'log' && anyOutsideHead;
 
   const onKey = (e: KeyboardEvent) => {
     const i = s.lead;

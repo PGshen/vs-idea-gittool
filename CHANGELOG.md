@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Git log: the selected commit stays clearly visible when the log has no focus (accent bar on the left and a stronger selection color), and the current-branch highlight is lighter and only shown when the log also contains commits outside the current branch, like IntelliJ.
+
 ## 0.3.0
 
 - New **Branches** tab in the Commit tool window (next to Commit / Shelf / Stash) with the content and layout of IntelliJ's branches popup: search, Fetch, settings, Update Project… / Commit… / Push…, New Branch…, Checkout Tag or Revision…, Recent / Local / Remote / Tags grouped by directory, favorites, branch submenus. `Branches…` (Ctrl+Shift+`) opens it.

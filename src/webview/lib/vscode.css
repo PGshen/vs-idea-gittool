@@ -16,7 +16,7 @@ body.ij-vscode {
   --bg-row-hover: var(--vscode-list-hoverBackground);
   --bg-selection: var(--vscode-list-activeSelectionBackground);
   --bg-selection-inactive: var(--vscode-list-inactiveSelectionBackground);
-  --bg-current-branch: var(--vscode-editor-lineHighlightBackground, color-mix(in srgb, var(--vscode-list-inactiveSelectionBackground) 35%, transparent));
+  --bg-current-branch: color-mix(in srgb, var(--vscode-list-inactiveSelectionBackground) 30%, transparent);
   --bg-popup: var(--vscode-menu-background);
   --bg-tooltip: var(--vscode-editorHoverWidget-background);
   --bg-action-hover: var(--vscode-toolbar-hoverBackground);
@@ -292,6 +292,28 @@ body.ij-vscode .tree:focus .tree-row.selected .hint,
 body.ij-vscode .tree:focus-within .tree-row.selected .hint {
   color: inherit;
   opacity: 0.8;
+}
+/* The selected commit in the log keeps a 2px accent bar on the left, also when the table has no focus,
+   so it stays visible in themes where the inactive selection is close to the hover or branch highlight. */
+body.ij-vscode .log-row.selected::before,
+.log-row.selected::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--sel-accent, var(--focus));
+}
+body.ij-vscode .log-row.selected::before {
+  --sel-accent: var(--vscode-focusBorder);
+}
+body.ij-vscode .log-table:not(:focus) .log-row.selected {
+  --log-sel: color-mix(in srgb, var(--vscode-focusBorder) 25%, var(--vscode-list-inactiveSelectionBackground));
+  background: var(--log-sel);
+  box-shadow:
+    -6px 0 0 var(--log-sel),
+    6px 0 0 var(--log-sel);
 }
 body.ij-vscode .log-row.current-branch:not(.selected):not(:hover) {
   background: var(--bg-current-branch);
