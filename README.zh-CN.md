@@ -94,12 +94,13 @@ code --install-extension ideagittool-*.vsix
   - `intellij`：保留 IntelliJ New UI 的外观（IntelliJ 的浅色/深色配色和控件形状）。
   - 两种外观的布局和功能完全相同，`scripts/layout-check.mjs` 会检查元素位置没有变化。
 - `ideagittool.log.showInEditor`、`ideagittool.log.openOnStartup`、`ideagittool.commit.gpgSign`、`ideagittool.commit.skipHooks`、`ideagittool.updateMethod`、`ideagittool.push.*`、`ideagittool.annotate.*`、`ideagittool.branches.*` 等。在设置编辑器里搜索 "ideagittool" 可以看到全部设置。
+- `ideagittool.dialogs.openInNewWindow`（默认关闭）：对话框和合并窗口改为在独立窗口中打开，像 IntelliJ 的浮动对话框一样，而不是编辑器标签页。对话框关闭时窗口也随之关闭。
 - `ideagittool.intellijShortcuts`（默认开启）：Ctrl+T 更新项目、Ctrl+Shift+K 推送、Ctrl+Shift+` 分支菜单、Alt+` VCS Operations Popup、Ctrl+Alt+N 新建分支、Alt+9 打开 Git 日志、Ctrl+K 提交（仅在 Commit 视图有焦点时）。这些快捷键会覆盖 VS Code 在同样按键上的默认功能（例如 Ctrl+T 的"转到工作区中的符号"、Ctrl+Shift+` 的"新建终端"）。关闭此设置即可恢复 VS Code 的快捷键。
 
 ## 与 Rebased 的差异
 
-VS Code 没有浮动窗口，也不能在行号栏加菜单，因此：
-- 对话框以编辑器标签页的形式打开，外观做成 IntelliJ 对话框的样子；分支弹出菜单做成了 Commit 工具窗口里的 Branches 标签页，原本在工具栏上的操作（Update Project、Push、分支组件）也都放在这里，不再放在状态栏。
+插件没法在 VS Code 工作台上方画悬浮的弹出层，也不能在行号栏加菜单，因此：
+- 对话框以编辑器标签页的形式打开，外观做成 IntelliJ 对话框的样子。打开设置 `ideagittool.dialogs.openInNewWindow` 后会改为在独立窗口里打开（窗口大小和位置由 VS Code 决定，且不是模态窗口）。分支弹出菜单做成了 Commit 工具窗口里的 Branches 标签页，原本在工具栏上的操作（Update Project、Push、分支组件）也都放在这里，不再放在状态栏。
 - Diff 使用 VS Code 的 diff 编辑器；合并使用基于 CodeMirror 实现的 IntelliJ 风格三栏合并窗口。
 - Blame 注解的选项放在悬停提示和行号区的右键菜单里。
 

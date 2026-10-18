@@ -76,12 +76,13 @@ code --install-extension ideagittool-*.vsix
 
 - `ideagittool.appearance`: `vscode` (the default) draws every view and dialog like native VS Code: buttons, inputs, checkboxes, lists, menus, hovers, scrollbars, fonts and colors come from your VS Code theme, and monochrome icons take the theme's icon color. `intellij` keeps the IntelliJ New UI look (IntelliJ light/dark palette and widget shapes). The layout and the features are the same in both; `scripts/layout-check.mjs` verifies that no element moves.
 - `ideagittool.log.showInEditor`, `ideagittool.log.openOnStartup`, `ideagittool.commit.gpgSign`, `ideagittool.commit.skipHooks`, `ideagittool.updateMethod`, `ideagittool.push.*`, `ideagittool.annotate.*`, `ideagittool.branches.*`. Open the Settings editor and search for "ideagittool" to see all of them.
+- `ideagittool.dialogs.openInNewWindow` (default off): open dialogs and the merge window in their own window, like IntelliJ's floating dialogs, instead of an editor tab. The window closes with the dialog.
 - `ideagittool.intellijShortcuts` (default on): Ctrl+T Update Project, Ctrl+Shift+K Push, Ctrl+Shift+` Branches, Alt+` VCS Operations Popup, Ctrl+Alt+N New Branch, Alt+9 Git log, Ctrl+K Commit (only while the Commit view has focus). These replace the VS Code defaults on the same keys (for example Ctrl+T *Go to Symbol in Workspace* and Ctrl+Shift+` *New Terminal*). Turn the setting off to keep the VS Code shortcuts.
 
 ## Differences from Rebased
 
-VS Code has no floating windows or gutter menus, so:
-- Dialogs open as editor tabs that look like IntelliJ dialogs; the branches popup is the Branches tab of the Commit tool window, and the actions of the toolbar (Update Project, Push, branch widget) are there too instead of in the status bar.
+An extension cannot draw floating popups over the VS Code workbench or add menus to the gutter, so:
+- Dialogs open as editor tabs that look like IntelliJ dialogs. With `ideagittool.dialogs.openInNewWindow` they open in their own window instead (VS Code chooses its size and position, and it is not modal). The branches popup is the Branches tab of the Commit tool window, and the actions of the toolbar (Update Project, Push, branch widget) are there too instead of in the status bar.
 - Diffs use the VS Code diff editor; merges use an IntelliJ-style three-pane merge window built on CodeMirror.
 - Annotation options live in the hover and the line-number context menu.
 

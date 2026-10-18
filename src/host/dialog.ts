@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { popOutIfConfigured } from './popOut';
 import { getExtensionUri, Handler, WebviewConnection } from './webviewHost';
 
 export interface DialogOptions {
@@ -66,6 +67,7 @@ export function showDialog<T = any>(kind: string, props: unknown, opts: DialogOp
       }
     });
     opts.onOpen?.(conn);
+    void popOutIfConfigured(panel);
   });
 }
 

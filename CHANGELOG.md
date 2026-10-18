@@ -6,6 +6,7 @@
 - The status bar widgets (Update Project, Push, branch, merge/rebase actions) and the `ideagittool.statusBar.enabled` setting are removed; their actions are in the Branches tab, the Commit tab banner and the Git menu.
 - The Git log opens in the **Git** panel at the bottom by default (`ideagittool.log.showInEditor` is now off by default).
 - Clickable elements in all views and dialogs show the hand cursor.
+- New setting `ideagittool.dialogs.openInNewWindow` (default off): dialogs and the merge window open in their own window.
 
 ## 0.2.0
 

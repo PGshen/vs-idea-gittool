@@ -39,6 +39,11 @@
         "type": "number",
         "default": 1,
         "description": "How deep to look for nested Git repositories below each workspace folder."
+      },
+      "ideagittool.dialogs.openInNewWindow": {
+        "type": "boolean",
+        "default": false,
+        "markdownDescription": "Open dialogs (Push, Rebase, Conflicts, \u2026) and the merge window in their own window, like IntelliJ's floating dialogs, instead of an editor tab. Uses VS Code's *Move Editor into New Window*; the window size and position are chosen by VS Code."
       }
     }
   },

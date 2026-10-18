@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { popOutIfConfigured } from '../../host/popOut';
 import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { getExtensionUri, WebviewConnection } from '../../host/webviewHost';
@@ -60,6 +61,7 @@ export class MergeTool {
         light: vscode.Uri.joinPath(getExtensionUri(), 'media', 'icons', 'vcs', 'merge.svg'),
         dark: vscode.Uri.joinPath(getExtensionUri(), 'media', 'icons', 'vcs', 'merge_dark.svg'),
       };
+      void popOutIfConfigured(panel);
       let outcome: MergeFinish | undefined;
       let last: MergeFinish | undefined = opts.progress ? { result: 'CANCEL', ...opts.progress } : undefined;
       const conn = new WebviewConnection(panel.webview, 'merge', () => init, panel.title);
