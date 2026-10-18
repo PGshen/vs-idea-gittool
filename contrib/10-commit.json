@@ -5,7 +5,7 @@
         "type": "webview",
         "id": "ideagittool.commit",
         "name": "Commit",
-        "icon": "media/activity/commit.svg",
+        "icon": "media/activity/ideagittool.svg",
         "contextualTitle": "Commit"
       }
     ]

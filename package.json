@@ -914,7 +914,7 @@
         {
           "id": "ideagittool-panel",
           "title": "Git",
-          "icon": "media/activity/vcs.svg"
+          "icon": "media/activity/ideagittool.svg"
         }
       ]
     },
@@ -924,7 +924,7 @@
           "type": "webview",
           "id": "ideagittool.commit",
           "name": "Commit",
-          "icon": "media/activity/commit.svg",
+          "icon": "media/activity/ideagittool.svg",
           "contextualTitle": "Commit"
         }
       ],
