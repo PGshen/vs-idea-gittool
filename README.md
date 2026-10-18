@@ -1,5 +1,7 @@
 # IdeaGitTool
 
+English | [简体中文](README.zh-CN.md)
+
 A VS Code extension that re-creates [Rebased](https://github.com/detachhead/rebased), the standalone git client built on the
 IntelliJ platform. It keeps the IntelliJ git workflow, menu wording, keyboard shortcuts, icons and New UI look.
 
