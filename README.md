@@ -5,6 +5,8 @@ English | [简体中文](README.zh-CN.md)
 A VS Code extension that re-creates [Rebased](https://github.com/detachhead/rebased), the standalone git client built on the
 IntelliJ platform. It keeps the IntelliJ git workflow, menu wording, keyboard shortcuts, icons and New UI look.
 
+![](docs/image/20261019175704.jpg)
+
 ## Installation
 
 **Requirements:** VS Code 1.90 or later, and Git 2.25 or later on your `PATH` (or set `ideagittool.gitPath`). The log actions that edit commits without touching the working tree (Drop / Extract Selected Changes, Add Commits to Remote Branch) need Git 2.40 or later, and the `--update-refs` rebase option needs Git 2.38 or later.
