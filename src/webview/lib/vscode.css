@@ -367,18 +367,24 @@ body.ij-vscode .speed-search {
 }
 
 /* ---------- Context menus and popups (monaco-menu) ---------- */
+/* Some themes give menus the sidebar color, a border close to it and a transparent shadow (Tokyo Night Storm:
+   #1f2335 / #1b1e2e / #ffffff00), so a popup over a list has no visible edge. The border mixes the foreground in
+   and the shadow does not depend on the theme, so popups always stand out. */
 body.ij-vscode .popup {
-  background: var(--vscode-menu-background);
+  background: color-mix(in srgb, var(--vscode-foreground) 6%, var(--vscode-menu-background));
   color: var(--vscode-menu-foreground);
-  border-color: var(--vscode-menu-border, var(--vscode-widget-border, transparent));
+  border-color: color-mix(in srgb, var(--vscode-foreground) 22%, var(--vscode-menu-background));
   border-radius: 5px;
-  box-shadow: 0 2px 8px var(--vscode-widget-shadow);
+  box-shadow:
+    0 2px 8px var(--vscode-widget-shadow, transparent),
+    0 6px 20px rgba(0, 0, 0, 0.45);
 }
 body.ij-vscode .menu-item {
   border-radius: 3px;
 }
 body.ij-vscode .menu-item.active:not(.disabled) {
-  background: var(--vscode-menu-selectionBackground);
+  /* The accent is mixed in for themes where the menu selection is close to the menu background. */
+  background: color-mix(in srgb, var(--vscode-list-highlightForeground, var(--vscode-focusBorder)) 22%, var(--vscode-menu-selectionBackground));
   color: var(--vscode-menu-selectionForeground);
   --icon-color: var(--vscode-menu-selectionForeground);
 }
