@@ -32,7 +32,9 @@ export function iconUrl(name: string, dark = theme.dark) {
   return `${boot.iconsBase}/${name}${dark && !NO_DARK.has(name) ? '_dark' : ''}.svg`;
 }
 
-const NO_DARK = new Set(['fileTypes/vue', 'fileTypes/gitignore', 'fileTypes/http', 'fileTypes/jenkins', 'fileTypes/wsdl', 'fileTypes/eclipse', 'git/verified', 'git/signed']);
+const NO_DARK = new Set([
+  'fileTypes/go', 'fileTypes/rust', 'fileTypes/ruby', 'fileTypes/dart', 'fileTypes/lua', 'fileTypes/svelte', 'fileTypes/rLang', 'fileTypes/elixir',
+  'fileTypes/vue', 'fileTypes/gitignore', 'fileTypes/http', 'fileTypes/jenkins', 'fileTypes/wsdl', 'fileTypes/eclipse', 'git/verified', 'git/signed']);
 
 export function useDark() {
   const [dark, setDark] = useState(theme.dark);
@@ -41,7 +43,9 @@ export function useDark() {
 }
 
 const EXT_ICONS: Record<string, string> = {
-  java: 'java', class: 'javaClass', kt: 'java', kts: 'gradle', gradle: 'gradle', groovy: 'groovy',
+  java: 'java', class: 'javaClass', kt: 'kotlin', kts: 'kotlinScript', gradle: 'gradle', groovy: 'groovy',
+  py: 'python', pyi: 'python', pyw: 'python', go: 'go', rs: 'rust', rb: 'ruby', rake: 'ruby', gemspec: 'ruby', php: 'php',
+  scala: 'scala', sc: 'scala', sbt: 'scala', dart: 'dart', lua: 'lua', svelte: 'svelte', r: 'rLang', ex: 'elixir', exs: 'elixir',
   js: 'javaScript', mjs: 'javaScript', cjs: 'javaScript', jsx: 'javaScript',
   ts: 'typeScript', tsx: 'typeScript', mts: 'typeScript', cts: 'typeScript',
   json: 'json', jsonc: 'json', json5: 'json', html: 'html', htm: 'html', xhtml: 'xhtml',
@@ -61,7 +65,9 @@ const EXT_ICONS: Record<string, string> = {
 const NAME_ICONS: Record<string, string> = {
   '.gitignore': 'gitignore', '.gitattributes': 'gitignore', '.ignore': 'gitignore', dockerfile: 'docker',
   '.editorconfig': 'editorConfig', 'build.bazel': 'bazel', build: 'bazel', 'module.bazel': 'bazel', workspace: 'bazel',
-  jenkinsfile: 'jenkins', 'manifest.mf': 'manifest',
+  jenkinsfile: 'jenkins', 'manifest.mf': 'manifest', 'go.mod': 'go', 'go.sum': 'go', 'go.work': 'go', 'cargo.toml': 'rust',
+  'cargo.lock': 'rust', gemfile: 'ruby', rakefile: 'ruby', 'build.gradle.kts': 'gradle', 'settings.gradle.kts': 'gradle',
+  'requirements.txt': 'python', 'pyproject.toml': 'python',
 };
 
 /** Icon name for a file, like IntelliJ's file type icons. */
