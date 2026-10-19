@@ -11,12 +11,12 @@ IntelliJ platform. It keeps the IntelliJ git workflow, menu wording, keyboard sh
 
 ### From the .vsix package (recommended)
 
-1. Download [`ideagittool-0.3.0.vsix`](https://github.com/PGshen/vs-idea-gittool/raw/master/releases/ideagittool-0.3.0.vsix) from the `releases/` folder of this repository.
+1. Download [`ideagittool-0.4.0.vsix`](https://github.com/PGshen/vs-idea-gittool/raw/master/releases/ideagittool-0.4.0.vsix) from the `releases/` folder of this repository.
 2. Install it in one of these ways:
    - In VS Code, open the Extensions view (Ctrl+Shift+X / Cmd+Shift+X), click the `⋯` menu at the top, choose **Install from VSIX…** and select the file.
    - Or from a terminal:
      ```
-     code --install-extension ideagittool-0.3.0.vsix
+     code --install-extension ideagittool-0.4.0.vsix
      ```
 3. Reload the window if VS Code asks you to.
 

@@ -2,7 +2,7 @@
   "name": "ideagittool",
   "displayName": "IdeaGitTool",
   "description": "The Rebased / IntelliJ git client, remade as a VS Code extension: git log with graph, commit tool window, shelf, branches popup, interactive rebase, push/update dialogs, conflicts resolver and annotations.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "ideagittool",
   "license": "Apache-2.0",
   "repository": {
