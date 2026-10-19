@@ -99,6 +99,25 @@
       "command": "ideagittool.importPatches",
       "title": "Import Patches\u2026",
       "category": "IdeaGitTool"
+    },
+    {
+      "command": "ideagittool.resolveConflictsInFile",
+      "title": "Resolve Conflicts\u2026 (IdeaGitTool)",
+      "category": "IdeaGitTool",
+      "icon": {
+        "light": "media/icons/vcs/merge.svg",
+        "dark": "media/icons/vcs/merge_dark.svg"
+      }
+    },
+    {
+      "command": "ideagittool.merge.useIdeaGitToolForConflicts",
+      "title": "Use IdeaGitTool for Merge Conflicts",
+      "category": "IdeaGitTool"
+    },
+    {
+      "command": "ideagittool.merge.restoreVsCodeConflictUi",
+      "title": "Restore VS Code's Built-in Merge Conflict UI",
+      "category": "IdeaGitTool"
     }
   ],
   "menus": {
@@ -113,6 +132,17 @@
       {
         "command": "ideagittool.addToGitignore",
         "when": "ideagittool.hasRepository"
+      },
+      {
+        "command": "ideagittool.resolveConflictsInFile",
+        "when": "resourceScheme == file && resource in ideagittool.conflictedFiles"
+      }
+    ],
+    "editor/title": [
+      {
+        "command": "ideagittool.resolveConflictsInFile",
+        "group": "navigation@-10",
+        "when": "resourceScheme == file && resource in ideagittool.conflictedFiles && !isInDiffEditor && !isMergeEditor"
       }
     ]
   },
@@ -234,6 +264,17 @@
         "type": "boolean",
         "default": false,
         "description": "Resolve Manually\u2026 opens VS Code's merge editor instead of the IntelliJ-style three-pane merge window."
+      },
+      "ideagittool.merge.handleConflicts": {
+        "type": "string",
+        "enum": ["ask", "always", "never"],
+        "enumDescriptions": [
+          "Ask once per workspace, when the first conflict appears.",
+          "Resolve conflicts with IdeaGitTool: turn off VS Code's merge conflict CodeLens and decorations (merge-conflict.codeLens.enabled, merge-conflict.decorators.enabled) and the automatic merge editor (git.mergeEditor). Run \"Restore VS Code's Built-in Merge Conflict UI\" to undo.",
+          "Keep VS Code's built-in conflict UI as it is; IdeaGitTool never changes those settings."
+        ],
+        "default": "ask",
+        "markdownDescription": "Whether IdeaGitTool handles merge conflicts in the editor instead of VS Code's built-in conflict UI. IdeaGitTool changes VS Code's settings only after you agree (or choose `always` here)."
       },
       "ideagittool.merge.contextLines": {
         "type": "number",

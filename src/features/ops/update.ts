@@ -70,12 +70,13 @@ export async function updateProjectCommand(ctx: Ctx, arg?: RootArg & { method?: 
     },
     { cancellable: true },
   );
+  const skipped = results.filter(r => r.res.outcome.kind === 'skipped');
+  const failed = results.filter(r => r.res.outcome.kind !== 'success' && r.res.outcome.kind !== 'skipped');
+  // Conflicts of the update are resolved first, then the restored local changes are reported (GitUpdateProcess).
+  for (const f of failed) await reportOutcome(f.repo, f.res.outcome as OperationOutcome, { operation: 'update', failedTitle: 'Update failed' });
   for (const { repo, res } of results) {
     if (res.outcome.kind !== 'skipped') await reportRestore(repo, res.saver, 'update', res.restore, res.savedChangesKept ?? false);
   }
-  const skipped = results.filter(r => r.res.outcome.kind === 'skipped');
-  const failed = results.filter(r => r.res.outcome.kind !== 'success' && r.res.outcome.kind !== 'skipped');
-  for (const f of failed) await reportOutcome(f.repo, f.res.outcome as OperationOutcome, { operation: 'update', failedTitle: 'Update failed' });
   // The tracked branch was force-pushed: offer IntelliJ's "Update Force-Pushed Branch".
   for (const { repo, res } of results) {
     if (!res.forcePushed) continue;
@@ -135,10 +136,15 @@ export async function resetToRemoteCommand(ctx: Ctx, arg?: RootArg) {
   if (ok !== 'OK') return;
   await putLocalHistoryLabel(repo, 'Before Update');
   let res: Awaited<ReturnType<typeof resetToRemoteBranch>> | undefined;
-  const outcome = await withSmartOperation(repo, 'checkout', async force => {
-    res = await withProgress('Updating…', (progress, token) => repo.batch(() => resetToRemoteBranch(repo, { progress, token, force })));
-    return res.outcome.kind === 'skipped' ? { kind: 'success', output: '' } : res.outcome;
-  });
+  const outcome = await withSmartOperation(
+    repo,
+    'checkout',
+    async force => {
+      res = await withProgress('Updating…', (progress, token) => repo.batch(() => resetToRemoteBranch(repo, { progress, token, force })));
+      return res.outcome.kind === 'skipped' ? { kind: 'success', output: '' } : res.outcome;
+    },
+    { destination: upstream },
+  );
   if (!outcome || !res) return;
   if (outcome.kind !== 'success') {
     await reportOutcome(repo, outcome, { operation: 'update', failedTitle: 'Update failed' });

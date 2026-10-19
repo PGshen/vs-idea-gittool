@@ -10,7 +10,7 @@ import { CancelledError, Handler, showError, WebviewConnection } from '../../hos
 import { changeKey, CommitOptionsState, CommitRepoInfo, CommitViewState, StashInfo, ViewSettings } from '../../shared/commitProtocol';
 import { Change } from '../../shared/types';
 import { ChangeLists } from './changelists';
-import { ConflictsController } from './conflicts';
+import { ConflictContext, ConflictsController } from './conflicts';
 import {
   acceptSide,
   addFiles,
@@ -584,7 +584,12 @@ export class CommitView implements vscode.WebviewViewProvider {
       );
     }
     if (conflicts) {
-      void notifyWarning('Unshelved with conflicts', 'Some files could not be applied cleanly', { label: 'Resolve Conflicts…', run: () => this.conflicts.show(repo.root) });
+      void this.resolveRestoreConflicts(repo.root, {
+        description: `Conflicts during unshelving ${s.name}`,
+        left: [{ text: 'Local changes' }],
+        right: [{ text: 'Changes from shelf' }],
+        reverse: false,
+      }, 'Conflicts were not resolved during unshelve', 'Unshelve is not complete, you have unresolved merges in your working tree.');
     }
   }
 
@@ -644,11 +649,23 @@ export class CommitView implements vscode.WebviewViewProvider {
     const r = await withProgress('Unstashing…', () => repo.batch(() => repo.exec(args, { allowFailure: true })), { location: 'window' });
     if (r.exitCode !== 0) {
       if (/conflict/i.test(r.stdout + r.stderr)) {
-        void notifyWarning('Unstashed with conflicts', undefined, { label: 'Resolve conflicts…', run: () => this.conflicts.show(root) });
+        // UnstashConflictResolver: the Conflicts dialog right away, a notification only when conflicts are left.
+        void this.resolveRestoreConflicts(root, {
+          description: `Conflicts during unstashing ${ref}`,
+          left: [{ text: 'Local changes' }],
+          right: [{ text: 'Changes from stash' }],
+          reverse: false,
+        }, 'Conflicts were not resolved during unstash', 'Unstash is not complete, you have unresolved merges in your working tree.');
       } else showError(new Error(r.stderr.trim() || r.stdout.trim()), 'Unstash failed');
       return;
     }
     void notifySuccess('Stash successfully applied');
+  }
+
+  /** Shows the Conflicts dialog for conflicts of unstashed / unshelved changes, then notifies about the ones left. */
+  private async resolveRestoreConflicts(root: string, context: ConflictContext, title: string, message: string) {
+    const { remaining } = await this.conflicts.show(root, undefined, context);
+    if (remaining) void notifyWarning(title, message, { label: 'Resolve conflicts…', run: () => this.conflicts.show(root) });
   }
 
   async stashDrop(root: string, ref: string, message: string) {

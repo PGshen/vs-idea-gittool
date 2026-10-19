@@ -676,8 +676,8 @@ export class LogTab implements vscode.Disposable {
         const r = await repo.exec([...args, '-'], { input: diff.stdout, allowFailure: true });
         await repo.refresh();
         if (r.exitCode !== 0) {
-          void vscode.window.showWarningMessage(`${id === 'revertSelected' ? 'Revert' : 'Cherry-pick'} of selected changes finished with conflicts: ${r.stderr.trim()}`);
-          await vscode.commands.executeCommand('ideagittool.resolveConflicts', { root });
+          const res = await vscode.commands.executeCommand<{ remaining?: number } | undefined>('ideagittool.resolveConflicts', { root });
+          if (res?.remaining !== 0) void vscode.window.showWarningMessage(`${id === 'revertSelected' ? 'Revert' : 'Cherry-pick'} of selected changes finished with conflicts: ${r.stderr.trim()}`);
         } else void vscode.window.showInformationMessage(id === 'revertSelected' ? 'Selected changes reverted' : 'Selected changes applied');
         return;
       }

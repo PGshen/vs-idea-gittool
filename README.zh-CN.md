@@ -63,6 +63,10 @@ code --install-extension ideagittool-*.vsix
   - 右键菜单有 Accept ‘Yours’ / ‘Theirs’ 和 Revert Conflict Resolution；Resolve All Simple Conflicts 会显示处理结果；可按目录分组。
   - 底部按钮为 Close / Accept and Finish / Resolve Manually（全部看过后显示 Review Changes）。
   - 合并窗口的 *Save and Close* 会保存处理到一半的文件，重新打开时从上次的进度继续；点 *Accept and Finish* 才会在 git 里标记为已解决。
+- 冲突出现的时机和 IntelliJ 一致：合并、变基、cherry-pick、revert、pull、更新项目、检出、Unstash 或 Unshelve 出现冲突时，直接弹出冲突对话框；只有在还有未解决的冲突时关闭对话框，才会在右下角提示。
+  - Smart Merge / Smart Checkout / 更新项目在恢复暂存（stash 或 shelf）的本地改动时出现冲突，对话框显示 "Uncommitted changes that were saved before merge have conflicts with files from feature"，合并窗口左右两栏标题为 "Uncommitted changes from the stash" / "Changes from feature"。和 IntelliJ 一样，解决后 stash（shelf）会保留，确认不再需要后自行删除。
+  - 合并或变基的冲突全部解决后，会自动提交合并、继续变基。
+  - 在编辑器里打开有冲突的文件时，编辑器标题栏和第一个冲突标记上方会出现 *Resolve Conflicts… (IdeaGitTool)*，点击后打开冲突对话框和该文件的合并窗口。
 - IntelliJ 风格的三栏合并窗口：
   - 左栏是 Yours（镜像布局，操作栏靠近分隔条），中间是可编辑的 Result，右栏是 Theirs。
   - 栏与栏之间用曲线色块连接（解决后变为虚线），同步滚动，按词高亮。
@@ -96,6 +100,7 @@ code --install-extension ideagittool-*.vsix
   - 两种外观的布局和功能完全相同，`scripts/layout-check.mjs` 会检查元素位置没有变化。
 - `ideagittool.log.showInEditor`、`ideagittool.log.openOnStartup`、`ideagittool.commit.gpgSign`、`ideagittool.commit.skipHooks`、`ideagittool.updateMethod`、`ideagittool.push.*`、`ideagittool.annotate.*`、`ideagittool.branches.*` 等。在设置编辑器里搜索 "ideagittool" 可以看到全部设置。
 - `ideagittool.inlineBlame.enabled`（默认开启）：在光标所在行的行尾显示该行最后一次提交的信息。打开 *Annotate with Git Blame* 时会自动隐藏。
+- `ideagittool.merge.handleConflicts`（默认 `ask`）：工作区里第一次出现冲突时询问一次，是否由 IdeaGitTool 代替 VS Code 自带的冲突界面处理冲突。同意（或设为 `always`）后，会在用户设置里关闭 `merge-conflict.codeLens.enabled`、`merge-conflict.decorators.enabled`，以及你手动打开过的 `git.mergeEditor`。设为 `never` 则不改动 VS Code 的设置；未经你同意绝不修改。命令 *Restore VS Code's Built-in Merge Conflict UI* 可恢复原来的值。git 扩展自带的 *Resolve in Merge Editor* 按钮没有对应的设置，无法隐藏。
 - `ideagittool.dialogs.openInNewWindow`（默认关闭）：对话框和合并窗口改为在独立窗口中打开，像 IntelliJ 的浮动对话框一样，而不是编辑器标签页。对话框关闭时窗口也随之关闭。
 - `ideagittool.intellijShortcuts`（默认开启）：Ctrl+T 更新项目、Ctrl+Shift+K 推送、Ctrl+Shift+` 分支菜单、Alt+` VCS Operations Popup、Ctrl+Alt+N 新建分支、Alt+9 打开 Git 日志、Ctrl+K 提交（仅在 Commit 视图有焦点时）。这些快捷键会覆盖 VS Code 在同样按键上的默认功能（例如 Ctrl+T 的"转到工作区中的符号"、Ctrl+Shift+` 的"新建终端"）。关闭此设置即可恢复 VS Code 的快捷键。
 

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Conflicts: when an operation stops with conflicts (merge, rebase, cherry-pick, revert, pull, update, checkout, Smart Merge / Smart Checkout restoring local changes, Unstash, Unshelve) the Conflicts dialog opens right away, like IntelliJ's GitConflictResolver; the notification ("Local changes were restored with conflicts", "Conflicts were not resolved during unstash", …) only appears when conflicts are left after the dialog is closed. Restored stash / shelf conflicts use IntelliJ's texts ("Uncommitted changes that were saved before merge have conflicts with files from feature", "Uncommitted changes from the stash" / "Changes from feature") and the saved changes stay on the left. Once the conflicts of a merge or rebase are all resolved, the merge is committed and the rebase continues. Smart Merge no longer tries to unstash in the middle of a conflicted merge: the changes are restored after the merge is finished.
+- *Resolve Conflicts… (IdeaGitTool)* in the editor title and as a CodeLens above the first conflict marker of a file git reports unmerged.
+- New setting `ideagittool.merge.handleConflicts` (`ask` / `always` / `never`): asked once per workspace whether IdeaGitTool should handle conflicts instead of VS Code's built-in conflict UI; with your consent it turns off `merge-conflict.codeLens.enabled`, `merge-conflict.decorators.enabled` and `git.mergeEditor`. Command *Restore VS Code's Built-in Merge Conflict UI* puts them back.
+- File type icons for Go, Rust, Python, Ruby, PHP, Kotlin (kt / kts), Scala, Dart, Lua, R, Svelte and Elixir.
+
 - Git log: the selected commit stays clearly visible, also when the log has no focus and in themes with low-contrast selection colors such as Tokyo Night Storm (accent bar on the left, selection color mixed with the theme accent), and the current-branch highlight is lighter and only shown when the log also contains commits outside the current branch, like IntelliJ.
 
 ## 0.3.0

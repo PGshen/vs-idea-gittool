@@ -7,6 +7,8 @@ import { openChangeDiff, REV_EMPTY, toGitUri } from '../../host/gitContent';
 import { notifySuccess, withProgress } from '../../host/ui';
 import { changeKey } from '../../shared/commitProtocol';
 import { Change } from '../../shared/types';
+import { registerConflictEditor } from './conflictEditor';
+import { ConflictContext } from './conflicts';
 import { StatusDecorations } from './decorations';
 import { addFiles, addToGitignore, stashFiles } from './gitOps';
 import { createPatchFromCommits } from './patchCommits';
@@ -73,7 +75,9 @@ export function register(ctx: Ctx) {
     await view.reveal('commit');
     view.post('commitAndPush');
   });
-  ctx.command('ideagittool.resolveConflicts', (a?: { root?: string }) => view.conflicts.show(a?.root));
+  // Resolves with {remaining} when the dialog is closed; `context` describes conflicts of restored changes (ConflictContext).
+  ctx.command('ideagittool.resolveConflicts', (a?: { root?: string; context?: ConflictContext }) => view.conflicts.show(a?.root, undefined, a?.context));
+  registerConflictEditor(ctx, view.conflicts);
   ctx.command('ideagittool.refreshChanges', async () => {
     await ctx.repos.scan();
     await Promise.all(ctx.repos.repositories.map(r => r.refresh()));

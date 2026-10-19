@@ -96,7 +96,7 @@ const command = async title => {
   await sleep(1200);
 };
 try {
-  await scenario.run({ app, window, shot, command, sleep, workspace });
+  await scenario.run({ app, window, shot, command, sleep, workspace, userData });
 } finally {
   await app.close();
 }

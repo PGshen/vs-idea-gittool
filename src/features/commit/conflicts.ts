@@ -9,7 +9,7 @@ import { confirmDialog, notifySuccess } from '../../host/ui';
 import { WebviewConnection } from '../../host/webviewHost';
 import { changeKey } from '../../shared/commitProtocol';
 import { joinText, MergeModel, splitText } from '../../shared/mergeModel';
-import { MergeFinish } from '../../shared/mergeProtocol';
+import { MergeFinish, TitleParts } from '../../shared/mergeProtocol';
 import { Change } from '../../shared/types';
 import { acceptSide, addFiles, conflictKind } from './gitOps';
 import { isBinary, MergeTool } from './mergeTool';
@@ -49,6 +49,26 @@ export interface ConflictsPayload {
 }
 
 /**
+ * What the conflicts come from when git does not record an operation (MergeDialogCustomizer and
+ * GitConflictResolver.Params.setReverse): restoring stashed or shelved changes after Smart Merge / Checkout /
+ * Update, or Unstash / Unshelve.
+ */
+export interface ConflictContext {
+  /** Text above the table, e.g. "Uncommitted changes that were saved before merge have conflicts with files from feature". */
+  description: string;
+  /** Titles of the left and right panes of the merge window. */
+  left: TitleParts;
+  right: TitleParts;
+  /** "Yours" is git's "theirs" (stage 3): the saved changes are applied onto the result of the operation. */
+  reverse: boolean;
+}
+
+/** Result of the Conflicts dialog: conflicts left in the repositories it was shown for. */
+export interface ConflictsResult {
+  remaining: number;
+}
+
+/**
  * Merge model of a file in the iterative flow (MergeConflictModel kept by MergeConflictIterativeDataHolder):
  * the result written to the work tree file and the per-change state.
  */
@@ -79,6 +99,11 @@ export class ConflictsController {
   private resolvePressedOnce = false;
   private status = '';
   private busy = false;
+  /**
+   * Context of the conflicts of a repository without an ongoing operation, kept while the conflicts remain, so
+   * that the dialog and the merge window opened later (notification, editor, Commit tool window) show the same texts.
+   */
+  private readonly contexts = new Map<string, ConflictContext>();
 
   constructor(private readonly ctx: Ctx) {
     this.mergeTool = new MergeTool(ctx);
@@ -97,9 +122,20 @@ export class ConflictsController {
     return this.ctx.repos.repositories.filter(r => !root || r.root === root).flatMap(r => r.status.conflicts);
   }
 
+  /** The context of a repository's conflicts; forgotten when they are resolved or an operation starts. */
+  private context(repo: Repository | undefined): ConflictContext | undefined {
+    if (!repo) return undefined;
+    const c = this.contexts.get(repo.root);
+    if (c && (repo.info.operation !== 'none' || !repo.status.conflicts.length)) {
+      this.contexts.delete(repo.root);
+      return undefined;
+    }
+    return c;
+  }
+
   /** Whether "yours" is git's "theirs": during a rebase git's "ours" is the branch being rebased onto. */
   private reversed(repo: Repository | undefined) {
-    return repo?.info.operation === 'rebase';
+    return this.context(repo)?.reverse ?? repo?.info.operation === 'rebase';
   }
 
   private sides(c: Change) {
@@ -147,6 +183,8 @@ export class ConflictsController {
         return undefined;
       }
     };
+    const context = this.context(repo);
+    if (context) return { text: context.description, yours: 'Yours', theirs: 'Theirs' };
     const branch = repo.info.branch ?? repo.info.rebaseHeadName ?? shortHash(repo.info.headHash ?? '');
     switch (repo.info.operation) {
       case 'merge': {
@@ -237,18 +275,24 @@ export class ConflictsController {
 
   // ---------------------------------------------------------------- dialog
 
-  /** Shows the Conflicts dialog. `keys` limits it to some files (Merge… in the changes view). */
-  async show(root?: string, keys?: string[]) {
+  /**
+   * Shows the Conflicts dialog and resolves when it is closed. `keys` limits it to some files (Merge… in the
+   * changes view); `context` describes conflicts without an ongoing git operation (see ConflictContext).
+   */
+  async show(root?: string, keys?: string[], context?: ConflictContext, opts: { openMerge?: boolean } = {}): Promise<ConflictsResult> {
     await this.ctx.repos.ready();
     await Promise.all(this.ctx.repos.repositories.map(r => r.refresh()));
+    if (context && root) this.contexts.set(root, context);
     const conflicts = this.conflicts(root);
     if (!conflicts.length) {
       void vscode.window.showInformationMessage('No conflicts to resolve');
-      return;
+      return { remaining: 0 };
     }
     if (this.dialog) {
       this.dialog.post('reveal');
-      return;
+      const open = opts.openMerge && keys ? this.current().filter(c => keys.includes(changeKey(c))) : [];
+      if (open.length) await this.resolveManually(open.map(c => changeKey(c)));
+      return { remaining: conflicts.length };
     }
     this.files = conflicts.map(c => changeKey(c)).filter(k => !keys || keys.includes(k));
     this.models.clear();
@@ -257,7 +301,11 @@ export class ConflictsController {
     let closing = false;
     await showDialog('commit.conflicts', this.payload(), {
       title: 'Conflicts',
-      onOpen: conn => (this.dialog = conn),
+      onOpen: conn => {
+        this.dialog = conn;
+        // Resolve Conflicts… in the editor: the merge window of the file opens over the dialog.
+        if (opts.openMerge) setTimeout(() => void this.resolveManually(this.files), 0);
+      },
       handlers: {
         load: () => this.payload(),
         open: (p: { keys: string[] }) => this.resolveManually(p.keys),
@@ -292,6 +340,8 @@ export class ConflictsController {
     this.dialog = undefined;
     this.models.clear();
     this.files = [];
+    await Promise.all(this.ctx.repos.repositories.map(r => r.refresh()));
+    return { remaining: this.conflicts(root).length };
   }
 
   /**
@@ -355,11 +405,16 @@ export class ConflictsController {
     const fm = await this.prepareModel(c);
     if (!fm) return this.chooseSide(c);
     const r = await this.revisions(c);
+    const context = this.context(repo);
     const finish = await this.mergeTool.open(
       repo,
       c,
       { base: r.base.toString('utf8'), left: r.yours.toString('utf8'), right: r.theirs.toString('utf8') },
-      { iterative: true, progress: { lines: fm.model.lines, states: fm.model.states, contentModified: fm.model.contentModified } },
+      {
+        iterative: true,
+        progress: { lines: fm.model.lines, states: fm.model.states, contentModified: fm.model.contentModified },
+        titles: context && { left: context.left, right: context.right },
+      },
     );
     const modified = finish.lines.length > 0 && (finish.contentModified || finish.lines.join('\n') !== fm.model.lines.join('\n'));
     if (finish.lines.length) {
@@ -510,13 +565,15 @@ export class ConflictsController {
 
   /** Opens the three-pane window, or VS Code's merge editor when `ideagittool.merge.useVsCodeMergeEditor` is set. */
   async openMergeEditor(c: Change) {
-    await this.show(c.root, [changeKey(c)]);
+    return this.show(c.root, [changeKey(c)]);
   }
 
   private async openVsCodeMergeEditor(c: Change) {
     const repo = this.ctx.repos.get(c.root);
     const rev = this.reversed(repo);
     const d = this.description();
+    const context = this.context(repo);
+    const plain = (t: TitleParts | undefined) => t?.map(p => p.text).join('');
     const file = vscode.Uri.file(path.join(c.root, c.path));
     let initial = '';
     try {
@@ -528,8 +585,8 @@ export class ConflictsController {
     try {
       await vscode.commands.executeCommand('_open.mergeEditor', {
         base: toGitUri(c.root, c.path, ':1'),
-        input1: { uri: toGitUri(c.root, c.path, rev ? ':3' : ':2'), title: d.yours, description: 'Your version', detail: c.path },
-        input2: { uri: toGitUri(c.root, c.path, rev ? ':2' : ':3'), title: d.theirs, description: 'Changes from the other side', detail: c.path },
+        input1: { uri: toGitUri(c.root, c.path, rev ? ':3' : ':2'), title: d.yours, description: plain(context?.left) ?? 'Your version', detail: c.path },
+        input2: { uri: toGitUri(c.root, c.path, rev ? ':2' : ':3'), title: d.theirs, description: plain(context?.right) ?? 'Changes from the other side', detail: c.path },
         output: file,
       });
     } catch {

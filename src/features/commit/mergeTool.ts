@@ -38,8 +38,13 @@ export class MergeTool {
    * Shows the merge window for one file and resolves with the result when it is closed. Closing the tab
    * is "Cancel" ("Save and Close" in the iterative flow, with the last progress of the window).
    */
-  open(repo: Repository, c: Change, revisions: MergeRevisions, opts: { iterative: boolean; progress?: MergeProgress }): Promise<MergeFinish> {
-    const titles = this.titles(repo);
+  open(
+    repo: Repository,
+    c: Change,
+    revisions: MergeRevisions,
+    opts: { iterative: boolean; progress?: MergeProgress; titles?: { left: TitleParts; right: TitleParts } },
+  ): Promise<MergeFinish> {
+    const titles = opts.titles ? { left: opts.titles.left, result: [{ text: 'Result' }], right: opts.titles.right } : this.titles(repo);
     const plain = (t: TitleParts) => t.map(p => p.text).join('');
     const init: MergeInit = {
       path: c.path,

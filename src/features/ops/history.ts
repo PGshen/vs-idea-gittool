@@ -234,7 +234,7 @@ export async function cherryPickCommand(ctx: Ctx, arg: CommitsArg) {
   const outcome = await withSmartOperation(repo, 'cherry-pick', async force => {
     if (force) await repo.exec(['stash', 'push', '--include-untracked', '-m', 'Uncommitted changes before cherry-pick']);
     return runConflictAware(repo, ['cherry-pick', '--allow-empty', ...hashes]);
-  });
+  }, { destination: hashes.map(h => h.slice(0, 8)).join(', ') });
   if (!outcome) return;
   const msgs = await commitMessages(repo, hashes).catch(() => []);
   const desc = msgs.map(m => `${m.hash.slice(0, 8)} ${m.subject}`).join(', ');
@@ -255,7 +255,7 @@ export async function revertCommand(ctx: Ctx, arg: CommitsArg) {
       }
     }
     return runConflictAware(repo, [...args, ...hashes]);
-  });
+  }, { destination: hashes.map(h => h.slice(0, 8)).join(', ') });
   if (!outcome) return;
   const msgs = await commitMessages(repo, hashes).catch(() => []);
   if (outcome.kind === 'success') void vscode.window.showInformationMessage(`Revert successful: ${msgs.map(m => `${m.hash.slice(0, 8)} ${m.subject}`).join(', ')}`);
@@ -373,7 +373,7 @@ export async function merge(repo: Repository, branch: string, options: string[] 
   const outcome = await withSmartOperation(repo, 'merge', async force => {
     if (force) await repo.exec(['reset', '--hard']);
     return withProgress(`Merging ${branch}…`, () => repo.batch(() => runConflictAware(repo, args)), { location: 'window' });
-  });
+  }, { destination: branch, noCommit: options.includes('no-commit') });
   if (!outcome) return;
   if (outcome.kind === 'success') {
     await repo.refresh();
@@ -386,7 +386,7 @@ export async function merge(repo: Repository, branch: string, options: string[] 
     if (a) void vscode.commands.executeCommand('ideagittool.branch.delete', { root: repo.root, name: branch, type: 'local' });
     return;
   }
-  await reportOutcome(repo, outcome, { operation: 'merge', failedTitle: `Could Not Merge ${branch}` });
+  await reportOutcome(repo, outcome, { operation: 'merge', failedTitle: `Could Not Merge ${branch}`, noCommit: options.includes('no-commit') });
 }
 
 export async function rebaseCommand(ctx: Ctx, arg?: RootArg & { upstream?: string }) {
@@ -543,8 +543,8 @@ export async function applyPatchCommand(ctx: Ctx, arg?: RootArg & { clipboard?: 
   const r = await repo.batch(() => repo.exec(args, { input, allowFailure: true }));
   if (r.exitCode === 0) void vscode.window.showInformationMessage('Patch applied');
   else if (/conflict/i.test(r.stderr)) {
-    void vscode.commands.executeCommand('ideagittool.resolveConflicts', { root: repo.root }).then(undefined, () => undefined);
-    void vscode.window.showWarningMessage('Patch applied with conflicts');
+    const res = await vscode.commands.executeCommand<{ remaining?: number } | undefined>('ideagittool.resolveConflicts', { root: repo.root }).then(undefined, () => undefined);
+    if (res?.remaining !== 0) void vscode.window.showWarningMessage('Patch applied with conflicts');
   } else showError(r.stderr, 'Patch was not applied');
 }
 
@@ -552,7 +552,7 @@ export async function applyPatchCommand(ctx: Ctx, arg?: RootArg & { clipboard?: 
 
 export async function checkoutRevisionCommand(ctx: Ctx, arg: CommitArg) {
   const repo = await repoFor(ctx, arg);
-  const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => runConflictAware(repo, ['checkout', ...(force ? ['--force'] : []), arg.hash, '--'])));
+  const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => runConflictAware(repo, ['checkout', ...(force ? ['--force'] : []), arg.hash, '--'])), { destination: arg.hash.slice(0, 8) });
   if (!outcome) return;
   if (outcome.kind === 'success') void vscode.window.showInformationMessage(`Checked out ${arg.hash.slice(0, 8)}`);
   else await reportOutcome(repo, outcome, { operation: 'checkout', failedTitle: `Could not checkout ${arg.hash.slice(0, 8)}` });

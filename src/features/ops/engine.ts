@@ -18,7 +18,11 @@ export interface RunOptions {
 
 export type OperationOutcome =
   | { kind: 'success'; output: string }
-  | { kind: 'conflicts'; output: string; files: string[] }
+  /**
+   * `handled`: the Conflicts dialog was already shown for them (and the notification about the ones left).
+   * `savedChangesKept`: the operation stopped with conflicts, so the changes saved by a smart operation were not restored.
+   */
+  | { kind: 'conflicts'; output: string; files: string[]; handled?: boolean; savedChangesKept?: boolean }
   /** Local changes (or untracked files) would be overwritten. */
   | { kind: 'localChanges'; output: string; files: string[]; untracked: boolean }
   /** Rebase stopped at an `edit` entry. */
@@ -215,6 +219,9 @@ export async function smartOperation(repo: Repository, op: () => Promise<Operati
     await saver.restore(repo);
     return result;
   }
+  // Git cannot apply the saved changes in the middle of a merge, rebase, cherry-pick or revert: like
+  // GitPreservingProcess, they stay saved ("Local changes were not restored").
+  if (result.kind === 'conflicts' && repo.detectOperation() !== 'none') return { ...result, savedChangesKept: true };
   const restored = await saver.restore(repo);
   if (restored.kind !== 'success') return restored;
   return result;

@@ -112,6 +112,7 @@ export async function newBranchCommand(ctx: Ctx, arg?: RootArg & { startPoint?: 
     if (res.overwrite && repo.info.branch === res.name) throw new Error(`Cannot overwrite current branch ${res.name}`);
     const outcome = await withSmartOperation(repo, 'checkout', force =>
       repo.batch(() => checkout(repo, from, { newBranch: res.name, overwrite: res.overwrite, force, track: startRef?.type === 'remote' ? undefined : false })),
+      { destination: start ?? res.name },
     );
     if (!outcome) return;
     if (outcome.kind === 'success') void vscode.window.showInformationMessage(start ? `Checked out new branch ${res.name} from ${start}` : `Checked out new branch ${res.name}`);
@@ -154,8 +155,10 @@ async function newBranchInRoots(ctx: Ctx, roots: string[], start?: string, title
   for (const repo of repos) {
     const from = start ?? 'HEAD';
     if (res.checkout) {
-      const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => checkout(repo, from, { newBranch: res.name, overwrite: res.overwrite, force })));
-      if (outcome && outcome.kind !== 'success') {
+      const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => checkout(repo, from, { newBranch: res.name, overwrite: res.overwrite, force })), {
+        destination: start ?? res.name,
+      });
+      if (outcome && outcome.kind !== 'success' && !(outcome.kind === 'conflicts' && outcome.handled)) {
         failed.push(repo.name);
         await reportOutcome(repo, outcome, { operation: 'checkout', failedTitle: `Could not create new branch ${res.name}` });
       }
@@ -195,7 +198,7 @@ export async function checkoutRef(ctx: Ctx, arg: BranchArg) {
       }
       opts = { newBranch: localName, track: true };
       label = localName;
-      const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => checkout(repo, target, { newBranch: localName, overwrite: true, force })));
+      const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => checkout(repo, target, { newBranch: localName, overwrite: true, force })), { destination: arg.name });
       if (outcome) await reportCheckout(repo, outcome, localName);
       return;
     } else {
@@ -212,7 +215,7 @@ export async function checkoutRef(ctx: Ctx, arg: BranchArg) {
     ignoreOtherWorktrees = conflict === 'proceed';
   }
   await putLocalHistoryLabel(repo, 'Before Checkout');
-  const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => checkout(repo, target, { ...opts, force, ignoreOtherWorktrees })));
+  const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => checkout(repo, target, { ...opts, force, ignoreOtherWorktrees })), { destination: arg.name });
   if (!outcome) return;
   await reportCheckout(repo, outcome, label, ref?.type === 'remote' && opts.newBranch ? arg.name : undefined);
 }

@@ -191,11 +191,12 @@ export async function doPush(ctx: Ctx, repo: Repository, spec: PushSpec, isNew: 
       if (choice.remember) await settings().update('push.autoUpdateOnRejected', method, vscode.ConfigurationTarget.Global);
     }
     const up = await withProgress('Updating…', (progress, token) => updateWithSavedChanges(repo, method!, { progress, token }));
-    await reportRestore(repo, up.saver, 'update', up.restore, up.savedChangesKept ?? false);
     if (up.outcome.kind !== 'success') {
       await reportOutcome(repo, up.outcome as never, { operation: 'update', failedTitle: 'Push was rejected, and update failed with an error' });
+      await reportRestore(repo, up.saver, 'update', up.restore, up.savedChangesKept ?? false);
       return false;
     }
+    await reportRestore(repo, up.saver, 'update', up.restore, up.savedChangesKept ?? false);
     return doPush(ctx, repo, spec, isNew, true);
   }
   if (res.rejected) {
