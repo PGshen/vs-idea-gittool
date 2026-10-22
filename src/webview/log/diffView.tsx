@@ -5,6 +5,7 @@ import { alignHunks, innerRange, isGap, Item, Kind, SideRow } from './diffAlign'
 import type { Change } from '../../shared/types';
 import { ActionButton, Spacer, Toolbar } from '../lib/components';
 import { FileIcon } from '../lib/icons';
+import { anchorAt, showMenu } from '../lib/menu';
 import { call } from '../lib/rpc';
 import { changeAction } from './menus';
 import { store, useStore } from './store';
@@ -145,6 +146,7 @@ export function DiffPreview() {
       <ActionButton icon="general/up" tip="Previous Difference" shortcut="Shift+F7" disabled={!aligned?.blocks || current <= 0} onClick={() => go(-1)} />
       <ActionButton icon="general/down" tip="Next Difference" shortcut="F7" disabled={!aligned?.blocks || current >= (aligned?.blocks ?? 0) - 1} onClick={() => go(1)} />
       <ActionButton icon="general/externalTools" tip="Open in Editor" disabled={!change} onClick={() => change && changeAction('diff', [change])} />
+      <ActionButton icon="general/edit" tip="Jump to Source" shortcut="F4" disabled={!change || change.status === 'D'} onClick={() => change && changeAction('editSource', [change])} />
       <span class="toolbar-separator" />
       <ActionButton
         icon={settings.diffUnified ? 'diff/unified' : 'diff/sideBySide'}
@@ -176,7 +178,24 @@ export function DiffPreview() {
     content = settings.diffUnified ? <Unified items={aligned!.items} onExpand={() => setFull(true)} /> : <SideBySide items={aligned!.items} onExpand={() => setFull(true)} />;
 
   return (
-    <div class="diff-preview">
+    <div
+      class="diff-preview"
+      onContextMenu={e => {
+        e.preventDefault();
+        e.stopPropagation();
+        showMenu([
+          { label: 'Jump to Source', icon: 'general/edit', shortcut: 'F4', disabled: !change || change.status === 'D', action: () => change && changeAction('editSource', [change]) },
+          { label: 'Open in Editor', icon: 'general/externalTools', disabled: !change, action: () => change && changeAction('diff', [change]) },
+        ], anchorAt(e));
+      }}
+      onKeyDown={e => {
+        if (e.key === 'F4' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (change && change.status !== 'D') changeAction('editSource', [change]);
+        }
+      }}
+    >
       {toolbar}
       <div
         class={`diff-body mono ${settings.diffUnified ? 'unified' : 'side'}`}

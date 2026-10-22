@@ -1,0 +1,26 @@
+{
+  "commands": [
+    {
+      "command": "ideagittool.diff.openSource",
+      "title": "Jump to Source from Diff",
+      "category": "IdeaGitTool",
+      "enablement": "isInDiffEditor || inDiffEditor || inMultiDiffEditor || textCompareEditorActive || activeEditor == multiDiffEditor"
+    }
+  ],
+  "keybindings": [
+    {
+      "command": "ideagittool.diff.openSource",
+      "key": "f4",
+      "when": "editorTextFocus && (isInDiffEditor || inDiffEditor || inMultiDiffEditor || activeEditor == multiDiffEditor)"
+    }
+  ],
+  "menus": {
+    "editor/context": [
+      {
+        "command": "ideagittool.diff.openSource",
+        "when": "isInDiffEditor || inDiffEditor || inMultiDiffEditor || activeEditor == multiDiffEditor",
+        "group": "navigation@1"
+      }
+    ]
+  }
+}

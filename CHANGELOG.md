@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+- Jump to Source from Diff via the editor context menu or F4, including native multi-file diff editors. Context-menu navigation uses the clicked file even when no text editor is active, and renamed files open their current working path.
+
 ## 0.4.0
 
 - Popup menus (branch actions, context menus) stand out in themes whose menu colors match the sidebar, such as Tokyo Night Storm: a contrasting border, a theme-independent shadow, a slightly lifted background and a stronger highlighted item.

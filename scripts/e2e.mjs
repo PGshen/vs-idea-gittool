@@ -9,14 +9,16 @@ import { pathToFileURL } from 'node:url';
 import { execSync } from 'node:child_process';
 
 const [scenarioPath, workspaceArg] = process.argv.slice(2);
-const code = resolve('.vscode-test/vscode-linux-x64-1.95.3/code');
-const workspace = workspaceArg ? resolve(workspaceArg) : makeSampleRepo();
+const code = process.env.VSCODE_EXECUTABLE_PATH ?? (process.platform === 'darwin'
+  ? ['/Applications/Visual Studio Code.app/Contents/MacOS/Code', '/Applications/Visual Studio Code.app/Contents/MacOS/Electron'].find(existsSync)
+  : resolve('.vscode-test/vscode-linux-x64-1.95.3/code'));
+const scenario = await import(pathToFileURL(resolve(scenarioPath)).href);
+const workspace = workspaceArg ? resolve(workspaceArg) : (scenario.createWorkspace?.() ?? makeSampleRepo());
 const userData = mkdtempSync(resolve(tmpdir(), 'ideagittool-e2e-user-'));
 const extDir = mkdtempSync(resolve(tmpdir(), 'ideagittool-e2e-ext-'));
 const outDir = process.env.SHOTS ?? resolve('test/shots');
 execSync(`mkdir -p ${outDir}`);
 
-const scenario = await import(pathToFileURL(resolve(scenarioPath)).href);
 // A scenario can export `settings` to add user settings.
 const userSettings = {
   'workbench.startupEditor': 'none',
@@ -49,6 +51,7 @@ const app = await electron.launch({
   env: { ...process.env, VSCODE_SKIP_PRELAUNCH: '1' },
 });
 const window = await app.firstWindow();
+window.setDefaultTimeout(15000);
 await window.setViewportSize?.({ width: 1600, height: 1000 }).catch(() => {});
 window.on('console', m => m.type() === 'error' && console.log('[console]', m.text()));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -97,8 +100,14 @@ const command = async title => {
 };
 try {
   await scenario.run({ app, window, shot, command, sleep, workspace, userData });
+} catch (error) {
+  await shot('e2e-failure').catch(() => undefined);
+  console.error(error);
+  throw error;
 } finally {
-  await app.close();
+  const child = app.process();
+  await Promise.race([app.close(), sleep(5000)]);
+  if (child.exitCode === null) child.kill();
 }
 
 function makeSampleRepo() {
