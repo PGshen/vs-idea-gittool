@@ -2,7 +2,7 @@
   "name": "ideagittool",
   "displayName": "IdeaGitTool",
   "description": "The Rebased / IntelliJ git client, remade as a VS Code extension: git log with graph, commit tool window, shelf, branches popup, interactive rebase, push/update dialogs, conflicts resolver and annotations.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "publisher": "ideagittool",
   "license": "Apache-2.0",
   "repository": {
@@ -967,6 +967,12 @@
         "command": "ideagittool.checkoutRevision",
         "title": "Checkout Revision",
         "category": "IdeaGitTool"
+      },
+      {
+        "command": "ideagittool.diff.openSource",
+        "title": "Jump to Source from Diff",
+        "category": "IdeaGitTool",
+        "enablement": "isInDiffEditor || inDiffEditor || inMultiDiffEditor || textCompareEditorActive || activeEditor == multiDiffEditor"
       }
     ],
     "viewsContainers": {
@@ -1038,6 +1044,11 @@
           "submenu": "ideagittool.git.file",
           "group": "1_modification@9",
           "when": "ideagittool.hasRepository && resourceScheme == file"
+        },
+        {
+          "command": "ideagittool.diff.openSource",
+          "when": "isInDiffEditor || inDiffEditor || inMultiDiffEditor || activeEditor == multiDiffEditor",
+          "group": "navigation@1"
         }
       ],
       "editor/title/context": [
@@ -1668,6 +1679,11 @@
         "key": "ctrl+alt+n",
         "mac": "alt+cmd+n",
         "when": "config.ideagittool.intellijShortcuts && ideagittool.hasRepository"
+      },
+      {
+        "command": "ideagittool.diff.openSource",
+        "key": "f4",
+        "when": "editorTextFocus && (isInDiffEditor || inDiffEditor || inMultiDiffEditor || activeEditor == multiDiffEditor)"
       }
     ],
     "colors": [

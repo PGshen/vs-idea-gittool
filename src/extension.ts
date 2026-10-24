@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Ctx } from './context';
+import { openDiffSource } from './host/diffSource';
 import { setGitPath } from './git/exec';
 import { RepositoryManager } from './git/manager';
 import { GIT_SCHEME, GitContentProvider } from './host/gitContent';
@@ -38,6 +39,7 @@ export async function activate(extension: vscode.ExtensionContext) {
   };
 
   ctx.command('ideagittool.showConsole', () => getOutputChannel().show());
+  ctx.command('ideagittool.diff.openSource', resource => openDiffSource(resource));
 
   const updateContext = () => {
     void vscode.commands.executeCommand('setContext', 'ideagittool.hasRepository', repos.repositories.length > 0);

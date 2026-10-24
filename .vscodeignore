@@ -2,6 +2,8 @@ src/**
 scripts/**
 contrib/**
 test/**
+out-test/**
+.github/**
 node_modules/**
 tsconfig.json
 **/*.map

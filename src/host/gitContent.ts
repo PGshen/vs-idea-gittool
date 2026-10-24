@@ -13,11 +13,13 @@ interface GitUriQuery {
   root: string;
   path: string;
   ref: string;
+  /** Current path when the original side of a multi-diff is a renamed file. */
+  sourcePath?: string;
 }
 
 /** Builds a read-only URI that shows `relPath` at revision `ref`. */
-export function toGitUri(root: string, relPath: string, ref: string): vscode.Uri {
-  const query: GitUriQuery = { root, path: relPath, ref };
+export function toGitUri(root: string, relPath: string, ref: string, sourcePath?: string): vscode.Uri {
+  const query: GitUriQuery = { root, path: relPath, ref, sourcePath };
   return vscode.Uri.file(path.join(root, relPath)).with({ scheme: GIT_SCHEME, query: JSON.stringify(query) });
 }
 
@@ -112,7 +114,7 @@ export async function openMultiDiff(title: string, changes: Change[], left: (c: 
   const resources = changes.map(c => {
     const l = left(c);
     const r = right(c);
-    const leftUri = c.status === 'A' || c.status === '?' ? undefined : toGitUri(c.root, c.oldPath ?? c.path, l);
+    const leftUri = c.status === 'A' || c.status === '?' ? undefined : toGitUri(c.root, c.oldPath ?? c.path, l, c.path);
     const rightUri = c.status === 'D' ? undefined : r === 'WORKTREE' ? vscode.Uri.file(path.join(c.root, c.path)) : toGitUri(c.root, c.path, r);
     return [vscode.Uri.file(path.join(c.root, c.path)), leftUri, rightUri];
   });
