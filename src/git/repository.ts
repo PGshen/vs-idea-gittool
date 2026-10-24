@@ -48,7 +48,8 @@ export class Repository implements vscode.Disposable {
     const gitDirWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.Uri.file(this.gitDir), '**'));
     const onGitDir = (uri: vscode.Uri) => {
       const rel = path.relative(this.gitDir, uri.fsPath).replace(/\\/g, '/');
-      if (rel.endsWith('.lock') || rel.startsWith('objects/') || rel === 'FETCH_HEAD' || rel.startsWith('logs/')) return;
+      // The empty path is the git dir itself: Windows reports it whenever an entry such as index.lock comes and goes.
+      if (!rel || rel.startsWith('..') || rel.endsWith('.lock') || rel.startsWith('objects/') || rel === 'FETCH_HEAD' || rel.startsWith('logs/')) return;
       this.scheduleRefresh(true, true);
     };
     gitDirWatcher.onDidChange(onGitDir, null, this.disposables);
@@ -187,7 +188,8 @@ export class Repository implements vscode.Disposable {
 
   private async loadStatus() {
     const untracked = vscode.workspace.getConfiguration('ideagittool').get<string>('untrackedFiles', 'all');
-    const args = ['status', '--porcelain=v2', '-z', `--untracked-files=${untracked === 'hide' ? 'no' : untracked}`];
+    // --no-optional-locks: a background status must not write the index, or the watcher would see it and refresh again.
+    const args = ['--no-optional-locks', 'status', '--porcelain=v2', '-z', `--untracked-files=${untracked === 'hide' ? 'no' : untracked}`];
     if (vscode.workspace.getConfiguration('ideagittool').get<boolean>('showIgnoredFiles', false)) args.push('--ignored=matching');
     const out = await this.execText(args, { quiet: true });
     this.status = parseStatusV2(this.root, out);
