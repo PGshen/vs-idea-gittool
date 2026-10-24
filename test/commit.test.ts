@@ -105,7 +105,12 @@ test('stash files include untracked', async () => {
 
 test('accept theirs resolves a conflict', async () => {
   const { dir, sh, repo } = makeRepo();
-  sh('git checkout -qb other && echo other > a.txt && git commit -qam other && git checkout -q master && echo mine > a.txt && git commit -qam mine');
+  // Write with fs: cmd's echo would add a trailing space and CRLF.
+  sh('git checkout -qb other');
+  fs.writeFileSync(path.join(dir, 'a.txt'), 'other\n');
+  sh('git commit -qam other && git checkout -q master');
+  fs.writeFileSync(path.join(dir, 'a.txt'), 'mine\n');
+  sh('git commit -qam mine');
   sh('git merge other || true');
   const st = await status(repo);
   assert.equal(st.conflicts.length, 1);

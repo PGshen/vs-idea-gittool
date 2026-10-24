@@ -15,5 +15,7 @@ await esbuild.build({
   alias: { vscode: './test/vscode-stub.ts' },
   logLevel: 'warning',
 });
-const r = spawnSync(process.execPath, ['--test', ...tests.map(t => t.replace(/^test\//, 'out-test/').replace(/\.ts$/, '.js'))], { stdio: 'inherit' });
+// Tests compare file contents byte for byte, so override core.autocrlf (true by default in Git for Windows) for every git they run.
+const env = { ...process.env, GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'core.autocrlf', GIT_CONFIG_VALUE_0: 'false' };
+const r = spawnSync(process.execPath, ['--test', ...tests.map(t => t.replace(/^test\//, 'out-test/').replace(/\.ts$/, '.js'))], { stdio: 'inherit', env });
 process.exit(r.status ?? 1);

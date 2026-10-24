@@ -13,6 +13,7 @@ import {
   parseWorktreeList,
   removeWorktree,
   resetToRemoteBranch,
+  samePath,
   StashSaver,
   updateForcePushedBranch,
   updateRepository,
@@ -144,7 +145,8 @@ test('worktrees: parse, create, find by branch, remove', async () => {
   const target = path.join(tmp(), 'wt-feature');
   const c = await createWorktree(repo, { path: target, ref: 'feature' });
   assert.equal(c.kind, 'success', c.output);
-  assert.equal((await worktreeOfBranch(repo, 'feature'))?.path, fs.realpathSync(target));
+  // git prints forward slashes on Windows; the extension compares worktree paths with samePath.
+  assert.ok(samePath((await worktreeOfBranch(repo, 'feature'))?.path ?? '', fs.realpathSync(target)));
   const c2 = await createWorktree(repo, { path: path.join(tmp(), 'wt-new'), ref: 'master', newBranch: 'topic' });
   assert.equal(c2.kind, 'success', c2.output);
   assert.equal((await listWorktrees(repo)).length, 3);
