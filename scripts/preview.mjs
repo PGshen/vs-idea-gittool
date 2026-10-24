@@ -1,6 +1,6 @@
 // Renders a webview bundle in Chromium with a mocked VS Code API and saves a screenshot.
 // Usage: node scripts/preview.mjs <bundle> <fixture.mjs> <out.png> [--light] [--vscode=dark|light] [--size=1400x900]
-//        [--dist=dir] [--rects=rects.json]
+//        [--dist=dir] [--rects=rects.json] [--lang=zh-cn]
 // --vars=dark|light only injects those variables (every real webview has them). --vscode renders the "vscode" appearance with the real --vscode-* variables of VS Code's Default Dark/Light Modern
 // themes (test/vscode-theme-*.css). --dist loads the bundles from another build. --rects writes the bounding box of
 // every element (used by scripts/layout-check.mjs).
@@ -20,6 +20,8 @@ const light = vscodeArg ? vscodeArg === 'light' : process.argv.includes('--light
 const dist = resolve(process.argv.find(a => a.startsWith('--dist='))?.slice(7) ?? 'dist');
 const rectsOut = process.argv.find(a => a.startsWith('--rects='))?.slice(8);
 const sizeArg = process.argv.find(a => a.startsWith('--size='));
+// --lang=zh-cn renders the UI with l10n/bundle.l10n.zh-cn.json.
+const langArg = process.argv.find(a => a.startsWith('--lang='))?.slice(7);
 const [width, height] = sizeArg ? sizeArg.slice(7).split('x').map(Number) : [1400, 900];
 const fixture = await import(pathToFileURL(resolve(fixturePath)).href);
 const root = resolve('.');
@@ -28,6 +30,7 @@ const boot = {
   themeClass: vscodeArg ? 'ij-vscode' : light ? 'ij-light' : 'ij-dark',
   dark: !light,
   initial: typeof fixture.initial === 'function' ? fixture.initial() : fixture.initial,
+  l10n: langArg ? JSON.parse(readFileSync(resolve(`l10n/bundle.l10n.${langArg}.json`), 'utf8')) : undefined,
 };
 const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
 ${varsArg ? `<style>${readFileSync(resolve(`test/vscode-theme-${varsArg}.css`), 'utf8')}</style>` : ''}

@@ -1,6 +1,8 @@
+import { ComponentChildren } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
 import { Button, Checkbox, Radio } from '../../../lib/components';
 import { FileIcon, Icon } from '../../../lib/icons';
+import { t } from '../../../lib/l10n';
 import { call } from '../../../lib/rpc';
 import { DialogFrame, Group, Row } from '../../frame';
 import { registerDialog } from '../../registry';
@@ -10,37 +12,49 @@ function cap(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** A translated message with elements in its {0}, {1}, … placeholders. */
+function rich(message: string, ...parts: ComponentChildren[]) {
+  return message.split(/\{(\d+)\}/).map((s, i) => (i % 2 ? parts[+s] : s));
+}
+
+/** Display names of the operations of the Git Checkout Problem dialog: [title case, in a sentence]. */
+const OPERATION_NAMES: Record<string, [string, string]> = {
+  checkout: [t('Checkout'), t('checkout')],
+  merge: [t('Merge'), t('merge')],
+  'cherry-pick': [t('Cherry-pick'), t('cherry-pick')],
+  revert: [t('Revert'), t('revert')],
+};
+
 // ------------------------------------------------------------------ Git Checkout Problem (GitSmartOperationDialog)
 
 registerDialog<{ operation: string; files: string[]; untracked: boolean }>('ops.smartOperation', ({ props, submit, cancel }) => {
-  const op = props.operation;
-  const Op = cap(op);
+  const [Op, op] = OPERATION_NAMES[props.operation] ?? [cap(props.operation), props.operation];
   return (
     <DialogFrame
-      title={`Git ${Op} Problem`}
+      title={t('Git {0} Problem', Op)}
       width={560}
       onCancel={cancel}
       onOk={() => submit({ button: 'smart' })}
       buttons={
         <>
-          <Button onClick={() => submit({ button: 'dont' })}>Don't {Op}</Button>
-          <Button onClick={() => submit({ button: 'force' })} tip={`${Op} and overwrite local changes`}>
-            Force {Op}
+          <Button onClick={() => submit({ button: 'dont' })}>{t("Don't {0}", Op)}</Button>
+          <Button onClick={() => submit({ button: 'force' })} tip={t('{0} and overwrite local changes', Op)}>
+            {t('Force {0}', Op)}
           </Button>
-          <Button primary onClick={() => submit({ button: 'smart' })} tip={`Stash local changes, ${op}, unstash`}>
-            Smart {Op}
+          <Button primary onClick={() => submit({ button: 'smart' })} tip={t('Stash local changes, {0}, unstash', op)}>
+            {t('Smart {0}', Op)}
           </Button>
         </>
       }
     >
       <div style={{ lineHeight: '20px', padding: '2px 0 6px' }}>
         {props.untracked ? (
-          <>The following untracked working tree files would be overwritten by {op}.</>
+          t('The following untracked working tree files would be overwritten by {0}.', op)
         ) : (
-          <>Your local changes to the following files would be overwritten by {op}.</>
+          t('Your local changes to the following files would be overwritten by {0}.', op)
         )}
         <br />
-        IdeaGitTool can stash the changes, {op} and unstash them after that.
+        {t('IdeaGitTool can stash the changes, {0} and unstash them after that.', op)}
       </div>
       <div class="panel-box file-list">
         {props.files.map(f => (
@@ -74,8 +88,8 @@ export interface NewBranchProps {
 }
 
 export function validateBranchName(name: string, p: NewBranchProps, overwrite: boolean): string | undefined {
-  if (!name.trim()) return 'Specify name for the new branch';
-  if (name === 'HEAD') return 'HEAD is a reserved keyword';
+  if (!name.trim()) return t('Specify name for the new branch');
+  if (name === 'HEAD') return t('HEAD is a reserved keyword');
   if (
     /(^|\/)\./.test(name) ||
     name.includes('..') ||
@@ -88,11 +102,11 @@ export function validateBranchName(name: string, p: NewBranchProps, overwrite: b
     name.startsWith('/') ||
     name.startsWith('-')
   )
-    return `Branch name ${name} is not valid`;
+    return t('Branch name {0} is not valid', name);
   if (name === p.renaming) return undefined;
-  if (!overwrite && p.locals.includes(name)) return `Branch name ${name} already exists`;
-  if (p.remotes.includes(name)) return `Branch name ${name} conflicts with remote branch with the same name`;
-  if (p.locals.some(l => l.startsWith(name + '/'))) return `Branch name ${name} conflicts with local branch directory with the same name`;
+  if (!overwrite && p.locals.includes(name)) return t('Branch name {0} already exists', name);
+  if (p.remotes.includes(name)) return t('Branch name {0} conflicts with remote branch with the same name', name);
+  if (p.locals.some(l => l.startsWith(name + '/'))) return t('Branch name {0} conflicts with local branch directory with the same name', name);
   return undefined;
 }
 
@@ -119,14 +133,14 @@ registerDialog<NewBranchProps>('ops.newBranch', ({ props, submit, cancel }) => {
       error={hostError}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary onClick={ok} disabled={!!error && (touched || !name)}>
             {props.okLabel}
           </Button>
         </>
       }
     >
-      <Row label="New branch name:">
+      <Row label={t('New branch name:')}>
         <input
           class={`text-field ${error && (touched || name !== props.initial) ? 'error' : ''}`}
           value={name}
@@ -139,11 +153,11 @@ registerDialog<NewBranchProps>('ops.newBranch', ({ props, submit, cancel }) => {
           }}
         />
       </Row>
-      {error && (touched || name !== props.initial) && <div class="error-text" style={{ marginLeft: '124px', marginTop: '-2px' }}>{exists && props.showOverwrite ? 'Change the name or overwrite existing branch' : error}</div>}
+      {error && (touched || name !== props.initial) && <div class="error-text" style={{ marginLeft: '124px', marginTop: '-2px' }}>{exists && props.showOverwrite ? t('Change the name or overwrite existing branch') : error}</div>}
       {(props.showCheckout || props.showOverwrite) && (
         <div style={{ display: 'flex', gap: '16px', marginLeft: '124px' }}>
-          {props.showCheckout && <Checkbox checked={checkout} onChange={setCheckout} label="Checkout branch" />}
-          {props.showOverwrite && <Checkbox checked={overwrite} onChange={setOverwrite} label="Overwrite existing branch" disabled={!exists && !overwrite} />}
+          {props.showCheckout && <Checkbox checked={checkout} onChange={setCheckout} label={t('Checkout branch')} />}
+          {props.showOverwrite && <Checkbox checked={overwrite} onChange={setOverwrite} label={t('Overwrite existing branch')} disabled={!exists && !overwrite} />}
         </div>
       )}
     </DialogFrame>
@@ -165,36 +179,36 @@ registerDialog<{ root: string; repoName: string; currentBranch: string; commit?:
   };
   return (
     <DialogFrame
-      title="Tag"
+      title={t('Tag')}
       width={520}
       onCancel={cancel}
       onOk={ok}
       error={err}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary onClick={ok} disabled={!name || (exists && !force)}>
-            Create Tag
+            {t('Create Tag')}
           </Button>
         </>
       }
     >
-      <Row label="Git root:">
+      <Row label={t('Git root:')}>
         <span>{props.repoName}</span>
       </Row>
-      <Row label="Current branch:">
+      <Row label={t('Current branch:')}>
         <span>{props.currentBranch}</span>
       </Row>
-      <Row label="Tag name:">
-        <input class={`text-field ${exists && !force ? 'error' : ''}`} value={name} autofocus spellcheck={false} onInput={e => setName((e.currentTarget as HTMLInputElement).value.trim())} data-tip="Enter the new tag name here." />
-        <Checkbox checked={force} onChange={setForce} label="Force" tip="Force creation of the tag even if another tag with such name already exists." />
+      <Row label={t('Tag name:')}>
+        <input class={`text-field ${exists && !force ? 'error' : ''}`} value={name} autofocus spellcheck={false} onInput={e => setName((e.currentTarget as HTMLInputElement).value.trim())} data-tip={t('Enter the new tag name here.')} />
+        <Checkbox checked={force} onChange={setForce} label={t('Force')} tip={t('Force creation of the tag even if another tag with such name already exists.')} />
       </Row>
-      {exists && !force && <div class="error-text" style={{ marginLeft: '98px' }}>The tag with the same name exists.</div>}
-      <Row label="Commit:">
-        <input class="text-field mono-text" value={commit} placeholder="HEAD" spellcheck={false} onInput={e => setCommit((e.currentTarget as HTMLInputElement).value)} data-tip="Enter name of commit or object to tag or leave blank to use HEAD." />
+      {exists && !force && <div class="error-text" style={{ marginLeft: '98px' }}>{t('The tag with the same name exists.')}</div>}
+      <Row label={t('Commit:')}>
+        <input class="text-field mono-text" value={commit} placeholder="HEAD" spellcheck={false} onInput={e => setCommit((e.currentTarget as HTMLInputElement).value)} data-tip={t('Enter name of commit or object to tag or leave blank to use HEAD.')} />
       </Row>
-      <Row label="Message:" top>
-        <textarea class="text-area mono" rows={5} value={message} onInput={e => setMessage((e.currentTarget as HTMLTextAreaElement).value)} data-tip="If the message is not empty, an annotated tag is created." />
+      <Row label={t('Message:')} top>
+        <textarea class="text-area mono" rows={5} value={message} onInput={e => setMessage((e.currentTarget as HTMLTextAreaElement).value)} data-tip={t('If the message is not empty, an annotated tag is created.')} />
       </Row>
     </DialogFrame>
   );
@@ -203,10 +217,10 @@ registerDialog<{ root: string; repoName: string; currentBranch: string; commit?:
 // ------------------------------------------------------------------ Git Reset (GitNewResetDialog)
 
 const RESET_MODES = [
-  { id: 'soft', label: 'Soft', desc: "Files won't change, differences will be staged for commit." },
-  { id: 'mixed', label: 'Mixed', desc: "Files won't change, differences won't be staged." },
-  { id: 'hard', label: 'Hard', desc: 'Files will be reverted to the state of the selected commit.\nWarning: any local changes will be lost.' },
-  { id: 'keep', label: 'Keep', desc: 'Files will be reverted to the state of the selected commit,\nbut local changes will be kept intact.' },
+  { id: 'soft', label: t('Soft'), desc: t("Files won't change, differences will be staged for commit.") },
+  { id: 'mixed', label: t('Mixed'), desc: t("Files won't change, differences won't be staged.") },
+  { id: 'hard', label: t('Hard'), desc: t('Files will be reverted to the state of the selected commit.\nWarning: any local changes will be lost.') },
+  { id: 'keep', label: t('Keep'), desc: t('Files will be reverted to the state of the selected commit,\nbut local changes will be kept intact.') },
 ];
 
 registerDialog<{ commits: { hash: string; subject: string; author: string; repo: string }[]; branch: string; mode?: string; editable?: boolean }>('ops.reset', ({ props, submit, cancel }) => {
@@ -215,33 +229,31 @@ registerDialog<{ commits: { hash: string; subject: string; author: string; repo:
   const ok = () => submit({ mode, target });
   return (
     <DialogFrame
-      title="Git Reset"
+      title={t('Git Reset')}
       width={540}
       onCancel={cancel}
       onOk={ok}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary onClick={ok}>
-            {mode === 'hard' ? 'Hard Reset' : 'Reset'}
+            {mode === 'hard' ? t('Hard Reset') : t('Reset')}
           </Button>
         </>
       }
     >
-      <div style={{ lineHeight: '20px' }}>
-        This will reset the current branch head to the selected commit,
-        <br />
-        and update the working tree and the index according to the selected mode:
+      <div style={{ lineHeight: '20px', whiteSpace: 'pre-line' }}>
+        {t('This will reset the current branch head to the selected commit,\nand update the working tree and the index according to the selected mode:')}
       </div>
       {props.editable ? (
-        <Row label="To commit:">
+        <Row label={t('To commit:')}>
           <input class="text-field mono-text" value={target} autofocus spellcheck={false} onInput={e => setTarget((e.currentTarget as HTMLInputElement).value)} />
         </Row>
       ) : (
         props.commits.map(c => (
           <div class="secondary" key={c.hash} style={{ padding: '4px 0 2px', lineHeight: '18px' }}>
-            <span class="mono-text">{c.hash.slice(0, 8)}</span> "{c.subject}" by {c.author}
-            {props.commits.length > 1 && <> in {c.repo}</>}
+            <span class="mono-text">{c.hash.slice(0, 8)}</span>{' '}
+            {props.commits.length > 1 ? t('"{0}" by {1} in {2}', c.subject, c.author, c.repo) : t('"{0}" by {1}', c.subject, c.author)}
           </div>
         ))
       )}
@@ -272,17 +284,17 @@ registerDialog<{ title: string; message: string; okLabel?: string; commits?: { h
       onOk={ok}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary onClick={ok} disabled={!message.trim()}>
-            {props.okLabel ?? 'OK'}
+            {props.okLabel ?? t('OK')}
           </Button>
         </>
       }
-      left={<span class="field-hint">Press Ctrl+Enter to apply changes</span>}
+      left={<span class="field-hint">{t('Press Ctrl+Enter to apply changes')}</span>}
     >
       {props.commits && props.commits.length > 1 && (
         <div class="secondary" style={{ marginBottom: '4px' }}>
-          {props.commits.length} commits: {props.commits.map(c => c.hash.slice(0, 8)).join(', ')}
+          {t('{0} commits: {1}', props.commits.length, props.commits.map(c => c.hash.slice(0, 8)).join(', '))}
         </div>
       )}
       <textarea
@@ -303,18 +315,18 @@ registerDialog<{ branch: string; hasMerges?: boolean }>('ops.pushRejected', ({ p
   const [remember, setRemember] = useState(false);
   return (
     <DialogFrame
-      title="Push Rejected"
+      title={t('Push Rejected')}
       width={520}
       onCancel={cancel}
       onOk={() => submit({ button: props.hasMerges ? 'merge' : 'rebase', remember })}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary={!!props.hasMerges} onClick={() => submit({ button: 'merge', remember })}>
-            Merge
+            {t('Merge')}
           </Button>
           <Button primary={!props.hasMerges} onClick={() => submit({ button: 'rebase', remember })}>
-            {props.hasMerges ? 'Rebase Anyway' : 'Rebase'}
+            {props.hasMerges ? t('Rebase Anyway') : t('Rebase')}
           </Button>
         </>
       }
@@ -322,19 +334,19 @@ registerDialog<{ branch: string; hasMerges?: boolean }>('ops.pushRejected', ({ p
       <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '4px 0 8px', lineHeight: '20px' }}>
         <Icon name="general/questionDialog" size={20} />
         <div>
-          Push of the current branch "{props.branch}" was rejected.
+          {t('Push of the current branch "{0}" was rejected.', props.branch)}
           <br />
-          Remote changes need to be merged before pushing.
+          {t('Remote changes need to be merged before pushing.')}
           {props.hasMerges && (
             <>
               <br />
               <br />
-              In this case <b>merge is highly recommended</b>, because there are non-pushed merge commits. Rebasing them can lead to problems.
+              {rich(t('In this case {0}, because there are non-pushed merge commits. Rebasing them can lead to problems.'), <b>{t('merge is highly recommended')}</b>)}
             </>
           )}
         </div>
       </div>
-      <Checkbox checked={remember} onChange={setRemember} label="Remember the update method and update silently in the future" />
+      <Checkbox checked={remember} onChange={setRemember} label={t('Remember the update method and update silently in the future')} />
     </DialogFrame>
   );
 });
@@ -348,33 +360,33 @@ registerDialog<{ method: string; saveChanges: string; repos: string[]; canReset?
   const ok = () => submit({ method, saveChanges: save, dontShow });
   return (
     <DialogFrame
-      title="Update Project"
+      title={t('Update Project')}
       width={props.canReset ? 600 : 520}
       onCancel={cancel}
       onOk={ok}
       left={
         <>
           {props.canReset && (
-            <Button tip="Checks out the corresponding remote branch" onClick={() => submit({ method, saveChanges: save, dontShow: false, button: 'reset' })}>
-              Reset to the Remote Branch
+            <Button tip={t('Checks out the corresponding remote branch')} onClick={() => submit({ method, saveChanges: save, dontShow: false, button: 'reset' })}>
+              {t('Reset to the Remote Branch')}
             </Button>
           )}
-          <Checkbox checked={dontShow} onChange={setDontShow} label="Don't show again" />
+          <Checkbox checked={dontShow} onChange={setDontShow} label={t("Don't show again")} />
         </>
       }
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary onClick={ok}>
-            OK
+            {t('OK')}
           </Button>
         </>
       }
     >
-      {props.repos.length > 1 && <div class="secondary">Update {props.repos.length} repositories: {props.repos.join(', ')}</div>}
-      <Group title="Update Type">
-        <Radio name="method" checked={method === 'merge'} onChange={() => setMethod('merge')} label="Merge incoming changes into the current branch" />
-        <Radio name="method" checked={method === 'rebase'} onChange={() => setMethod('rebase')} label="Rebase the current branch on top of incoming changes" />
+      {props.repos.length > 1 && <div class="secondary">{t('Update {0} repositories: {1}', props.repos.length, props.repos.join(', '))}</div>}
+      <Group title={t('Update Type')}>
+        <Radio name="method" checked={method === 'merge'} onChange={() => setMethod('merge')} label={t('Merge incoming changes into the current branch')} />
+        <Radio name="method" checked={method === 'rebase'} onChange={() => setMethod('rebase')} label={t('Rebase the current branch on top of incoming changes')} />
       </Group>
     </DialogFrame>
   );
@@ -389,25 +401,25 @@ registerDialog<{ path: string; count: number }>('ops.createPatch', ({ props, sub
   const ok = () => submit({ path: file, reverse, clipboard: toClipboard });
   return (
     <DialogFrame
-      title="Create Patch"
+      title={t('Create Patch')}
       width={600}
       onCancel={cancel}
       onOk={ok}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary onClick={ok} disabled={!toClipboard && !file}>
-            OK
+            {t('OK')}
           </Button>
         </>
       }
     >
-      <div class="secondary">{props.count === 1 ? '1 change' : `${props.count} changes`}</div>
-      <Row label="File:">
+      <div class="secondary">{props.count === 1 ? t('1 change') : t('{0} changes', props.count)}</div>
+      <Row label={t('File:')}>
         <input class="text-field" value={file} disabled={toClipboard} spellcheck={false} onInput={e => setFile((e.currentTarget as HTMLInputElement).value)} />
         <button
           class="action-button"
-          data-tip="Browse…"
+          data-tip={t('Browse…')}
           disabled={toClipboard}
           onClick={async () => {
             const p = await call<string | null>('browse', file);
@@ -418,8 +430,8 @@ registerDialog<{ path: string; count: number }>('ops.createPatch', ({ props, sub
         </button>
       </Row>
       <div style={{ marginLeft: '98px', display: 'flex', flexDirection: 'column' }}>
-        <Checkbox checked={toClipboard} onChange={setToClipboard} label="Copy patch to clipboard instead of saving to a file" />
-        <Checkbox checked={reverse} onChange={setReverse} label="Reverse patch" />
+        <Checkbox checked={toClipboard} onChange={setToClipboard} label={t('Copy patch to clipboard instead of saving to a file')} />
+        <Checkbox checked={reverse} onChange={setReverse} label={t('Reverse patch')} />
       </div>
     </DialogFrame>
   );
@@ -429,23 +441,23 @@ registerDialog<{ path: string; count: number }>('ops.createPatch', ({ props, sub
 
 registerDialog<{ branch: string; base: string; commits: { hash: string; subject: string; author: string; date: number }[] }>('ops.notFullyMerged', ({ props, submit, cancel }) => (
   <DialogFrame
-    title="Branch Was Not Fully Merged"
+    title={t('Branch Was Not Fully Merged')}
     width={620}
     onCancel={cancel}
     onOk={() => submit({ button: 'delete' })}
     buttons={
       <>
-        <Button onClick={cancel}>Cancel</Button>
+        <Button onClick={cancel}>{t('Cancel')}</Button>
         <Button primary onClick={() => submit({ button: 'delete' })}>
-          Delete
+          {t('Delete')}
         </Button>
       </>
     }
   >
     <div style={{ lineHeight: '20px' }}>
-      The branch <b>{props.branch}</b> was not fully merged to <b>{props.base}</b>.
+      {rich(t('The branch {0} was not fully merged to {1}.'), <b>{props.branch}</b>, <b>{props.base}</b>)}
       <br />
-      Below is the list of unmerged commits.
+      {t('Below is the list of unmerged commits.')}
     </div>
     <div class="panel-box file-list" style={{ maxHeight: '260px' }}>
       {props.commits.map(c => (
@@ -472,22 +484,22 @@ registerDialog<{ refs: ComboItem[] }>('ops.checkoutRevision', ({ props, submit, 
   const ok = async () => ref.trim() && setErr(await submit({ ref: ref.trim() }));
   return (
     <DialogFrame
-      title="Checkout Tag or Revision"
+      title={t('Checkout Tag or Revision')}
       width={480}
       onCancel={cancel}
       onOk={ok}
       error={err}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary onClick={ok} disabled={!ref.trim()}>
-            Checkout
+            {t('Checkout')}
           </Button>
         </>
       }
     >
-      <div>Enter reference (branch, tag) name or commit hash:</div>
-      <ComboField value={ref} onChange={setRef} items={items} autofocus placeholder="Reference or hash" />
+      <div>{t('Enter reference (branch, tag) name or commit hash:')}</div>
+      <ComboField value={ref} onChange={setRef} items={items} autofocus placeholder={t('Reference or hash')} />
     </DialogFrame>
   );
 });

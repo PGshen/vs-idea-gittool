@@ -2,6 +2,7 @@ import { invertedEffects } from '@codemirror/commands';
 import { ChangeSet, EditorState, Extension, RangeSet, RangeSetBuilder, StateEffect, StateField, Text } from '@codemirror/state';
 import { Decoration, DecorationSet, EditorView, GutterMarker, WidgetType } from '@codemirror/view';
 import { ChangeState, LineEdit, MergeChange, MergeModel } from '../../shared/mergeModel';
+import { t } from '../lib/l10n';
 
 // ---------------------------------------------------------------- model state in the result editor
 
@@ -313,7 +314,7 @@ class FoldWidget extends WidgetType {
     const el = document.createElement('div');
     el.className = 'mg-fold';
     el.dataset.group = String(this.group);
-    el.dataset.tip = 'Click to expand';
+    el.dataset.tip = t('Click to expand');
     const line = document.createElement('span');
     line.className = 'mg-fold-line';
     el.appendChild(line);

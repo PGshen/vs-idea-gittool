@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { RowData } from '../../shared/logProtocol';
+import { t } from '../lib/l10n';
 import { anchorAt } from '../lib/menu';
 import { call } from '../lib/rpc';
 import { Icon, useDark } from '../lib/icons';
@@ -27,19 +28,19 @@ export function rootColor(index: number, dark: boolean) {
 }
 
 const SIGNATURE_TEXT: Record<string, string> = {
-  G: 'Verified signature',
-  U: 'Signature with unknown validity',
-  X: 'Expired signature',
-  Y: 'Signature made by an expired key',
-  R: 'Signature made by a revoked key',
-  E: 'Signature cannot be checked',
-  B: 'Bad signature',
+  G: t('Verified signature'),
+  U: t('Signature with unknown validity'),
+  X: t('Expired signature'),
+  Y: t('Signature made by an expired key'),
+  R: t('Signature made by a revoked key'),
+  E: t('Signature cannot be checked'),
+  B: t('Bad signature'),
 };
 
 /** GPG Signature column cell (git4idea GitCommitSignatureLogColumn). */
 function SignatureCell({ hash, width }: { hash: string; width: number }) {
   const sig = store.signatures.get(hash);
-  const text = sig && sig.status !== 'N' ? `${SIGNATURE_TEXT[sig.status] ?? 'Signed'}${sig.signer ? `\n${sig.signer}` : ''}${sig.key ? `\nKey: ${sig.key}` : ''}` : undefined;
+  const text = sig && sig.status !== 'N' ? `${SIGNATURE_TEXT[sig.status] ?? t('Signed')}${sig.signer ? `\n${sig.signer}` : ''}${sig.key ? `\n${t('Key: {0}', sig.key)}` : ''}` : undefined;
   return (
     <div class="cell signature" style={{ width: `${width}px` }} data-tip={text}>
       {sig && sig.status === 'G' && <Icon name="git/verified" />}
@@ -274,7 +275,7 @@ export function LogTable() {
                   {!settings.refsOnLeft && <RefLabels labels={labels} />}
                 </div>
                 {cols.author && (
-                  <div class="cell author" style={{ width: `${cw.author}px` }} data-tip={`${r.an} <${r.ae}>${r.an !== r.cn ? `\ncommitted by ${r.cn}` : ''}`}>
+                  <div class="cell author" style={{ width: `${cw.author}px` }} data-tip={`${r.an} <${r.ae}>${r.an !== r.cn ? `\n${t('committed by {0}', r.cn)}` : ''}`}>
                     {author}
                   </div>
                 )}
@@ -301,18 +302,18 @@ export function LogTable() {
         <div class="table-status">
           {s.error ? <span class="error-text">{s.error}</span> : s.filters.text || s.filters.users.length || s.filters.paths.length || s.filters.branches.length || s.filters.since || s.filters.until ? (
             <>
-              No commits matching filters
+              {t('No commits matching filters')}
               <br />
               <span class="link" onClick={() => void s.setFilters({ ...s.filters, branches: [], users: [], paths: [], text: '', since: undefined, until: undefined })}>
-                Reset filters
+                {t('Reset filters')}
               </span>
             </>
           ) : (
             <>
-              No changes committed.
+              {t('No changes committed.')}
               <br />
               <span class="link" onClick={() => void call('command', { id: 'ideagittool.commit' })}>
-                Commit local changes
+                {t('Commit local changes')}
               </span>
             </>
           )}

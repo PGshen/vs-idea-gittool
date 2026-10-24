@@ -1,6 +1,7 @@
 import { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Icon } from '../../../lib/icons';
+import { t } from '../../../lib/l10n';
 import { anchorBelow, closePopup, showMenu, showPopup } from '../../../lib/menu';
 
 export interface ComboItem {
@@ -122,7 +123,7 @@ function ComboList({ items, current, onPick, width }: { items: ComboItem[]; curr
   useEffect(() => {
     document.querySelector('.combo-popup .menu-item.active')?.scrollIntoView({ block: 'nearest' });
   }, [active]);
-  if (items.length === 0) return <div class="menu-item disabled" style={{ minWidth: `${width - 2}px` }}>No branches</div>;
+  if (items.length === 0) return <div class="menu-item disabled" style={{ minWidth: `${width - 2}px` }}>{t('No branches')}</div>;
   return (
     <div style={{ minWidth: `${width - 2}px`, maxHeight: '300px' }}>
       {items.map((it, i) => (
@@ -178,7 +179,7 @@ export function OptionsLink({ title, options, selected, onChange }: { title: str
         )
       }
     >
-      Modify options <Icon name="general/chevronDown" size={12} />
+      {t('Modify options')} <Icon name="general/chevronDown" size={12} />
     </span>
   );
 }
@@ -217,7 +218,7 @@ export function ListBox<T>({
   empty,
 }: {
   items: T[];
-  render: (t: T, i: number) => ComponentChildren;
+  render: (item: T, i: number) => ComponentChildren;
   selected: number;
   onSelect: (i: number) => void;
   onDblClick?: (i: number) => void;
@@ -240,9 +241,9 @@ export function ListBox<T>({
       }}
     >
       {items.length === 0 && empty && <div class="empty-text">{empty}</div>}
-      {items.map((t, i) => (
+      {items.map((item, i) => (
         <div class={`tree-row ${i === selected ? 'selected' : ''}`} key={i} onMouseDown={() => onSelect(i)} onDblClick={() => onDblClick?.(i)}>
-          {render(t, i)}
+          {render(item, i)}
         </div>
       ))}
     </div>
@@ -253,9 +254,9 @@ export function formatDate(sec: number) {
   const d = new Date(sec * 1000);
   const now = new Date();
   const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toLowerCase().replace(' ', ' ');
-  if (d.toDateString() === now.toDateString()) return `Today ${time}`;
+  if (d.toDateString() === now.toDateString()) return t('Today {0}', time);
   const y = new Date(now);
   y.setDate(now.getDate() - 1);
-  if (d.toDateString() === y.toDateString()) return `Yesterday ${time}`;
+  if (d.toDateString() === y.toDateString()) return t('Yesterday {0}', time);
   return `${d.getDate()}/${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}, ${time}`;
 }

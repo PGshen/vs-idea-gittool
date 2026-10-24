@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { ActionButton, Button } from '../../../lib/components';
 import { FileIcon, Icon } from '../../../lib/icons';
+import { t } from '../../../lib/l10n';
 import { anchorAt, showMenu } from '../../../lib/menu';
 import { call, on } from '../../../lib/rpc';
 import { DialogFrame } from '../../frame';
@@ -42,8 +43,8 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 /** multiple.file.iterative.merge.tooltip */
 function badgeTip(b: { resolved: number; total: number }) {
-  if (b.resolved === 0) return plural(b.total, '1 change', `${b.total} changes`);
-  return plural(b.resolved, '1 change has been merged', `${b.resolved} changes have been merged`);
+  if (b.resolved === 0) return plural(b.total, t('1 change'), t('{0} changes', b.total));
+  return plural(b.resolved, t('1 change has been merged'), t('{0} changes have been merged', b.resolved));
 }
 
 /** The column names, `Yours` and `Theirs` as a fallback (MergeUIUtil.getYoursAndTheirsLabes). */
@@ -116,8 +117,8 @@ registerDialog<Payload>('commit.conflicts', ({ props, cancel }) => {
   const resolvedSelected = sel.some(r => r.resolved);
   const allSelectedResolved = sel.every(r => r.resolved);
   const onlyRevertable = sel.length > 0 && sel.every(r => (r.badge?.resolved ?? 0) > 0);
-  const yoursLabel = sideLabel(data.yours, 'Yours');
-  const theirsLabel = sideLabel(data.theirs, 'Theirs');
+  const yoursLabel = sideLabel(data.yours, t('Yours'));
+  const theirsLabel = sideLabel(data.theirs, t('Theirs'));
 
   const resolveManually = async () => {
     if (disabled) return;
@@ -154,10 +155,10 @@ registerDialog<Payload>('commit.conflicts', ({ props, cancel }) => {
     e.preventDefault();
     showMenu(
       [
-        { label: `Accept ‘${yoursLabel}’`, disabled: disabled || resolvedSelected || !sel.length, action: () => accept([...selected], true) },
-        { label: `Accept ‘${theirsLabel}’`, disabled: disabled || resolvedSelected || !sel.length, action: () => accept([...selected], false) },
+        { label: t('Accept ‘{0}’', yoursLabel), disabled: disabled || resolvedSelected || !sel.length, action: () => accept([...selected], true) },
+        { label: t('Accept ‘{0}’', theirsLabel), disabled: disabled || resolvedSelected || !sel.length, action: () => accept([...selected], false) },
         { separator: true },
-        { label: 'Revert Conflict Resolution', icon: 'vcs/revert', disabled: disabled || !onlyRevertable, action: () => void call('revert', { keys: [...selected] }) },
+        { label: t('Revert Conflict Resolution'), icon: 'vcs/revert', disabled: disabled || !onlyRevertable, action: () => void call('revert', { keys: [...selected] }) },
       ],
       anchorAt(e),
     );
@@ -178,7 +179,7 @@ registerDialog<Payload>('commit.conflicts', ({ props, cancel }) => {
               accept([row.key], yours);
             }}
           >
-            Accept
+            {t('Accept')}
           </button>
         )}
       </td>
@@ -187,7 +188,7 @@ registerDialog<Payload>('commit.conflicts', ({ props, cancel }) => {
 
   return (
     <DialogFrame
-      title="Conflicts"
+      title={t('Conflicts')}
       width={850}
       height={data.rows.length <= 6 ? 470 : 570}
       resizable
@@ -196,14 +197,14 @@ registerDialog<Payload>('commit.conflicts', ({ props, cancel }) => {
       buttons={
         <>
           <Button onClick={close} disabled={disabled}>
-            Close
+            {t('Close')}
           </Button>
           <Button primary={data.allResolvedAndReviewed} disabled={disabled || !data.canFinish} onClick={finish}>
-            Accept and Finish
+            {t('Accept and Finish')}
           </Button>
           {!data.allResolvedAndReviewed && (
             <Button primary disabled={data.busy} onClick={resolveManually}>
-              {allSelectedResolved ? 'Review Changes' : 'Resolve Manually'}
+              {allSelectedResolved ? t('Review Changes') : t('Resolve Manually')}
             </Button>
           )}
         </>
@@ -212,7 +213,7 @@ registerDialog<Payload>('commit.conflicts', ({ props, cancel }) => {
       <div class="conflicts-description" style={{ userSelect: 'text' }}>
         {data.allResolvedAndReviewed ? (
           <>
-            <Icon name="status/success" /> All conflicts have been resolved
+            <Icon name="status/success" /> {t('All conflicts have been resolved')}
           </>
         ) : (
           data.text
@@ -225,21 +226,21 @@ registerDialog<Payload>('commit.conflicts', ({ props, cancel }) => {
             data.busy
               ? undefined
               : data.canResolveAutomatically
-                ? 'Apply all non-conflicting changes and resolve simple conflicts (ones that can be resolved through static analysis) across all files'
-                : 'There are no simple conflicts to resolve'
+                ? t('Apply all non-conflicting changes and resolve simple conflicts (ones that can be resolved through static analysis) across all files')
+                : t('There are no simple conflicts to resolve')
           }
           onClick={() => void call('resolveAutomatically')}
         >
           <span class="conflicts-magic">
             {data.busy ? <span class="spinner" /> : <Icon name="diff/magicResolve@14x14" />}
-            {data.busy ? 'Resolving Conflicts…' : 'Resolve All Simple Conflicts'}
+            {data.busy ? t('Resolving Conflicts…') : t('Resolve All Simple Conflicts')}
           </span>
         </Button>
         <span class="conflicts-status">{data.status}</span>
         <ActionButton
           icon="general/show"
-          tip="View Options"
-          menu={() => [{ label: 'Group by directory', icon: 'actions/toggleVisibility', checked: groupByDir, action: () => setGroupByDir(!groupByDir) }]}
+          tip={t('View Options')}
+          menu={() => [{ label: t('Group by directory'), icon: 'actions/toggleVisibility', checked: groupByDir, action: () => setGroupByDir(!groupByDir) }]}
         />
       </div>
       <div class={`panel-box conflicts-box ${disabled ? 'disabled' : ''}`} tabIndex={0} onMouseLeave={() => setHovered(undefined)}>
@@ -266,8 +267,8 @@ registerDialog<Payload>('commit.conflicts', ({ props, cancel }) => {
                     >
                       <Icon name={collapsed.has(l.key) ? 'general/chevronRight' : 'general/chevronDown'} />
                       <Icon name={l.resolved ? 'general/greenCheckmark' : 'vcs/remove'} />
-                      <b>{l.resolved ? 'Resolved' : 'Unresolved'}</b>
-                      <span class="secondary">{plural(l.files, '1 file', `${l.files} files`)}</span>
+                      <b>{l.resolved ? t('Resolved') : t('Unresolved')}</b>
+                      <span class="secondary">{plural(l.files, t('1 file'), t('{0} files', l.files))}</span>
                     </span>
                   </td>
                 </tr>

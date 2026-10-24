@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Change, CommitDetails } from '../../shared/types';
 import { ActionButton, buildDirectoryTree, Split, Spacer, Toolbar, Tree, TreeNode, walkTree } from '../lib/components';
 import { fileIconName } from '../lib/icons';
+import { t } from '../lib/l10n';
 import { anchorAt, MenuEntry } from '../lib/menu';
 import { call, persisted, send } from '../lib/rpc';
 import { changeAction, changesMenu, layoutMenu } from './menus';
@@ -11,7 +12,7 @@ import { store, useStore } from './store';
 const dateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'short' });
 const timeFmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
 const lower = (s: string) => s.replace(/\s?(AM|PM)$/, m => m.toLowerCase());
-const onDate = (t: number) => `${dateFmt.format(new Date(t * 1000))} at ${lower(timeFmt.format(new Date(t * 1000)))}`;
+const onDate = (ts: number) => t('{0} at {1}', dateFmt.format(new Date(ts * 1000)), lower(timeFmt.format(new Date(ts * 1000))));
 
 type CNode = TreeNode<{ change?: Change }>;
 
@@ -21,7 +22,7 @@ function treeCommand(cmd: 'expand' | 'collapse') {
 }
 
 function statusTip(c: Change) {
-  const names: Record<string, string> = { M: 'Modified', A: 'Added', D: 'Deleted', R: 'Moved', C: 'Copied', T: 'Type changed' };
+  const names: Record<string, string> = { M: t('Modified'), A: t('Added'), D: t('Deleted'), R: t('Moved'), C: t('Copied'), T: t('Type changed') };
   return names[c.status] ?? c.status;
 }
 
@@ -29,7 +30,7 @@ function fileNode(c: Change, flat: boolean): CNode {
   const name = c.path.slice(c.path.lastIndexOf('/') + 1);
   const dir = c.path.includes('/') ? c.path.slice(0, c.path.lastIndexOf('/')) : '';
   let hint: string | undefined = flat && dir ? dir : undefined;
-  if (c.oldPath) hint = `${hint ? hint + '  ' : ''}${c.status === 'C' ? 'copied' : 'moved'} from ${c.oldPath}`;
+  if (c.oldPath) hint = `${hint ? hint + '  ' : ''}${c.status === 'C' ? t('copied from {0}', c.oldPath) : t('moved from {0}', c.oldPath)}`;
   return { key: `f:${c.oldPath ?? ''}>${c.path}`, label: name, text: name, icon: fileIconName(c.path), labelClass: `st-${c.status}`, hint, data: { change: c }, tip: `${c.path}\n${statusTip(c)}` };
 }
 
@@ -53,9 +54,9 @@ function ChangesTree() {
     if (d.toParents) {
       return d.toParents.map(tp => ({
         key: `parent:${tp.parent}`,
-        label: `Changes to ${tp.parent.slice(0, 8)}`,
+        label: t('Changes to {0}', tp.parent.slice(0, 8)),
         icon: 'vcs/changelist',
-        hint: `${tp.changes.length} ${tp.changes.length === 1 ? 'file' : 'files'}`,
+        hint: tp.changes.length === 1 ? t('{0} file', 1) : t('{0} files', tp.changes.length),
         children: buildDirectoryTree(tp.changes, c => fileNode(c, !grouped), `${tp.parent}:`, { flat: !grouped }) as CNode[],
       }));
     }
@@ -71,7 +72,7 @@ function ChangesTree() {
             label: repo?.name ?? root,
             text: repo?.name ?? root,
             icon: 'nodes/folder',
-            hint: `${list.length} ${list.length === 1 ? 'file' : 'files'}`,
+            hint: list.length === 1 ? t('{0} file', 1) : t('{0} files', list.length),
             tip: root,
             children: buildDirectoryTree(list, c => fileNode(c, !grouped), `${root}:`, { flat: !grouped }) as CNode[],
           };
@@ -80,7 +81,7 @@ function ChangesTree() {
     return [
       {
         key: 'root',
-        label: `${n} ${n === 1 ? 'file' : 'files'}`,
+        label: n === 1 ? t('{0} file', 1) : t('{0} files', n),
         text: '',
         icon: 'nodes/folder',
         labelClass: 'secondary',
@@ -123,7 +124,7 @@ function ChangesTree() {
   };
 
   if (!d) {
-    return <div class="changes-empty">{s.selection.size ? (s.detailsLoading ? '' : 'Select commit to view changes') : 'No commits selected'}</div>;
+    return <div class="changes-empty">{s.selection.size ? (s.detailsLoading ? '' : t('Select commit to view changes')) : t('No commits selected')}</div>;
   }
   if (changes.length === 0 && !d.toParents) {
     const merge = s.selection.size === 1 && (s.selectedRows()[0]?.p.length ?? 0) > 1;
@@ -131,22 +132,22 @@ function ChangesTree() {
       <div class="changes-empty">
         {merge ? (
           <>
-            No merged conflicts.
+            {t('No merged conflicts.')}
             <br />
             <span class="link" onClick={() => ((store.showChangesToParents = true), void store.loadDetails())}>
-              Show changes to parents
+              {t('Show changes to parents')}
             </span>
           </>
         ) : s.settings.showOnlyAffectedChanges && s.filters.paths.length ? (
           <>
-            No changes that affect selected paths.
+            {t('No changes that affect selected paths.')}
             <br />
             <span class="link" onClick={() => store.updateSettings({ showOnlyAffectedChanges: false })}>
-              Show changes for all paths
+              {t('Show changes for all paths')}
             </span>
           </>
         ) : (
-          'No changes'
+          t('No changes')
         )}
       </div>
     );
@@ -168,6 +169,7 @@ function ChangesTree() {
         if (lead?.data?.change && store.previewChange !== lead.data.change) {
           store.previewChange = lead.data.change;
           store.emit();
+          if (sel.size === 1) changeAction('followDiff', [lead.data.change]);
         }
       }}
       onOpen={n => n.data?.change && changeAction('diff', [n.data.change])}
@@ -187,7 +189,7 @@ function ChangesTree() {
         }
       }}
       onContextMenu={(e, sel) => changesMenu(anchorAt(e), selectedChanges(new Set(sel.map(n => n.key))))}
-      emptyText="No changes"
+      emptyText={t('No changes')}
     />
   );
 }
@@ -200,7 +202,7 @@ function Details() {
   const shown = d.details;
   return (
     <div class="details">
-      {s.selection.size > shown.length && <div class="secondary">(showing {shown.length} of {s.selection.size} selected commits)</div>}
+      {s.selection.size > shown.length && <div class="secondary">{t('(showing {0} of {1} selected commits)', shown.length, s.selection.size)}</div>}
       {shown.map((c, i) => (
         <div key={c.hash}>
           {i > 0 && <div class="commit-sep" />}
@@ -248,22 +250,21 @@ function CommitInfo({ c, single }: { c: CommitDetails; single: boolean }) {
       <div class="subject-line">{linkify(subject || c.subject)}</div>
       {body && <div class="body">{linkify(body)}</div>}
       <div class="meta">
-        <span class="link hash" data-tip="Copy Revision Number" onClick={() => send('copy', c.hash)}>
+        <span class="link hash" data-tip={t('Copy Revision Number')} onClick={() => send('copy', c.hash)}>
           {c.hash.slice(0, 8)}
         </span>{' '}
         {c.authorName}{' '}
-        <a href={`mailto:${c.authorEmail}`}>&lt;{c.authorEmail}&gt;</a> on {onDate(c.authorDate)}
+        <a href={`mailto:${c.authorEmail}`}>&lt;{c.authorEmail}&gt;</a> {t('on {0}', onDate(c.authorDate))}
         {committedDiffers && (
           <div class="committer">
-            {c.committerName !== c.authorName ? `committed by ${c.committerName} on ${onDate(c.commitDate)}` : `committed on ${onDate(c.commitDate)}`}
+            {c.committerName !== c.authorName ? t('committed by {0} on {1}', c.committerName, onDate(c.commitDate)) : t('committed on {0}', onDate(c.commitDate))}
           </div>
         )}
       </div>
       {sig && (
         <div class="section">
           <span class="sig" style={sig === 'G' ? undefined : { color: 'var(--fg-warning)' }}>
-            {sig === 'G' ? '✔ Signed' : sig === 'B' ? '✘ Bad signature' : '? Signature cannot be verified'}
-            {c.signer ? ` by ${c.signer}` : ''}
+            {sig === 'G' ? '✔ ' + (c.signer ? t('Signed by {0}', c.signer) : t('Signed')) : sig === 'B' ? '✘ ' + (c.signer ? t('Bad signature by {0}', c.signer) : t('Bad signature')) : '? ' + (c.signer ? t('Signature cannot be verified by {0}', c.signer) : t('Signature cannot be verified'))}
           </span>
         </div>
       )}
@@ -275,16 +276,16 @@ function CommitInfo({ c, single }: { c: CommitDetails; single: boolean }) {
       {single && (
         <div class="section branch-list">
           {branches === undefined ? (
-            <span class="secondary">In branches: loading…</span>
+            <span class="secondary">{t('In branches: loading…')}</span>
           ) : branches.length === 0 ? (
-            <span>Not in any branch</span>
+            <span>{t('Not in any branch')}</span>
           ) : (
             <>
-              In {branches.length} {branches.length === 1 ? 'branch' : 'branches'}:{' '}
+              {branches.length === 1 ? t('In {0} branch:', 1) : t('In {0} branches:', branches.length)}{' '}
               {showAll || branches.length <= 3 ? branches.join(', ') : `${branches.slice(0, 3).join(', ').slice(0, 30)}…`}{' '}
               {branches.length > 3 && (
                 <span class="link" onClick={() => setShowAll(!showAll)}>
-                  {showAll ? 'Hide' : 'Show all'}
+                  {showAll ? t('Hide') : t('Show all')}
                 </span>
               )}
             </>
@@ -299,12 +300,12 @@ export function RightPanel() {
   const s = useStore();
   const groupMenu = (): MenuEntry[] => [
     {
-      label: 'Group By',
+      label: t('Group By'),
       icon: 'general/show',
       children: [
-        { separator: true, label: 'Group By' },
-        { label: 'Directory', shortcut: 'Ctrl+Alt+P', checked: s.settings.changesGroupByDirectory, action: () => store.updateSettings({ changesGroupByDirectory: !s.settings.changesGroupByDirectory }) },
-        { label: 'Repository', checked: s.init.multi && s.settings.changesGroupByRepository, disabled: !s.init.multi, action: () => store.updateSettings({ changesGroupByRepository: !s.settings.changesGroupByRepository }) },
+        { separator: true, label: t('Group By') },
+        { label: t('Directory'), shortcut: 'Ctrl+Alt+P', checked: s.settings.changesGroupByDirectory, action: () => store.updateSettings({ changesGroupByDirectory: !s.settings.changesGroupByDirectory }) },
+        { label: t('Repository'), checked: s.init.multi && s.settings.changesGroupByRepository, disabled: !s.init.multi, action: () => store.updateSettings({ changesGroupByRepository: !s.settings.changesGroupByRepository }) },
       ],
     },
     layoutMenu(),
@@ -313,16 +314,16 @@ export function RightPanel() {
   const tree = (
     <div class="right" style={{ height: '100%' }}>
       <Toolbar>
-        <ActionButton icon="vcs/diff" tip="Show Diff" shortcut="Ctrl+D" disabled={!allChanges.length} onClick={() => changeAction('diff', allChanges)} />
-        <ActionButton icon="vcs/revert" tip="Revert Selected Changes" disabled={!allChanges.length} onClick={() => changeAction('revertSelected', allChanges)} />
-        <ActionButton icon="general/history" tip="History Up to Here" disabled={allChanges.length !== 1} onClick={() => changeAction('historyUpToHere', allChanges)} />
+        <ActionButton icon="vcs/diff" tip={t('Show Diff')} shortcut="Ctrl+D" disabled={!allChanges.length} onClick={() => changeAction('diff', allChanges)} />
+        <ActionButton icon="vcs/revert" tip={t('Revert Selected Changes')} disabled={!allChanges.length} onClick={() => changeAction('revertSelected', allChanges)} />
+        <ActionButton icon="general/history" tip={t('History Up to Here')} disabled={allChanges.length !== 1} onClick={() => changeAction('historyUpToHere', allChanges)} />
         {s.filters.paths.length > 0 && (
-          <ActionButton icon="nodes/folder" tip="Show Only Affected Changes" toggled={s.settings.showOnlyAffectedChanges} onClick={() => store.updateSettings({ showOnlyAffectedChanges: !s.settings.showOnlyAffectedChanges })} />
+          <ActionButton icon="nodes/folder" tip={t('Show Only Affected Changes')} toggled={s.settings.showOnlyAffectedChanges} onClick={() => store.updateSettings({ showOnlyAffectedChanges: !s.settings.showOnlyAffectedChanges })} />
         )}
-        <ActionButton icon="general/show" tip="View Options" menu={groupMenu} />
+        <ActionButton icon="general/show" tip={t('View Options')} menu={groupMenu} />
         <Spacer />
-        <ActionButton icon="general/expandAll" tip="Expand All" onClick={() => treeCommand('expand')} />
-        <ActionButton icon="general/collapseAll" tip="Collapse All" onClick={() => treeCommand('collapse')} />
+        <ActionButton icon="general/expandAll" tip={t('Expand All')} onClick={() => treeCommand('expand')} />
+        <ActionButton icon="general/collapseAll" tip={t('Collapse All')} onClick={() => treeCommand('collapse')} />
       </Toolbar>
       <ChangesTree />
     </div>

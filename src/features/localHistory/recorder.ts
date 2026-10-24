@@ -330,7 +330,7 @@ export class LocalHistoryRecorder implements vscode.Disposable {
         fs.rmSync(p, { force: true });
       } else {
         const data = this.store.getContent(state);
-        if (!data) throw new Error(`Content of ${p} is not available`);
+        if (!data) throw new Error(vscode.l10n.t('Content of {0} is not available', p));
         fs.mkdirSync(path.dirname(p), { recursive: true });
         fs.writeFileSync(p, data);
       }

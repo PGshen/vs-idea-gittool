@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { Button, Checkbox } from '../../../lib/components';
 import { Icon } from '../../../lib/icons';
+import { t } from '../../../lib/l10n';
 import { call } from '../../../lib/rpc';
 import { DialogFrame, Row } from '../../frame';
 import { registerDialog } from '../../registry';
@@ -26,10 +27,10 @@ registerDialog<{ remotes: RemoteRow[]; repos: { root: string; name: string }[] }
     if (!editing) return;
     const name = editing.name.trim();
     const url = editing.url.trim();
-    if (!name) return setEditing({ ...editing, error: 'Remote name cannot be empty' });
-    if (!url) return setEditing({ ...editing, error: 'Remote URL cannot be empty' });
-    if (/[\s~^:?*[\\]/.test(name)) return setEditing({ ...editing, error: 'Remote name contains illegal characters' });
-    if (rows.some(r => r.root === editing.root && r.name === name && r.name !== editing.oldName)) return setEditing({ ...editing, error: `Remote name '${name}' is already used` });
+    if (!name) return setEditing({ ...editing, error: t('Remote name cannot be empty') });
+    if (!url) return setEditing({ ...editing, error: t('Remote URL cannot be empty') });
+    if (/[\s~^:?*[\\]/.test(name)) return setEditing({ ...editing, error: t('Remote name contains illegal characters') });
+    if (rows.some(r => r.root === editing.root && r.name === name && r.name !== editing.oldName)) return setEditing({ ...editing, error: t("Remote name '{0}' is already used", name) });
     try {
       const updated = await call<RemoteRow[]>(editing.mode === 'add' ? 'addRemote' : 'editRemote', { root: editing.root, oldName: editing.oldName, name, url });
       setRows(updated);
@@ -53,22 +54,22 @@ registerDialog<{ remotes: RemoteRow[]; repos: { root: string; name: string }[] }
   if (editing) {
     return (
       <DialogFrame
-        title={editing.mode === 'add' ? 'Define Remote' : 'Edit Remote'}
+        title={editing.mode === 'add' ? t('Define Remote') : t('Edit Remote')}
         width={520}
         onCancel={() => setEditing(null)}
         onOk={save}
         error={editing.error}
         buttons={
           <>
-            <Button onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={() => setEditing(null)}>{t('Cancel')}</Button>
             <Button primary onClick={save}>
-              OK
+              {t('OK')}
             </Button>
           </>
         }
       >
         {multi && editing.mode === 'add' && (
-          <Row label="Repository:">
+          <Row label={t('Repository:')}>
             <select class="combo" value={editing.root} onChange={e => setEditing({ ...editing, root: (e.currentTarget as HTMLSelectElement).value })}>
               {props.repos.map(r => (
                 <option value={r.root}>{r.name}</option>
@@ -76,7 +77,7 @@ registerDialog<{ remotes: RemoteRow[]; repos: { root: string; name: string }[] }
             </select>
           </Row>
         )}
-        <Row label="Name:">
+        <Row label={t('Name:')}>
           <input class="text-field" value={editing.name} autofocus spellcheck={false} onInput={e => setEditing({ ...editing, name: (e.currentTarget as HTMLInputElement).value, error: undefined })} />
         </Row>
         <Row label="URL:">
@@ -88,7 +89,7 @@ registerDialog<{ remotes: RemoteRow[]; repos: { root: string; name: string }[] }
 
   return (
     <DialogFrame
-      title="Git Remotes"
+      title={t('Git Remotes')}
       width={640}
       onCancel={cancel}
       onOk={() => submit({})}
@@ -96,7 +97,7 @@ registerDialog<{ remotes: RemoteRow[]; repos: { root: string; name: string }[] }
       buttons={
         <>
           <Button primary onClick={() => submit({})}>
-            OK
+            {t('OK')}
           </Button>
         </>
       }
@@ -105,15 +106,15 @@ registerDialog<{ remotes: RemoteRow[]; repos: { root: string; name: string }[] }
         <div class="toolbar" style={{ minHeight: '30px', borderBottom: '1px solid var(--border-subtle)' }}>
           <button
             class="action-button"
-            data-tip="Add"
+            data-tip={t('Add')}
             onClick={() => setEditing({ mode: 'add', root: current?.root ?? props.repos[0].root, name: rows.some(r => r.name === 'origin') ? '' : 'origin', url: '' })}
           >
             <Icon name="general/add" />
           </button>
-          <button class="action-button" data-tip="Remove" disabled={!current} onClick={remove}>
+          <button class="action-button" data-tip={t('Remove')} disabled={!current} onClick={remove}>
             <Icon name="general/remove" />
           </button>
-          <button class="action-button" data-tip="Edit" disabled={!current} onClick={() => current && setEditing({ mode: 'edit', root: current.root, oldName: current.name, name: current.name, url: current.url })}>
+          <button class="action-button" data-tip={t('Edit')} disabled={!current} onClick={() => current && setEditing({ mode: 'edit', root: current.root, oldName: current.name, name: current.name, url: current.url })}>
             <Icon name="general/edit" />
           </button>
         </div>
@@ -121,8 +122,8 @@ registerDialog<{ remotes: RemoteRow[]; repos: { root: string; name: string }[] }
           <table class="table">
             <thead>
               <tr>
-                {multi && <th>Repository</th>}
-                <th>Name</th>
+                {multi && <th>{t('Repository')}</th>}
+                <th>{t('Name')}</th>
                 <th style={{ width: '100%' }}>URL</th>
               </tr>
             </thead>
@@ -143,7 +144,7 @@ registerDialog<{ remotes: RemoteRow[]; repos: { root: string; name: string }[] }
               ))}
             </tbody>
           </table>
-          {rows.length === 0 && <div class="empty-text">No remotes defined</div>}
+          {rows.length === 0 && <div class="empty-text">{t('No remotes defined')}</div>}
         </div>
       </div>
     </DialogFrame>
@@ -179,16 +180,16 @@ registerDialog<{ parent: string }>('ops.clone', ({ props, submit, cancel }) => {
   };
   return (
     <DialogFrame
-      title="Clone Repository"
+      title={t('Clone Repository')}
       width={640}
       onCancel={cancel}
       onOk={ok}
       error={error}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary onClick={ok} disabled={!url.trim() || !dir.trim() || busy}>
-            {busy ? 'Cloning…' : 'Clone'}
+            {busy ? t('Cloning…') : t('Clone')}
           </Button>
         </>
       }
@@ -196,7 +197,7 @@ registerDialog<{ parent: string }>('ops.clone', ({ props, submit, cancel }) => {
       <Row label="URL:">
         <input class="text-field" value={url} autofocus spellcheck={false} placeholder="https://github.com/user/repo.git" onInput={e => onUrl((e.currentTarget as HTMLInputElement).value)} />
       </Row>
-      <Row label="Directory:">
+      <Row label={t('Directory:')}>
         <input
           class="text-field"
           value={dir}
@@ -208,7 +209,7 @@ registerDialog<{ parent: string }>('ops.clone', ({ props, submit, cancel }) => {
         />
         <button
           class="action-button"
-          data-tip="Browse…"
+          data-tip={t('Browse…')}
           onClick={async () => {
             const p = await call<string | null>('browse', dir);
             if (p) {
@@ -221,9 +222,9 @@ registerDialog<{ parent: string }>('ops.clone', ({ props, submit, cancel }) => {
         </button>
       </Row>
       <div style={{ marginLeft: '98px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <Checkbox checked={shallow} onChange={setShallow} label="Shallow clone with a history truncated to" />
+        <Checkbox checked={shallow} onChange={setShallow} label={t('Shallow clone with a history truncated to')} />
         <input class="text-field" type="number" min={1} style={{ width: '70px' }} disabled={!shallow} value={depth} onInput={e => setDepth(Math.max(1, +(e.currentTarget as HTMLInputElement).value || 1))} />
-        <span>commits</span>
+        <span>{t('commits')}</span>
       </div>
     </DialogFrame>
   );

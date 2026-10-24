@@ -57,7 +57,7 @@ export async function pushCommand(ctx: Ctx, arg?: RootArg & { upTo?: string; bra
   let repos: Repository[];
   if (arg?.root) repos = [await repoFor(ctx, arg)];
   else repos = ctx.repos.repositories.filter(r => r.info.branch || r.info.headHash);
-  if (repos.length === 0) throw new Error('No Git repository found in the workspace.');
+  if (repos.length === 0) throw new Error(vscode.l10n.t('No Git repository found in the workspace.'));
   const items: {
     root: string;
     name: string;
@@ -84,14 +84,14 @@ export async function pushCommand(ctx: Ctx, arg?: RootArg & { upTo?: string; bra
     const remoteBranches: Record<string, string[]> = {};
     for (const r of repo.refs.filter(x => x.type === 'remote')) (remoteBranches[r.remote!] ??= []).push(r.name.slice(r.remote!.length + 1));
     let problem: string | undefined;
-    if (!repo.info.headHash) problem = 'Empty repository';
-    else if (!remote) problem = 'Define remote';
-    else if (!branch && !arg?.upTo) problem = 'Cannot push (detached HEAD)';
+    if (!repo.info.headHash) problem = vscode.l10n.t('Empty repository');
+    else if (!remote) problem = vscode.l10n.t('Define remote');
+    else if (!branch && !arg?.upTo) problem = vscode.l10n.t('Cannot push (detached HEAD)');
     const out = remote && !problem ? await outgoingCommits(repo, source, remote, target) : { commits: [], isNew: false };
     items.push({
       root: repo.root,
       name: repo.name,
-      source: arg?.upTo ? `${branch ?? 'HEAD'} (up to ${arg.upTo.slice(0, 8)})` : (branch ?? 'HEAD'),
+      source: arg?.upTo ? vscode.l10n.t('{0} (up to {1})', branch ?? 'HEAD', arg.upTo.slice(0, 8)) : (branch ?? 'HEAD'),
       sourceRef: source,
       remote: remote ?? '',
       target,
@@ -106,7 +106,7 @@ export async function pushCommand(ctx: Ctx, arg?: RootArg & { upTo?: string; bra
   }
   if (repos.length > 1 && !items.some(i => i.checked)) items.forEach(i => (i.checked = true));
 
-  const title = repos.length === 1 ? `Push Commits to ${repos[0].name}` : 'Push Commits';
+  const title = repos.length === 1 ? vscode.l10n.t('Push Commits to {0}', repos[0].name) : vscode.l10n.t('Push Commits');
   const result = await showDialog<{
     repos: { root: string; remote: string; target: string; setUpstream: boolean; isNew: boolean; count: number }[];
     force?: 'lease' | 'force';
@@ -131,12 +131,13 @@ export async function pushCommand(ctx: Ctx, arg?: RootArg & { upTo?: string; bra
   if (!result) return;
   if (result.force) {
     const targets = result.repos.map(x => `${x.remote}/${x.target}`).join(', ');
+    const forcePush = vscode.l10n.t('Force Push');
     const a = await vscode.window.showWarningMessage(
-      'Force Push',
-      { modal: true, detail: `You're going to force push to ${targets}. It may overwrite commits at the remote. Are you sure you want to proceed?` },
-      'Force Push',
+      forcePush,
+      { modal: true, detail: vscode.l10n.t("You're going to force push to {0}. It may overwrite commits at the remote. Are you sure you want to proceed?", targets) },
+      forcePush,
     );
-    if (a !== 'Force Push') return;
+    if (a !== forcePush) return;
   }
   await settings().update('push.tags', result.tags, vscode.ConfigurationTarget.Global);
   await settings().update('push.runHooks', result.runHooks, vscode.ConfigurationTarget.Global);
@@ -164,7 +165,7 @@ export async function pushCommand(ctx: Ctx, arg?: RootArg & { upTo?: string; bra
 export async function doPush(ctx: Ctx, repo: Repository, spec: PushSpec, isNew: boolean, retried = false): Promise<boolean> {
   const count = isNew ? 0 : await countCommits(repo, `refs/remotes/${spec.remote}/${spec.target}..${spec.source}`);
   const res = await withProgress(
-    'Pushing…',
+    vscode.l10n.t('Pushing…'),
     (progress, token) => push(repo, spec, { progress, token }),
     { cancellable: true },
   );
@@ -172,8 +173,8 @@ export async function doPush(ctx: Ctx, repo: Repository, spec: PushSpec, isNew: 
   if (res.ok) {
     const forced = !!spec.force && res.refs.some(r => r.flag === '+');
     const upToDate = res.refs.every(r => r.flag === '=');
-    const msg = upToDate ? 'Everything is up to date' : pushSuccessMessage(spec, count, res.refs.some(r => r.flag === '*') || isNew, forced);
-    void vscode.window.showInformationMessage(`Push successful: ${msg}`);
+    const msg = upToDate ? vscode.l10n.t('Everything is up to date') : pushSuccessMessage(spec, count, res.refs.some(r => r.flag === '*') || isNew, forced);
+    void vscode.window.showInformationMessage(vscode.l10n.t('Push successful: {0}', msg));
     return true;
   }
   if (res.needsUpdate && !spec.force && !retried && repo.info.branch) {
@@ -182,17 +183,17 @@ export async function doPush(ctx: Ctx, repo: Repository, spec: PushSpec, isNew: 
     if (!method) {
       const merges = await repo.exec(['rev-list', '--count', '--merges', `refs/remotes/${spec.remote}/${spec.target}..${spec.source}`], { allowFailure: true, quiet: true });
       const hasMerges = +merges.stdout.trim() > 0;
-      const choice = await showDialog<{ button: string; remember: boolean }>('ops.pushRejected', { branch: repo.info.branch, hasMerges }, { title: 'Push Rejected' });
+      const choice = await showDialog<{ button: string; remember: boolean }>('ops.pushRejected', { branch: repo.info.branch, hasMerges }, { title: vscode.l10n.t('Push Rejected') });
       if (!choice || choice.button === 'cancel') {
-        void vscode.window.showWarningMessage(`Push rejected: Push to ${spec.remote}/${spec.target} was rejected`);
+        void vscode.window.showWarningMessage(vscode.l10n.t('Push rejected: Push to {0} was rejected', `${spec.remote}/${spec.target}`));
         return false;
       }
       method = choice.button as UpdateMethod;
       if (choice.remember) await settings().update('push.autoUpdateOnRejected', method, vscode.ConfigurationTarget.Global);
     }
-    const up = await withProgress('Updating…', (progress, token) => updateWithSavedChanges(repo, method!, { progress, token }));
+    const up = await withProgress(vscode.l10n.t('Updating…'), (progress, token) => updateWithSavedChanges(repo, method!, { progress, token }));
     if (up.outcome.kind !== 'success') {
-      await reportOutcome(repo, up.outcome as never, { operation: 'update', failedTitle: 'Push was rejected, and update failed with an error' });
+      await reportOutcome(repo, up.outcome as never, { operation: 'update', failedTitle: vscode.l10n.t('Push was rejected, and update failed with an error') });
       await reportRestore(repo, up.saver, 'update', up.restore, up.savedChangesKept ?? false);
       return false;
     }
@@ -201,13 +202,15 @@ export async function doPush(ctx: Ctx, repo: Repository, spec: PushSpec, isNew: 
   }
   if (res.rejected) {
     const a = await vscode.window.showErrorMessage(
-      spec.force === 'lease' ? `Push rejected: Force-with-lease push ${spec.source} to ${spec.remote}/${spec.target} was rejected` : `Push rejected: Push to ${spec.remote}/${spec.target} was rejected\n${res.output}`,
-      'Show Git Console',
+      spec.force === 'lease'
+        ? vscode.l10n.t('Push rejected: Force-with-lease push {0} to {1} was rejected', spec.source, `${spec.remote}/${spec.target}`)
+        : `${vscode.l10n.t('Push rejected: Push to {0} was rejected', `${spec.remote}/${spec.target}`)}\n${res.output}`,
+      vscode.l10n.t('Show Git Console'),
     );
     if (a) void vscode.commands.executeCommand('ideagittool.showConsole');
     return false;
   }
-  showError(res.error ?? res.output, 'Push failed');
+  showError(res.error ?? res.output, vscode.l10n.t('Push failed'));
   return false;
 }
 
@@ -217,7 +220,7 @@ export async function fetchCommand(ctx: Ctx, arg?: RootArg) {
   const repos = arg?.root ? [await repoFor(ctx, arg)] : ctx.repos.repositories;
   const failures: string[] = [];
   await withProgress(
-    'Fetching…',
+    vscode.l10n.t('Fetching…'),
     async (progress, token) => {
       for (const repo of repos) {
         if (repo.remotes.length === 0) continue;
@@ -228,8 +231,8 @@ export async function fetchCommand(ctx: Ctx, arg?: RootArg) {
     },
     { cancellable: true },
   );
-  if (failures.length) showError(failures.join('\n'), 'Fetch failed');
-  else void vscode.window.showInformationMessage('Fetch successful');
+  if (failures.length) showError(failures.join('\n'), vscode.l10n.t('Fetch failed'));
+  else void vscode.window.showInformationMessage(vscode.l10n.t('Fetch successful'));
 }
 
 /** `ideagittool.pull {root?}`: the Pull dialog. */
@@ -249,7 +252,7 @@ export async function pullCommand(ctx: Ctx, arg?: RootArg & { remote?: string; b
     defaultRemoteMap[r.root] = arg?.remote ?? upRemote ?? defaultRemote(r) ?? '';
     defaultBranch[r.root] = arg?.branch ?? (up && upRemote ? up.slice(upRemote.length + 1) : (r.info.branch ?? ''));
   }
-  if (!repo.remotes.length) throw new Error('No remotes defined. Use Git | Manage Remotes… to add a remote.');
+  if (!repo.remotes.length) throw new Error(vscode.l10n.t('No remotes defined. Use Git | Manage Remotes… to add a remote.'));
   const res = await showDialog<{ root: string; remote: string; branch: string; options: string[] }>(
     'ops.pull',
     {
@@ -261,7 +264,7 @@ export async function pullCommand(ctx: Ctx, arg?: RootArg & { remote?: string; b
       defaultBranch,
       options: arg?.options,
     },
-    { title: `Pull to ${currentName(repo)}` },
+    { title: vscode.l10n.t('Pull to {0}', currentName(repo)) },
   );
   if (!res) return;
   const target = ctx.repos.get(res.root)!;
@@ -274,20 +277,20 @@ export async function pull(repo: Repository, remote: string, branch: string, opt
   for (const o of options) args.push(o === 'rebase' ? '--rebase' : `--${o}`);
   args.push(remote, branch);
   const before = repo.info.headHash;
-  const outcome = await withProgress(`Pulling ${remote}/${branch}…`, (progress, token) => repo.batch(() => runConflictAware(repo, args, { progress, token })), { cancellable: true });
+  const outcome = await withProgress(vscode.l10n.t('Pulling {0}…', `${remote}/${branch}`), (progress, token) => repo.batch(() => runConflictAware(repo, args, { progress, token })), { cancellable: true });
   if (outcome.kind === 'success' && before) {
     const after = (await repo.execText(['rev-parse', 'HEAD'], { quiet: true })).trim();
     const commits = await countCommits(repo, `${before}..${after}`);
     if (commits === 0) {
-      void vscode.window.showInformationMessage('All files are up-to-date');
+      void vscode.window.showInformationMessage(vscode.l10n.t('All files are up-to-date'));
       return;
     }
     const files = (await repo.execText(['diff', '--name-only', before, after], { quiet: true })).split('\n').filter(Boolean).length;
-    const a = await vscode.window.showInformationMessage(`Project updated: ${updateSummary(files, commits)}`, 'View Commits');
+    const a = await vscode.window.showInformationMessage(vscode.l10n.t('Project updated: {0}', updateSummary(files, commits)), vscode.l10n.t('View Commits'));
     if (a) void vscode.commands.executeCommand('ideagittool.compareRefs', { root: repo.root, ref: after, with: before });
     return;
   }
-  await reportOutcome(repo, outcome, { operation: 'pull', failedTitle: 'Pull failed' });
+  await reportOutcome(repo, outcome, { operation: 'pull', failedTitle: vscode.l10n.t('Pull failed') });
 }
 
 // ------------------------------------------------------------------ remotes / clone / init
@@ -295,17 +298,17 @@ export async function pull(repo: Repository, remote: string, branch: string, opt
 export async function remotesCommand(ctx: Ctx, arg?: RootArg) {
   await ctx.repos.ready();
   const repos = arg?.root ? [await repoFor(ctx, arg)] : ctx.repos.repositories;
-  if (!repos.length) throw new Error('No Git repository found in the workspace.');
+  if (!repos.length) throw new Error(vscode.l10n.t('No Git repository found in the workspace.'));
   const rows = () => repos.flatMap(r => r.remotes.map(x => ({ root: r.root, repo: r.name, name: x.name, url: x.fetchUrl })));
   await showDialog('ops.remotes', { remotes: rows(), repos: repos.map(r => ({ root: r.root, name: r.name })) }, {
-    title: 'Git Remotes',
+    title: vscode.l10n.t('Git Remotes'),
     handlers: {
       addRemote: async (p: { root: string; name: string; url: string }) => {
         const repo = ctx.repos.get(p.root)!;
         await repo.exec(['remote', 'add', p.name, p.url]);
         await repo.refresh();
         // IntelliJ fetches the new remote right away.
-        void withProgress(`Fetching ${p.name}…`, (progress, token) => fetch(repo, p.name, { progress, token }).then(() => repo.refresh()), { location: 'window' });
+        void withProgress(vscode.l10n.t('Fetching {0}…', p.name), (progress, token) => fetch(repo, p.name, { progress, token }).then(() => repo.refresh()), { location: 'window' });
         return rows();
       },
       editRemote: async (p: { root: string; oldName: string; name: string; url: string }) => {
@@ -316,8 +319,9 @@ export async function remotesCommand(ctx: Ctx, arg?: RootArg) {
         return rows();
       },
       removeRemote: async (p: { root: string; name: string }) => {
-        const a = await vscode.window.showWarningMessage(`Remove remote ${p.name}?`, { modal: true }, 'Remove');
-        if (a !== 'Remove') return rows();
+        const remove = vscode.l10n.t('Remove');
+        const a = await vscode.window.showWarningMessage(vscode.l10n.t('Remove remote {0}?', p.name), { modal: true }, remove);
+        if (a !== remove) return rows();
         const repo = ctx.repos.get(p.root)!;
         await repo.exec(['remote', 'remove', p.name]);
         await repo.refresh();
@@ -331,15 +335,15 @@ export async function cloneCommand(ctx: Ctx) {
   const parent = vscode.workspace.workspaceFolders?.[0] ? path.dirname(vscode.workspace.workspaceFolders[0].uri.fsPath) : os.homedir();
   let cloned: string | undefined;
   await showDialog('ops.clone', { parent }, {
-    title: 'Clone Repository',
+    title: vscode.l10n.t('Clone Repository'),
     handlers: { browse: (current: string) => browseFolder(current) },
     validate: async (v: { url: string; dir: string; depth?: number }) => {
-      if (fs.existsSync(v.dir) && fs.readdirSync(v.dir).length > 0) return `Directory ${v.dir} already exists and is not empty`;
+      if (fs.existsSync(v.dir) && fs.readdirSync(v.dir).length > 0) return vscode.l10n.t('Directory {0} already exists and is not empty', v.dir);
       const args = ['clone', '--progress', v.url, v.dir];
       if (v.depth) args.push('--depth', String(v.depth));
       try {
         await withProgress(
-          `Cloning ${v.url}…`,
+          vscode.l10n.t('Cloning {0}…', v.url),
           (progress, token) =>
             git(args, {
               cwd: fs.existsSync(path.dirname(v.dir)) ? path.dirname(v.dir) : os.homedir(),
@@ -359,11 +363,14 @@ export async function cloneCommand(ctx: Ctx) {
     },
   });
   if (!cloned) return;
-  const a = await vscode.window.showInformationMessage(`Cloned to ${cloned}. Would you like to open the cloned repository?`, 'Open', 'Open in New Window', 'Add to Workspace');
+  const open = vscode.l10n.t('Open');
+  const openInNewWindow = vscode.l10n.t('Open in New Window');
+  const addToWorkspace = vscode.l10n.t('Add to Workspace');
+  const a = await vscode.window.showInformationMessage(vscode.l10n.t('Cloned to {0}. Would you like to open the cloned repository?', cloned), open, openInNewWindow, addToWorkspace);
   const uri = vscode.Uri.file(cloned);
-  if (a === 'Open') await vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: false });
-  else if (a === 'Open in New Window') await vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: true });
-  else if (a === 'Add to Workspace') vscode.workspace.updateWorkspaceFolders(vscode.workspace.workspaceFolders?.length ?? 0, 0, { uri });
+  if (a === open) await vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: false });
+  else if (a === openInNewWindow) await vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: true });
+  else if (a === addToWorkspace) vscode.workspace.updateWorkspaceFolders(vscode.workspace.workspaceFolders?.length ?? 0, 0, { uri });
 }
 
 export async function browseFolder(current?: string): Promise<string | null> {
@@ -375,17 +382,17 @@ export async function initCommand(ctx: Ctx) {
   const folders = vscode.workspace.workspaceFolders ?? [];
   let dir: string | undefined;
   if (folders.length === 1) dir = folders[0].uri.fsPath;
-  else if (folders.length > 1) dir = (await vscode.window.showQuickPick(folders.map(f => ({ label: f.name, description: f.uri.fsPath, dir: f.uri.fsPath })), { placeHolder: 'Select directory for git init' }))?.dir;
+  else if (folders.length > 1) dir = (await vscode.window.showQuickPick(folders.map(f => ({ label: f.name, description: f.uri.fsPath, dir: f.uri.fsPath })), { placeHolder: vscode.l10n.t('Select directory for git init') }))?.dir;
   if (!dir) dir = (await browseFolder()) ?? undefined;
   if (!dir) throw new CancelledError();
   await git(['init'], { cwd: dir });
   await ctx.repos.open(dir);
-  void vscode.window.showInformationMessage(`Created Git repository in ${dir}`);
+  void vscode.window.showInformationMessage(vscode.l10n.t('Created Git repository in {0}', dir));
 }
 
 export async function unshallowCommand(ctx: Ctx, arg?: RootArg) {
   const repo = await repoFor(ctx, arg);
-  await withProgress('Unshallowing repository…', (progress, token) => repo.exec(['fetch', '--unshallow', '--progress'], { token, onStderrLine: l => progress(l) }), { cancellable: true });
+  await withProgress(vscode.l10n.t('Unshallowing repository…'), (progress, token) => repo.exec(['fetch', '--unshallow', '--progress'], { token, onStderrLine: l => progress(l) }), { cancellable: true });
   await repo.refresh();
-  void vscode.window.showInformationMessage('Repository unshallowed');
+  void vscode.window.showInformationMessage(vscode.l10n.t('Repository unshallowed'));
 }

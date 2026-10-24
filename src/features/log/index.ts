@@ -6,7 +6,7 @@ import { getExtensionUri } from '../../host/webviewHost';
 import { registerAnnotate } from './annotate';
 import { registerInlineBlame } from './inlineBlame';
 import { registerCompare } from './compare';
-import { EMPTY_FILTERS, LogFilters, LogOptions } from './filters';
+import { EMPTY_FILTERS, filtersTitle, LogFilters, LogOptions } from './filters';
 import { LogTab, LogTabState } from './logTab';
 import { fileFromArg } from './util';
 
@@ -101,13 +101,13 @@ class LogTabs {
     await this.ctx.repos.ready();
     const repo = this.ctx.repos.repositories[0];
     if (!repo) {
-      view.webview.html = `<body style="padding:16px;font-family:sans-serif;opacity:.7">No Git repository found in the workspace.</body>`;
+      view.webview.html = `<body style="padding:16px;font-family:sans-serif;opacity:.7">${vscode.l10n.t('No Git repository found in the workspace.')}</body>`;
       return;
     }
     const tab = new LogTab(this.ctx, repo, this.mainState(repo), `${MAIN_KEY}:${repo.root}`);
     await tab.start();
     tab.attach(view.webview);
-    tab.onTitle(t => (view.description = t.replace(/^Log:?\s*/, '')));
+    tab.onTitle(() => (view.description = filtersTitle(tab.state.filters)));
     const entry: OpenTab = { tab, view, main: true };
     this.tabs.push(entry);
     view.onDidDispose(() => {
@@ -130,7 +130,7 @@ class LogTabs {
     }
     const main = await this.showMain(repo);
     if (main && !(await main.tab.select(hash))) {
-      void vscode.window.showWarningMessage(`Commit ${hash.slice(0, 8)} not found in the log`);
+      void vscode.window.showWarningMessage(vscode.l10n.t('Commit {0} not found in the log', hash.slice(0, 8)));
     }
   }
 }

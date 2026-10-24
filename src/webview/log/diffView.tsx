@@ -5,6 +5,7 @@ import { alignHunks, innerRange, isGap, Item, Kind, SideRow } from './diffAlign'
 import type { Change } from '../../shared/types';
 import { ActionButton, Spacer, Toolbar } from '../lib/components';
 import { FileIcon } from '../lib/icons';
+import { t } from '../lib/l10n';
 import { anchorAt, showMenu } from '../lib/menu';
 import { call } from '../lib/rpc';
 import { changeAction } from './menus';
@@ -27,8 +28,8 @@ function SideBySide({ items, onExpand }: { items: Item[]; onExpand: () => void }
       {items.map((it, i) => {
         if (isGap(it)) {
           return (
-            <div key={i} class="diff-gap" onClick={onExpand} data-tip="Expand">
-              <span>{it.gap} unchanged {it.gap === 1 ? 'line' : 'lines'}</span>
+            <div key={i} class="diff-gap" onClick={onExpand} data-tip={t('Expand')}>
+              <span>{it.gap === 1 ? t('{0} unchanged line', 1) : t('{0} unchanged lines', it.gap)}</span>
             </div>
           );
         }
@@ -54,8 +55,8 @@ function Unified({ items, onExpand }: { items: Item[]; onExpand: () => void }) {
     const it = items[i];
     if (isGap(it)) {
       out.push(
-        <div key={k++} class="diff-gap" onClick={onExpand} data-tip="Expand">
-          <span>{it.gap} unchanged {it.gap === 1 ? 'line' : 'lines'}</span>
+        <div key={k++} class="diff-gap" onClick={onExpand} data-tip={t('Expand')}>
+          <span>{it.gap === 1 ? t('{0} unchanged line', 1) : t('{0} unchanged lines', it.gap)}</span>
         </div>,
       );
       continue;
@@ -143,20 +144,20 @@ export function DiffPreview() {
 
   const toolbar = (
     <Toolbar class="diff-toolbar">
-      <ActionButton icon="general/up" tip="Previous Difference" shortcut="Shift+F7" disabled={!aligned?.blocks || current <= 0} onClick={() => go(-1)} />
-      <ActionButton icon="general/down" tip="Next Difference" shortcut="F7" disabled={!aligned?.blocks || current >= (aligned?.blocks ?? 0) - 1} onClick={() => go(1)} />
-      <ActionButton icon="general/externalTools" tip="Open in Editor" disabled={!change} onClick={() => change && changeAction('diff', [change])} />
-      <ActionButton icon="general/edit" tip="Jump to Source" shortcut="F4" disabled={!change || change.status === 'D'} onClick={() => change && changeAction('editSource', [change])} />
+      <ActionButton icon="general/up" tip={t('Previous Difference')} shortcut="Shift+F7" disabled={!aligned?.blocks || current <= 0} onClick={() => go(-1)} />
+      <ActionButton icon="general/down" tip={t('Next Difference')} shortcut="F7" disabled={!aligned?.blocks || current >= (aligned?.blocks ?? 0) - 1} onClick={() => go(1)} />
+      <ActionButton icon="general/externalTools" tip={t('Open in Editor')} disabled={!change} onClick={() => change && changeAction('diff', [change])} />
+      <ActionButton icon="general/edit" tip={t('Jump to Source')} shortcut="F4" disabled={!change || change.status === 'D'} onClick={() => change && changeAction('editSource', [change])} />
       <span class="toolbar-separator" />
       <ActionButton
         icon={settings.diffUnified ? 'diff/unified' : 'diff/sideBySide'}
-        tip="Viewer"
+        tip={t('Viewer')}
         menu={() => [
-          { label: 'Side-by-side viewer', icon: 'diff/sideBySide', checked: !settings.diffUnified, action: () => store.updateSettings({ diffUnified: false }) },
-          { label: 'Unified viewer', icon: 'diff/unified', checked: settings.diffUnified, action: () => store.updateSettings({ diffUnified: true }) },
+          { label: t('Side-by-side viewer'), icon: 'diff/sideBySide', checked: !settings.diffUnified, action: () => store.updateSettings({ diffUnified: false }) },
+          { label: t('Unified viewer'), icon: 'diff/unified', checked: settings.diffUnified, action: () => store.updateSettings({ diffUnified: true }) },
         ]}
       />
-      <ActionButton icon="actions/unselectAll" tip="Collapse Unchanged Fragments" toggled={settings.diffCollapseUnchanged} onClick={() => store.updateSettings({ diffCollapseUnchanged: !settings.diffCollapseUnchanged })} />
+      <ActionButton icon="actions/unselectAll" tip={t('Collapse Unchanged Fragments')} toggled={settings.diffCollapseUnchanged} onClick={() => store.updateSettings({ diffCollapseUnchanged: !settings.diffCollapseUnchanged })} />
       <Spacer />
       {change && (
         <span class="diff-title">
@@ -164,16 +165,16 @@ export function DiffPreview() {
           <span class={`st-${change.status}`}>{change.path}</span>
         </span>
       )}
-      {aligned && <span class="secondary diff-count">{aligned.blocks === 0 ? 'No differences' : `${aligned.blocks} ${aligned.blocks === 1 ? 'difference' : 'differences'}`}</span>}
+      {aligned && <span class="secondary diff-count">{aligned.blocks === 0 ? t('No differences') : aligned.blocks === 1 ? t('{0} difference', 1) : t('{0} differences', aligned.blocks)}</span>}
     </Toolbar>
   );
 
   let content: preact.ComponentChildren;
-  if (!change) content = <div class="changes-empty">No file selected</div>;
-  else if (!diff) content = loading ? <div class="changes-empty">Loading…</div> : <div class="changes-empty">Cannot show diff</div>;
-  else if (diff.binary) content = <div class="changes-empty">Binary files differ</div>;
-  else if (diff.tooLarge) content = <div class="changes-empty">File is too large to show the difference. <span class="link" onClick={() => changeAction('diff', [change as Change])}>Open in Editor</span></div>;
-  else if (!aligned!.items.length) content = <div class="changes-empty">Contents are identical</div>;
+  if (!change) content = <div class="changes-empty">{t('No file selected')}</div>;
+  else if (!diff) content = loading ? <div class="changes-empty">{t('Loading…')}</div> : <div class="changes-empty">{t('Cannot show diff')}</div>;
+  else if (diff.binary) content = <div class="changes-empty">{t('Binary files differ')}</div>;
+  else if (diff.tooLarge) content = <div class="changes-empty">{t('File is too large to show the difference.')} <span class="link" onClick={() => changeAction('diff', [change as Change])}>{t('Open in Editor')}</span></div>;
+  else if (!aligned!.items.length) content = <div class="changes-empty">{t('Contents are identical')}</div>;
   else
     content = settings.diffUnified ? <Unified items={aligned!.items} onExpand={() => setFull(true)} /> : <SideBySide items={aligned!.items} onExpand={() => setFull(true)} />;
 
@@ -184,8 +185,8 @@ export function DiffPreview() {
         e.preventDefault();
         e.stopPropagation();
         showMenu([
-          { label: 'Jump to Source', icon: 'general/edit', shortcut: 'F4', disabled: !change || change.status === 'D', action: () => change && changeAction('editSource', [change]) },
-          { label: 'Open in Editor', icon: 'general/externalTools', disabled: !change, action: () => change && changeAction('diff', [change]) },
+          { label: t('Jump to Source'), icon: 'general/edit', shortcut: 'F4', disabled: !change || change.status === 'D', action: () => change && changeAction('editSource', [change]) },
+          { label: t('Open in Editor'), icon: 'general/externalTools', disabled: !change, action: () => change && changeAction('diff', [change]) },
         ], anchorAt(e));
       }}
       onKeyDown={e => {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ActionButton, Button, Checkbox } from '../lib/components';
 import { Icon } from '../lib/icons';
+import { t } from '../lib/l10n';
 import { anchorBelow, MenuEntry, showMenu, showPopup } from '../lib/menu';
 import { boot, call, on, persist, persisted, send } from '../lib/rpc';
 import { CommitOptionsState, CommitViewState } from '../../shared/commitProtocol';
@@ -88,8 +89,8 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
     const history = state.messageHistory;
     const entries: MenuEntry[] = history.length
       ? history.map(m => ({ label: m.split('\n')[0], hint: m.includes('\n') ? '…' : undefined, action: () => updateMessage(m) }))
-      : [{ label: 'No messages', disabled: true }];
-    showMenu(entries, anchorBelow(anchor), { title: 'Commit Message History' });
+      : [{ label: t('No messages'), disabled: true }];
+    showMenu(entries, anchorBelow(anchor), { title: t('Commit Message History') });
   };
 
   const chooseAmendTarget = async (anchor: Element) => {
@@ -100,7 +101,7 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
       checked: amend && (amendTarget ? amendTarget.hash === c.hash : i === 0),
       action: () => toggleAmend(true, i === 0 ? undefined : c),
     }));
-    showMenu(entries.length ? entries : [{ label: 'No commits', disabled: true }], anchorBelow(anchor), { title: 'Commit to Amend' });
+    showMenu(entries.length ? entries : [{ label: t('No commits'), disabled: true }], anchorBelow(anchor), { title: t('Commit to Amend') });
   };
 
   const showOptions = (anchor: Element) => {
@@ -132,17 +133,18 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
   };
 
   const merging = state.repos.some(r => r.operation === 'merge');
-  const commitLabel = amend ? 'Amend Commit' : 'Commit';
-  const amendLabel = amendTarget ? amendTarget.subject : 'last commit';
+  const commitLabel = amend ? t('Amend Commit') : t('Commit');
+  const commitAndPushLabel = amend ? t('Amend Commit and Push…') : t('Commit and Push…');
+  const amendLabel = amendTarget ? amendTarget.subject : t('last commit');
   const emptyRepo = state.repos.length > 0 && state.repos.every(r => !r.headHash);
 
   return (
     <div class="commit-panel" onKeyDown={onKeyDown}>
       <div class="amend-row">
-        <Checkbox checked={amend} disabled={emptyRepo || merging} onChange={v => toggleAmend(v)} label="Amend" tip="Merge this commit with the previous one (Alt+M)" />
+        <Checkbox checked={amend} disabled={emptyRepo || merging} onChange={v => toggleAmend(v)} label={t('Amend')} tip={t('Merge this commit with the previous one (Alt+M)')} />
         <span
           class="amend-target"
-          data-tip="Choose the commit to amend"
+          data-tip={t('Choose the commit to amend')}
           onClick={e => !emptyRepo && chooseAmendTarget(e.currentTarget as Element)}
           style={emptyRepo ? { color: 'var(--fg-disabled)' } : undefined}
         >
@@ -150,14 +152,14 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
           <Icon name="general/chevronDown" size={14} />
         </span>
         <span style={{ width: '4px' }} />
-        <ActionButton icon="general/history" tip="Commit Message History" shortcut="Ctrl+M" onClick={e => showHistory(e.currentTarget as Element)} />
+        <ActionButton icon="general/history" tip={t('Commit Message History')} shortcut="Ctrl+M" onClick={e => showHistory(e.currentTarget as Element)} />
       </div>
       <div class="message-box">
         <textarea
           ref={textRef}
           class="text-area"
-          placeholder="Commit Message"
-          aria-label="Commit Message"
+          placeholder={t('Commit Message')}
+          aria-label={t('Commit Message')}
           spellcheck={false}
           value={message}
           onInput={e => updateMessage((e.currentTarget as HTMLTextAreaElement).value)}
@@ -169,11 +171,11 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
           {commitLabel}
         </Button>
         <Button onClick={() => doCommit(true)} disabled={busy} tip="Ctrl+Alt+K">
-          {commitLabel} and Push…
+          {commitAndPushLabel}
         </Button>
         <span class="spacer" />
         {busy && <span class="spinner" />}
-        <ActionButton icon="general/settings" tip="Show Commit Options" shortcut="Ctrl+O" onClick={e => showOptions(e.currentTarget as Element)} />
+        <ActionButton icon="general/settings" tip={t('Show Commit Options')} shortcut="Ctrl+O" onClick={e => showOptions(e.currentTarget as Element)} />
       </div>
     </div>
   );
@@ -194,7 +196,7 @@ function OptionsPopup({ options, close }: { options: CommitOptionsState; close: 
     <div class="options-popup" onKeyDown={e => e.key === 'Enter' && close()}>
       <div class="section">Git</div>
       <div class="row">
-        <label for="commit-author">Author:</label>
+        <label for="commit-author">{t('Author:')}</label>
         <input
           id="commit-author"
           class="text-field"
@@ -203,8 +205,8 @@ function OptionsPopup({ options, close }: { options: CommitOptionsState; close: 
           onChange={e => update({ author: (e.currentTarget as HTMLInputElement).value.trim() })}
         />
       </div>
-      <Checkbox checked={o.signOff} onChange={v => update({ signOff: v })} label="Sign-off commit" tip={`Adds the following line at the end of the commit message:\nSigned-off by: ${defaultAuthor}`} />
-      <Checkbox checked={o.extraMoveCommit} onChange={v => update({ extraMoveCommit: v })} label="Create extra commit with file movements" />
+      <Checkbox checked={o.signOff} onChange={v => update({ signOff: v })} label={t('Sign-off commit')} tip={t('Adds the following line at the end of the commit message:\nSigned-off by: {0}', defaultAuthor)} />
+      <Checkbox checked={o.extraMoveCommit} onChange={v => update({ extraMoveCommit: v })} label={t('Create extra commit with file movements')} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useMemo } from 'preact/hooks';
 import { diffLines, splitLines } from '../../shared/lineDiff';
 import { LhSide } from '../../shared/localHistoryProtocol';
+import { t } from '../lib/l10n';
 
 interface Row {
   l?: string;
@@ -55,7 +56,7 @@ export function DiffView({ left, right }: { left: LhSide; right: LhSide }) {
   const lOff = (left.firstLine ?? 1) - 1;
   const rOff = (right.firstLine ?? 1) - 1;
   const changes = rows.filter(r => r.start).length;
-  const note = (s: LhSide) => (s.missing ? 'File does not exist' : s.unavailable ? 'File content is not available' : undefined);
+  const note = (s: LhSide) => (s.missing ? t('File does not exist') : s.unavailable ? t('File content is not available') : undefined);
   return (
     <div class="diff">
       <div class="diff-titles">
@@ -69,7 +70,7 @@ export function DiffView({ left, right }: { left: LhSide; right: LhSide }) {
         </div>
       </div>
       <div class="diff-body mono" tabIndex={0}>
-        {rows.length === 0 && <div class="empty-text">{changes === 0 ? 'Contents are identical' : ''}</div>}
+        {rows.length === 0 && <div class="empty-text">{changes === 0 ? t('Contents are identical') : ''}</div>}
         {rows.map((r, i) => (
           <div class={`diff-row ${r.kind}`} key={i}>
             <span class="ln">{r.ln !== undefined ? r.ln + lOff : ''}</span>
@@ -80,7 +81,7 @@ export function DiffView({ left, right }: { left: LhSide; right: LhSide }) {
           </div>
         ))}
       </div>
-      <div class="diff-status secondary">{changes === 0 ? 'No differences' : `${changes} ${changes === 1 ? 'difference' : 'differences'}`}</div>
+      <div class="diff-status secondary">{changes === 0 ? t('No differences') : changes === 1 ? t('{0} difference', 1) : t('{0} differences', changes)}</div>
     </div>
   );
 }

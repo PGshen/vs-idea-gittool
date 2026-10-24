@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import { Button, Checkbox } from '../../../lib/components';
+import { t } from '../../../lib/l10n';
 import { changeKey, ShelfInfo } from '../../../../shared/commitProtocol';
 import { Change } from '../../../../shared/types';
 import { DialogFrame, Row } from '../../frame';
@@ -15,7 +16,7 @@ registerDialog<{ files: Change[]; selected: string[]; groupByDirectory: boolean 
   const ok = async () => setError(await submit({ keys: [...included], deleteAdded }));
   return (
     <DialogFrame
-      title="Rollback Changes"
+      title={t('Rollback Changes')}
       width={620}
       height={520}
       resizable
@@ -23,12 +24,12 @@ registerDialog<{ files: Change[]; selected: string[]; groupByDirectory: boolean 
       onOk={ok}
       okDisabled={!included.size}
       error={error}
-      left={<Checkbox checked={deleteAdded} disabled={!hasAdded} onChange={setDeleteAdded} label="Delete local copies of added files" />}
+      left={<Checkbox checked={deleteAdded} disabled={!hasAdded} onChange={setDeleteAdded} label={t('Delete local copies of added files')} />}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary disabled={!included.size} onClick={ok}>
-            Rollback
+            {t('Rollback')}
           </Button>
         </>
       }
@@ -46,7 +47,7 @@ registerDialog<{ files: Change[]; selected: string[]; name: string; groupByDirec
   const ok = async () => setError(await submit({ keys: [...included], name }));
   return (
     <DialogFrame
-      title="Shelve Changes"
+      title={t('Shelve Changes')}
       width={640}
       height={600}
       resizable
@@ -56,21 +57,21 @@ registerDialog<{ files: Change[]; selected: string[]; name: string; groupByDirec
       error={error}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary disabled={!included.size} onClick={ok}>
-            Shelve Changes
+            {t('Shelve Changes')}
           </Button>
         </>
       }
     >
       <ChangesSelector files={props.files} included={included} onIncludedChange={setIncluded} groupByDirectory={props.groupByDirectory} />
       <label class="secondary" style={{ marginTop: '6px' }}>
-        Commit Message
+        {t('Commit Message')}
       </label>
       <textarea
         class="text-area mono"
         style={{ height: '110px', flex: 'none', userSelect: 'text' }}
-        placeholder="Commit Message"
+        placeholder={t('Commit Message')}
         value={name}
         onInput={e => setName((e.currentTarget as HTMLTextAreaElement).value)}
       />
@@ -88,7 +89,7 @@ registerDialog<{ shelf: ShelfInfo; selected: string[]; changelists: string[]; ch
   const ok = async () => setError(await submit({ paths: [...included], changelist: changelist.trim(), removeApplied }));
   return (
     <DialogFrame
-      title="Unshelve Changes"
+      title={t('Unshelve Changes')}
       width={620}
       height={540}
       resizable
@@ -98,14 +99,14 @@ registerDialog<{ shelf: ShelfInfo; selected: string[]; changelists: string[]; ch
       error={error}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary disabled={!included.size} onClick={ok}>
-            OK
+            {t('OK')}
           </Button>
         </>
       }
     >
-      <Row label="Name:">
+      <Row label={t('Name:')}>
         <input class="text-field" list="changelist-names" value={changelist} onInput={e => setChangelist((e.currentTarget as HTMLInputElement).value)} />
         <datalist id="changelist-names">
           {props.changelists.map(n => (
@@ -113,7 +114,7 @@ registerDialog<{ shelf: ShelfInfo; selected: string[]; changelists: string[]; ch
           ))}
         </datalist>
       </Row>
-      <Checkbox checked={removeApplied} onChange={setRemoveApplied} label="Remove successfully applied files from the shelf" />
+      <Checkbox checked={removeApplied} onChange={setRemoveApplied} label={t('Remove successfully applied files from the shelf')} />
       <ChangesSelector files={props.shelf.files} included={included} onIncludedChange={setIncluded} keyOf={keyOf} rootLabel={props.shelf.name} />
     </DialogFrame>
   );
@@ -125,32 +126,32 @@ registerDialog<{ mode: 'new' | 'edit'; name: string; comment: string; makeActive
   const [comment, setComment] = useState(props.comment);
   const [makeActive, setMakeActive] = useState(props.makeActive);
   const [error, setError] = useState<string>();
-  const validation = !name.trim() ? 'Changelist name cannot be empty' : props.existing.includes(name.trim()) ? `Changelist "${name.trim()}" already exists` : undefined;
+  const validation = !name.trim() ? t('Changelist name cannot be empty') : props.existing.includes(name.trim()) ? t('Changelist "{0}" already exists', name.trim()) : undefined;
   const ok = async () => {
     if (validation) return setError(validation);
     setError(await submit({ name: name.trim(), comment, makeActive }));
   };
   return (
     <DialogFrame
-      title={props.mode === 'new' ? 'New Changelist' : 'Edit Changelist'}
+      title={props.mode === 'new' ? t('New Changelist') : t('Edit Changelist')}
       width={460}
       onCancel={cancel}
       onOk={ok}
       error={error}
-      left={<Checkbox checked={makeActive} onChange={setMakeActive} label="Set active" disabled={props.mode === 'edit' && props.makeActive} />}
+      left={<Checkbox checked={makeActive} onChange={setMakeActive} label={t('Set active')} disabled={props.mode === 'edit' && props.makeActive} />}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary onClick={ok} disabled={!!validation}>
-            OK
+            {t('OK')}
           </Button>
         </>
       }
     >
-      <Row label="Name:">
+      <Row label={t('Name:')}>
         <input class={`text-field ${error && validation ? 'error' : ''}`} autofocus value={name} onInput={e => (setName((e.currentTarget as HTMLInputElement).value), setError(undefined))} />
       </Row>
-      <Row label="Comment:" top>
+      <Row label={t('Comment:')} top>
         <textarea class="text-area" style={{ height: '90px', userSelect: 'text' }} value={comment} onInput={e => setComment((e.currentTarget as HTMLTextAreaElement).value)} />
       </Row>
     </DialogFrame>

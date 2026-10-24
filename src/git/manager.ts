@@ -112,11 +112,11 @@ export class RepositoryManager implements vscode.Disposable {
   /**
    * Picks the repository to act on: the one of the active editor, the only one, or asks the user.
    */
-  async pick(placeHolder = 'Select a Git repository'): Promise<Repository | undefined> {
+  async pick(placeHolder = vscode.l10n.t('Select a Git repository')): Promise<Repository | undefined> {
     await this.ready();
     const repos = this.repositories;
     if (repos.length === 0) {
-      void vscode.window.showWarningMessage('No Git repository found in the workspace.');
+      void vscode.window.showWarningMessage(vscode.l10n.t('No Git repository found in the workspace.'));
       return undefined;
     }
     if (repos.length === 1) return repos[0];

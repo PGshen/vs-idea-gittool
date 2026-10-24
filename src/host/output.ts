@@ -4,7 +4,7 @@ let channel: vscode.OutputChannel | undefined;
 
 /** The "Git" console: mirrors every git command, like the Console tab of IntelliJ's Git tool window. */
 export function getOutputChannel(): vscode.OutputChannel {
-  if (!channel) channel = vscode.window.createOutputChannel('IdeaGitTool: Git Console');
+  if (!channel) channel = vscode.window.createOutputChannel(vscode.l10n.t('IdeaGitTool: Git Console'));
   return channel;
 }
 

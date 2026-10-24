@@ -21,13 +21,13 @@ export function withProgress<T>(
 
 /** Success balloon (IntelliJ "VCS Notifications" success group). */
 export async function notifySuccess(title: string, content?: string, ...actions: { label: string; run: () => unknown }[]) {
-  const text = content ? `${title}: ${content}` : title;
+  const text = content ? vscode.l10n.t('{0}: {1}', title, content) : title;
   const picked = await vscode.window.showInformationMessage(text, ...actions.map(a => a.label));
   actions.find(a => a.label === picked)?.run();
 }
 
 export async function notifyWarning(title: string, content?: string, ...actions: { label: string; run: () => unknown }[]) {
-  const text = content ? `${title}: ${content}` : title;
+  const text = content ? vscode.l10n.t('{0}: {1}', title, content) : title;
   const picked = await vscode.window.showWarningMessage(text, ...actions.map(a => a.label));
   actions.find(a => a.label === picked)?.run();
 }
@@ -65,9 +65,9 @@ export async function input(opts: vscode.InputBoxOptions): Promise<string> {
 
 export function relativeTime(unixSeconds: number): string {
   const diff = Date.now() / 1000 - unixSeconds;
-  if (diff < 60) return 'moments ago';
-  if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
-  if (diff < 86400 * 2) return 'yesterday';
+  if (diff < 60) return vscode.l10n.t('moments ago');
+  if (diff < 3600) return vscode.l10n.t('{0} minutes ago', Math.floor(diff / 60));
+  if (diff < 86400) return vscode.l10n.t('{0} hours ago', Math.floor(diff / 3600));
+  if (diff < 86400 * 2) return vscode.l10n.t('yesterday');
   return new Date(unixSeconds * 1000).toLocaleDateString();
 }

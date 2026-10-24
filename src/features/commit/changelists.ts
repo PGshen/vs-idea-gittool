@@ -16,6 +16,13 @@ interface Stored {
 
 const KEY = 'ideagittool.changelists';
 export const DEFAULT_ID = 'default';
+/** Name of the default changelist as stored (kept in English); shown translated, see changelistDisplayName. */
+export const DEFAULT_CHANGELIST_NAME = 'Changes';
+
+/** The name shown for a changelist: the default changelist's stored default name is translated. */
+export function changelistDisplayName(name: string, id = DEFAULT_ID): string {
+  return id === DEFAULT_ID && name === DEFAULT_CHANGELIST_NAME ? vscode.l10n.t('Changes') : name;
+}
 
 /**
  * IntelliJ's ChangeListManager: named changelists, one of them active. New changes go to the active
@@ -35,7 +42,7 @@ export class ChangeLists {
 
   constructor(private readonly memento: vscode.Memento) {
     const s = memento.get<Stored>(KEY);
-    this.lists = s?.lists?.length ? s.lists : [{ id: DEFAULT_ID, name: 'Changes' }];
+    this.lists = s?.lists?.length ? s.lists : [{ id: DEFAULT_ID, name: DEFAULT_CHANGELIST_NAME }];
     this.activeId = s && this.lists.some(l => l.id === s.activeId) ? s.activeId : this.lists[0].id;
     this.assignment = new Map(Object.entries(s?.assignment ?? {}));
   }
@@ -88,7 +95,7 @@ export class ChangeLists {
     for (const c of changes) byList.get(this.listOf(changeKey(c)))!.push(c);
     return this.lists.map(l => ({
       id: l.id,
-      name: l.name,
+      name: changelistDisplayName(l.name, l.id),
       comment: l.comment,
       isDefault: l.id === this.activeId,
       files: byList.get(l.id)!.map(changeKey),
@@ -121,8 +128,9 @@ export class ChangeLists {
     return id;
   }
 
+  /** By stored or displayed name. */
   findByName(name: string) {
-    return this.lists.find(l => l.name === name);
+    return this.lists.find(l => l.name === name) ?? this.lists.find(l => changelistDisplayName(l.name, l.id) === name);
   }
 
   edit(id: string, name: string, comment?: string) {

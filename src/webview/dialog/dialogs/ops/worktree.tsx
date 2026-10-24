@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { Button, Checkbox } from '../../../lib/components';
 import { Icon } from '../../../lib/icons';
+import { t } from '../../../lib/l10n';
 import { call } from '../../../lib/rpc';
 import { DialogFrame, Row } from '../../frame';
 import { registerDialog } from '../../registry';
@@ -39,9 +40,9 @@ registerDialog<Props>('ops.newWorktree', ({ props, submit, cancel }) => {
     () => [
       ...repo.refs
         .filter(r => r.type === 'local')
-        .map(r => ({ value: r.name, icon: 'general/vcs', group: 'Local', hint: r.worktree ? r.worktree : undefined })),
-      ...repo.refs.filter(r => r.type === 'remote').map(r => ({ value: r.name, icon: 'general/vcs', group: 'Remote' })),
-      ...repo.tags.map(t => ({ value: t, icon: 'nodes/tag', group: 'Tags' })),
+        .map(r => ({ value: r.name, icon: 'general/vcs', group: t('Local'), hint: r.worktree ? r.worktree : undefined })),
+      ...repo.refs.filter(r => r.type === 'remote').map(r => ({ value: r.name, icon: 'general/vcs', group: t('Remote') })),
+      ...repo.tags.map(tag => ({ value: tag, icon: 'nodes/tag', group: t('Tags') })),
     ],
     [repo],
   );
@@ -67,7 +68,7 @@ registerDialog<Props>('ops.newWorktree', ({ props, submit, cancel }) => {
   };
   return (
     <DialogFrame
-      title="New Worktree"
+      title={t('New Worktree')}
       width={620}
       onCancel={cancel}
       onOk={ok}
@@ -75,15 +76,15 @@ registerDialog<Props>('ops.newWorktree', ({ props, submit, cancel }) => {
       error={error}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary onClick={ok} disabled={busy || !ref}>
-            {busy ? 'Creating worktree…' : 'Create & Open Worktree'}
+            {busy ? t('Creating worktree…') : t('Create & Open Worktree')}
           </Button>
         </>
       }
     >
       {props.repos.length > 1 && (
-        <Row label="Repository:">
+        <Row label={t('Repository:')}>
           <select
             class="combo"
             value={root}
@@ -99,14 +100,14 @@ registerDialog<Props>('ops.newWorktree', ({ props, submit, cancel }) => {
           </select>
         </Row>
       )}
-      <Row label="From branch:">
-        <ComboField value={ref} onChange={setRef} items={items} placeholder="Select branch" autofocus error={!ref && !!error} />
+      <Row label={t('From branch:')}>
+        <ComboField value={ref} onChange={setRef} items={items} placeholder={t('Select branch')} autofocus error={!ref && !!error} />
       </Row>
-      {checkedOutElsewhere && !newBranchOn && <Hint>Selected branch is already checked out in another worktree</Hint>}
-      <Row label={<Checkbox checked={newBranchOn} onChange={setNewBranchOn} label="New branch:" />}>
+      {checkedOutElsewhere && !newBranchOn && <Hint>{t('Selected branch is already checked out in another worktree')}</Hint>}
+      <Row label={<Checkbox checked={newBranchOn} onChange={setNewBranchOn} label={t('New branch:')} />}>
         <input class="text-field" value={newBranch} disabled={!newBranchOn} spellcheck={false} onInput={e => setNewBranch((e.currentTarget as HTMLInputElement).value)} />
       </Row>
-      <Row label="Project name:">
+      <Row label={t('Project name:')}>
         <input
           class="text-field"
           value={name}
@@ -117,11 +118,11 @@ registerDialog<Props>('ops.newWorktree', ({ props, submit, cancel }) => {
           }}
         />
       </Row>
-      <Row label="Location:">
+      <Row label={t('Location:')}>
         <input class="text-field" value={parent} spellcheck={false} onInput={e => setParent((e.currentTarget as HTMLInputElement).value)} />
         <button
           class="action-button"
-          data-tip="Worktree Location"
+          data-tip={t('Worktree Location')}
           onClick={async () => {
             const p = await call<string | null>('browse', { current: parent });
             if (p) setParent(p);
@@ -132,7 +133,7 @@ registerDialog<Props>('ops.newWorktree', ({ props, submit, cancel }) => {
       </Row>
       {target && (
         <div class="comment" style={{ marginLeft: '98px', marginTop: 0 }}>
-          The worktree will be created in:
+          {t('The worktree will be created in:')}
           <br />
           {target}
         </div>

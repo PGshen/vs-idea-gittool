@@ -1,5 +1,7 @@
 import { graphColor } from '../../git/graph';
 import type { GraphEdge, GraphRow } from '../../shared/types';
+import { t } from '../lib/l10n';
+import { theme } from '../lib/rpc';
 
 export const LANE = 14;
 export const ROW_H = 26;
@@ -10,11 +12,14 @@ let cache = new Map<number, string>();
 let sat = 0.6;
 let bri = 0.6;
 
-/** Re-reads VersionControl.Log.Graph saturation / brightness from the theme. Call after a theme change. */
+/**
+ * Re-reads VersionControl.Log.Graph saturation / brightness from the theme. Call after a theme change.
+ * The "vscode" appearance does not set them, so it gets the IntelliJ dark / light values by theme kind.
+ */
 export function updateGraphTheme() {
   const style = getComputedStyle(document.body);
   sat = parseFloat(style.getPropertyValue('--graph-saturation')) || 0.6;
-  bri = parseFloat(style.getPropertyValue('--graph-brightness')) || 0.6;
+  bri = parseFloat(style.getPropertyValue('--graph-brightness')) || (theme.dark ? 0.6 : 0.7);
   cache = new Map();
 }
 
@@ -66,7 +71,7 @@ export function GraphCell({ row, width, head, onJump }: { row: GraphRow; width: 
               if (e.jump) onJump?.(e.jump, e.arrow === 'down');
             }}
           >
-            <title>{e.arrow === 'down' ? 'Jump to Parent' : 'Jump to Child'}</title>
+            <title>{e.arrow === 'down' ? t('Jump to Parent') : t('Jump to Child')}</title>
             <rect x={Math.min(x(e.fromLane), x(e.toLane)) - 5} y={0} width={Math.abs(x(e.toLane) - x(e.fromLane)) + 10} height={ROW_H} fill="transparent" />
             {line}
             <path d={arrowPath(e)} stroke={color} stroke-width={1.6} fill="none" stroke-linecap="round" stroke-linejoin="round" />

@@ -11,6 +11,20 @@ import { Change } from '../../shared/types';
 
 const SETTINGS_KEY = 'ideagittool.merge.settings';
 
+/** Placeholder value for boldTitle: `boldTitle(vscode.l10n.t('Changes from {0}', BOLD), branch)`. */
+export const BOLD = '\u0001';
+
+/** Title parts from a translated text with BOLD in place of the value shown in bold. */
+export function boldTitle(text: string, value: string): TitleParts {
+  const i = text.indexOf(BOLD);
+  if (i < 0) return [{ text }];
+  const parts: TitleParts = [];
+  if (i > 0) parts.push({ text: text.slice(0, i) });
+  parts.push({ text: value, bold: true });
+  if (i + BOLD.length < text.length) parts.push({ text: text.slice(i + BOLD.length) });
+  return parts;
+}
+
 export interface MergeRevisions {
   base: string;
   left: string;
@@ -44,7 +58,7 @@ export class MergeTool {
     revisions: MergeRevisions,
     opts: { iterative: boolean; progress?: MergeProgress; titles?: { left: TitleParts; right: TitleParts } },
   ): Promise<MergeFinish> {
-    const titles = opts.titles ? { left: opts.titles.left, result: [{ text: 'Result' }], right: opts.titles.right } : this.titles(repo);
+    const titles = opts.titles ? { left: opts.titles.left, result: [{ text: vscode.l10n.t('Result') }], right: opts.titles.right } : this.titles(repo);
     const plain = (t: TitleParts) => t.map(p => p.text).join('');
     const init: MergeInit = {
       path: c.path,
@@ -59,7 +73,7 @@ export class MergeTool {
       progress: opts.progress,
     };
     return new Promise<MergeFinish>(resolve => {
-      const panel = vscode.window.createWebviewPanel('ideagittool.merge', `Merge Revisions for ${c.path}`, vscode.ViewColumn.Active, {
+      const panel = vscode.window.createWebviewPanel('ideagittool.merge', vscode.l10n.t('Merge Revisions for {0}', c.path), vscode.ViewColumn.Active, {
         retainContextWhenHidden: true,
       });
       panel.iconPath = {
@@ -99,7 +113,7 @@ export class MergeTool {
             result: () => write('Result', p.result),
           };
           const [a, b] = p.mode.split('-') as (keyof typeof uri)[];
-          const name = (k: string) => (k === 'left' ? 'Left' : k === 'right' ? 'Right' : k === 'base' ? 'Base' : 'Result');
+          const name = (k: string) => (k === 'left' ? vscode.l10n.t('Left') : k === 'right' ? vscode.l10n.t('Right') : k === 'base' ? vscode.l10n.t('Base') : vscode.l10n.t('Result'));
           await vscode.commands.executeCommand('vscode.diff', uri[a](), uri[b](), `${init.fileName} (${name(a)} ↔ ${name(b)})`, {
             viewColumn: vscode.ViewColumn.Beside,
           });
@@ -107,7 +121,7 @@ export class MergeTool {
         // CompareClipboardWithSelection
         compareClipboard: async (p: { text: string; fileName: string }) => {
           const clip = await vscode.env.clipboard.readText();
-          await vscode.commands.executeCommand('vscode.diff', write('Clipboard', clip), write('Selection', p.text), `Clipboard ↔ ${p.fileName}`, {
+          await vscode.commands.executeCommand('vscode.diff', write('Clipboard', clip), write('Selection', p.text), vscode.l10n.t('Clipboard ↔ {0}', p.fileName), {
             viewColumn: vscode.ViewColumn.Beside,
           });
         },
@@ -136,16 +150,16 @@ export class MergeTool {
       const r = repo.refs.find(x => (x.type === 'local' || x.type === 'remote') && x.hash === hash);
       return r?.name;
     };
-    const result: TitleParts = [{ text: 'Result' }];
+    const result: TitleParts = [{ text: vscode.l10n.t('Result') }];
     const current = repo.info.branch ?? short(repo.info.headHash);
     switch (repo.info.operation) {
       case 'merge': {
         const mergeHead = read('MERGE_HEAD')?.split('\n')[0];
         const other = /Merge (?:remote-tracking )?branch '([^']+)'/.exec(read('MERGE_MSG') ?? '')?.[1] ?? branchAt(mergeHead) ?? short(mergeHead);
         return {
-          left: [{ text: 'Changes from ' }, { text: current, bold: true }],
+          left: boldTitle(vscode.l10n.t('Changes from {0}', BOLD), current),
           result,
-          right: [{ text: 'Changes from ' }, { text: other, bold: true }],
+          right: boldTitle(vscode.l10n.t('Changes from {0}', BOLD), other),
         };
       }
       case 'rebase': {
@@ -154,24 +168,24 @@ export class MergeTool {
         const onto = read('rebase-merge/onto') ?? read('rebase-apply/onto');
         const ontoBranch = branchAt(onto);
         return {
-          left: [{ text: `Rebasing ${short(rebaseHead)} from ` }, { text: branch, bold: true }],
+          left: boldTitle(vscode.l10n.t('Rebasing {0} from {1}', short(rebaseHead), BOLD), branch),
           result,
-          right: ontoBranch ? [{ text: 'Already rebased commits and commits from ' }, { text: ontoBranch, bold: true }] : [{ text: 'Already rebased commits' }],
+          right: ontoBranch ? boldTitle(vscode.l10n.t('Already rebased commits and commits from {0}', BOLD), ontoBranch) : [{ text: vscode.l10n.t('Already rebased commits') }],
         };
       }
       case 'cherry-pick': {
         const h = read('CHERRY_PICK_HEAD');
-        return { left: [{ text: 'Local Changes' }], result, right: [{ text: 'Changes from cherry-pick ' }, { text: short(h), bold: true }] };
+        return { left: [{ text: vscode.l10n.t('Local Changes') }], result, right: boldTitle(vscode.l10n.t('Changes from cherry-pick {0}', BOLD), short(h)) };
       }
       case 'revert': {
         const h = read('REVERT_HEAD');
-        return { left: [{ text: 'Local Changes' }], result, right: [{ text: 'Changes from revert ' }, { text: short(h), bold: true }] };
+        return { left: [{ text: vscode.l10n.t('Local Changes') }], result, right: boldTitle(vscode.l10n.t('Changes from revert {0}', BOLD), short(h)) };
       }
       default:
         return {
-          left: repo.info.branch ? [{ text: 'Your version, branch ' }, { text: repo.info.branch, bold: true }] : [{ text: 'Your version' }],
+          left: repo.info.branch ? boldTitle(vscode.l10n.t('Your version, branch {0}', BOLD), repo.info.branch) : [{ text: vscode.l10n.t('Your version') }],
           result,
-          right: [{ text: 'Changes from diverging branches' }],
+          right: [{ text: vscode.l10n.t('Changes from diverging branches') }],
         };
     }
   }

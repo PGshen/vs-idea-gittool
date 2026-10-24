@@ -7,6 +7,7 @@ import { ChangeState, isChange, isResolved, isSideResolved, linesContent, MergeC
 import { MergeInit, MergeSettings } from '../../shared/mergeProtocol';
 import { innerDifferences } from '../../shared/mergeResolve';
 import { iconUrl } from '../lib/icons';
+import { t } from '../lib/l10n';
 import { MenuEntry } from '../lib/menu';
 import {
   buildDecorations,
@@ -132,7 +133,7 @@ export class MergeController {
             history(),
             keymap.of([...defaultKeymap, ...historyKeymap]),
             EditorView.updateListener.of(u => {
-              if (u.docChanged || u.transactions.some(t => t.effects.length && !t.effects.every(e => e.is(setDecorations) || e.is(setFolds) || e.is(setOperations) || e.is(setGutterClasses)))) {
+              if (u.docChanged || u.transactions.some(tr => tr.effects.length && !tr.effects.every(e => e.is(setDecorations) || e.is(setFolds) || e.is(setOperations) || e.is(setGutterClasses)))) {
                 this.refresh();
                 this.emit();
               }
@@ -334,25 +335,25 @@ export class MergeController {
     const items: MenuEntry[] = [];
     if (pane === 'left' || pane === 'result') {
       if (has(sideOpen('left')))
-        items.push({ label: pane === 'result' ? 'Accept Left Side' : 'Accept', icon: 'diff/arrowRight@14x14', shortcut: 'Ctrl+Alt+R', action: () => this.applySelected(pane, 'left', false) });
+        items.push({ label: pane === 'result' ? t('Accept Left Side') : t('Accept'), icon: 'diff/arrowRight@14x14', shortcut: 'Ctrl+Alt+R', action: () => this.applySelected(pane, 'left', false) });
     }
     if (pane === 'right' || pane === 'result') {
       if (has(sideOpen('right')))
-        items.push({ label: pane === 'result' ? 'Accept Right Side' : 'Accept', icon: 'diff/arrow@14x14', shortcut: 'Ctrl+Alt+A', action: () => this.applySelected(pane, 'right', false) });
+        items.push({ label: pane === 'result' ? t('Accept Right Side') : t('Accept'), icon: 'diff/arrow@14x14', shortcut: 'Ctrl+Alt+A', action: () => this.applySelected(pane, 'right', false) });
     }
-    if ((pane === 'left' || pane === 'result') && has(sideOpen('left'))) items.push({ label: 'Resolve using Left', action: () => this.applySelected(pane, 'left', true) });
-    if ((pane === 'right' || pane === 'result') && has(sideOpen('right'))) items.push({ label: 'Resolve using Right', action: () => this.applySelected(pane, 'right', true) });
-    if (pane === 'left' && has(sideOpen('left'))) items.push({ label: 'Ignore', icon: 'diff/remove@14x14', action: () => this.ignoreSelectedSide(pane, 'left') });
-    if (pane === 'right' && has(sideOpen('right'))) items.push({ label: 'Ignore', icon: 'diff/remove@14x14', action: () => this.ignoreSelectedSide(pane, 'right') });
+    if ((pane === 'left' || pane === 'result') && has(sideOpen('left'))) items.push({ label: t('Resolve using Left'), action: () => this.applySelected(pane, 'left', true) });
+    if ((pane === 'right' || pane === 'result') && has(sideOpen('right'))) items.push({ label: t('Resolve using Right'), action: () => this.applySelected(pane, 'right', true) });
+    if (pane === 'left' && has(sideOpen('left'))) items.push({ label: t('Ignore'), icon: 'diff/remove@14x14', action: () => this.ignoreSelectedSide(pane, 'left') });
+    if (pane === 'right' && has(sideOpen('right'))) items.push({ label: t('Ignore'), icon: 'diff/remove@14x14', action: () => this.ignoreSelectedSide(pane, 'right') });
     if (pane === 'result') {
-      if (has(c => model.canResolveAutomatically(c.index, 'base'))) items.push({ label: 'Resolve Automatically', icon: 'diff/magicResolve@14x14', action: () => this.resolveSelected() });
-      if (has((_c, s) => !isResolved(s))) items.push({ label: 'Ignore', icon: 'diff/remove@14x14', action: () => this.ignoreSelected() });
+      if (has(c => model.canResolveAutomatically(c.index, 'base'))) items.push({ label: t('Resolve Automatically'), icon: 'diff/magicResolve@14x14', action: () => this.resolveSelected() });
+      if (has((_c, s) => !isResolved(s))) items.push({ label: t('Ignore'), icon: 'diff/remove@14x14', action: () => this.ignoreSelected() });
     }
     items.push({ separator: true });
-    items.push({ label: 'Compare with Clipboard', icon: 'actions/diffWithClipboard', action: toggles.compareClipboard });
+    items.push({ label: t('Compare with Clipboard'), icon: 'actions/diffWithClipboard', action: toggles.compareClipboard });
     items.push({ separator: true });
-    if (this.init.contextLines !== -1) items.push({ label: 'Collapse Unchanged Fragments', checked: this.settings.collapseUnchanged, action: toggles.toggleCollapse });
-    items.push({ label: 'Synchronize Scrolling', checked: this.settings.syncScroll, action: toggles.toggleSync });
+    if (this.init.contextLines !== -1) items.push({ label: t('Collapse Unchanged Fragments'), checked: this.settings.collapseUnchanged, action: toggles.toggleCollapse });
+    items.push({ label: t('Synchronize Scrolling'), checked: this.settings.syncScroll, action: toggles.toggleSync });
     return items;
   }
 
@@ -440,20 +441,20 @@ export class MergeController {
         const sideResolved = isSideResolved(st, side);
         regions[side].push({ l0: c[side][0], l1: c[side][1], kind: c.kind, resolved: sideResolved, inner: inner?.[side] });
         if (!sideResolved) {
-          const tip = (text: string) => (c.kind === 'conflict' ? `${text}\nCtrl+click to resolve conflict` : text);
+          const tip = (text: string) => (c.kind === 'conflict' ? t('{0}\nCtrl+click to resolve conflict', text) : text);
           const apply: Operation = {
             i: c.index,
             action: 'apply',
             side,
             icon: side === 'left' ? (st.oneside ? ICONS.appendLeft : ICONS.applyLeft) : st.oneside ? ICONS.appendRight : ICONS.applyRight,
-            tooltip: tip('Accept'),
+            tooltip: tip(t('Accept')),
           };
-          const ignore: Operation = { i: c.index, action: 'ignore', side, icon: ICONS.ignore, tooltip: tip('Ignore') };
+          const ignore: Operation = { i: c.index, action: 'ignore', side, icon: ICONS.ignore, tooltip: tip(t('Ignore')) };
           ops[side].push({ line: c[side][0], ops: [apply, ignore] });
         }
       }
       if (c.kind === 'conflict' && model.canResolveAutomatically(c.index, 'base')) {
-        ops.result.push({ line: st.start, ops: [{ i: c.index, action: 'resolve', side: 'result', icon: ICONS.resolve, tooltip: 'Resolve' }] });
+        ops.result.push({ line: st.start, ops: [{ i: c.index, action: 'resolve', side: 'result', icon: ICONS.resolve, tooltip: t('Resolve') }] });
       }
     }
     const h = this.settings.highlight;

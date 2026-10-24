@@ -134,7 +134,6 @@ body {
   font-size: 13px;
   line-height: 16px;
   user-select: none;
-  -webkit-font-smoothing: antialiased;
 }
 
 #root {

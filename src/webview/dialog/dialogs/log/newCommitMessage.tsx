@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import { Button } from '../../../lib/components';
+import { t } from '../../../lib/l10n';
 import { DialogFrame } from '../../frame';
 import { registerDialog } from '../../registry';
 
@@ -20,16 +21,16 @@ registerDialog<NewCommitMessageProps>('log.newCommitMessage', ({ props, submit, 
   };
   return (
     <DialogFrame
-      title="New Commit Message"
+      title={t('New Commit Message')}
       width={600}
       onCancel={cancel}
       onOk={ok}
       error={error}
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           <Button primary onClick={ok} disabled={!message.trim()}>
-            {props.okText ?? 'OK'}
+            {props.okText ?? t('OK')}
           </Button>
         </>
       }

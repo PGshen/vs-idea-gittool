@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Change } from '../../../../shared/types';
 import { buildDirectoryTree, Button, Split, Tree, TreeNode, walkTree } from '../../../lib/components';
 import { fileIconName, Icon } from '../../../lib/icons';
+import { t } from '../../../lib/l10n';
 import { anchorAt, anchorBelow, showMenu, showPopup } from '../../../lib/menu';
 import { call } from '../../../lib/rpc';
 import { DialogFrame } from '../../frame';
@@ -34,15 +35,15 @@ export interface InteractiveRebaseProps {
 }
 
 const ACTIONS: { id: Action; label: string; key: string; icon?: string; tip: string }[] = [
-  { id: 'pick', label: 'Pick', key: 'Alt+P', icon: 'vcs/revert', tip: 'Pick' },
-  { id: 'edit', label: 'Stop to Edit', key: 'Alt+E', icon: 'run/pause', tip: 'Stop to Edit' },
-  { id: 'reword', label: 'Reword', key: 'Alt+R', tip: 'Reword' },
-  { id: 'squash', label: 'Squash', key: 'Alt+S', tip: 'Squash' },
-  { id: 'fixup', label: 'Fixup', key: 'Alt+F', tip: 'Fixup' },
-  { id: 'drop', label: 'Drop', key: 'Alt+D', tip: 'Drop' },
+  { id: 'pick', label: t('Pick'), key: 'Alt+P', icon: 'vcs/revert', tip: t('Pick') },
+  { id: 'edit', label: t('Stop to Edit'), key: 'Alt+E', icon: 'run/pause', tip: t('Stop to Edit') },
+  { id: 'reword', label: t('Reword'), key: 'Alt+R', tip: t('Reword') },
+  { id: 'squash', label: t('Squash'), key: 'Alt+S', tip: t('Squash') },
+  { id: 'fixup', label: t('Fixup'), key: 'Alt+F', tip: t('Fixup') },
+  { id: 'drop', label: t('Drop'), key: 'Alt+D', tip: t('Drop') },
 ];
 
-const ACTION_NAMES: Record<Action, string> = { pick: 'Pick', edit: 'Edit', reword: 'Reword', squash: 'Squash', fixup: 'Fixup', drop: 'Drop' };
+const ACTION_NAMES: Record<Action, string> = { pick: t('Pick'), edit: t('Edit'), reword: t('Reword'), squash: t('Squash'), fixup: t('Fixup'), drop: t('Drop') };
 
 function prettySquash(messages: string[]) {
   const seen = new Set<string>();
@@ -183,11 +184,11 @@ registerDialog<InteractiveRebaseProps>('ops.interactiveRebase', ({ props, submit
   const start = async () => {
     if (rewording) applyReword();
     if (entries.every(e => e.action === 'drop')) {
-      setError('Cannot drop all commits');
+      setError(t('Cannot drop all commits'));
       return;
     }
     if (entries[0]?.action === 'squash' || entries[0]?.action === 'fixup') {
-      setError('Cannot squash or fixup the first commit');
+      setError(t('Cannot squash or fixup the first commit'));
       return;
     }
     setError(await submit({ entries }));
@@ -201,14 +202,14 @@ registerDialog<InteractiveRebaseProps>('ops.interactiveRebase', ({ props, submit
             <div style={{ display: 'flex', gap: '10px' }}>
               <Icon name="general/questionDialog" size={20} />
               <div>
-                <b>Cancel Rebase</b>
-                <div style={{ marginTop: '4px' }}>Discard changes and cancel rebase?</div>
+                <b>{t('Cancel Rebase')}</b>
+                <div style={{ marginTop: '4px' }}>{t('Discard changes and cancel rebase?')}</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <Button onClick={close}>Continue Rebasing</Button>
+              <Button onClick={close}>{t('Continue Rebasing')}</Button>
               <Button primary onClick={() => (close(), cancel())}>
-                Discard
+                {t('Discard')}
               </Button>
             </div>
           </div>
@@ -223,7 +224,7 @@ registerDialog<InteractiveRebaseProps>('ops.interactiveRebase', ({ props, submit
       [
         ...ACTIONS.map(a => ({ label: a.label, shortcut: a.key, icon: a.icon, action: () => setAction(a.id) })),
         { separator: true as const },
-        { label: 'View Git Commands', action: () => showCommands() },
+        { label: t('View Git Commands'), action: () => showCommands() },
       ],
       anchorAt(e),
     );
@@ -243,7 +244,7 @@ registerDialog<InteractiveRebaseProps>('ops.interactiveRebase', ({ props, submit
 
   return (
     <DialogFrame
-      title="Rebasing Commits"
+      title={t('Rebasing Commits')}
       width="min(1100px, calc(100vw - 32px))"
       height="min(640px, calc(100vh - 32px))"
       resizable
@@ -252,9 +253,9 @@ registerDialog<InteractiveRebaseProps>('ops.interactiveRebase', ({ props, submit
       error={error}
       buttons={
         <>
-          <Button onClick={doCancel}>Cancel</Button>
+          <Button onClick={doCancel}>{t('Cancel')}</Button>
           <Button primary onClick={start}>
-            Start Rebasing
+            {t('Start Rebasing')}
           </Button>
         </>
       }
@@ -263,36 +264,36 @@ registerDialog<InteractiveRebaseProps>('ops.interactiveRebase', ({ props, submit
         <Split persistKey="irebase" initial={620}>
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <div class="irebase-toolbar">
-              <button class="action-button" data-tip="Move Up" data-shortcut="Alt+Up" onClick={() => move(-1)}>
+              <button class="action-button" data-tip={t('Move Up')} data-shortcut="Alt+Up" onClick={() => move(-1)}>
                 <Icon name="general/moveUp" />
               </button>
-              <button class="action-button" data-tip="Move Down" data-shortcut="Alt+Down" onClick={() => move(1)}>
+              <button class="action-button" data-tip={t('Move Down')} data-shortcut="Alt+Down" onClick={() => move(1)}>
                 <Icon name="general/moveDown" />
               </button>
-              <button class="action-button" data-tip="Pick" data-shortcut="Alt+P" onClick={() => setAction('pick')}>
+              <button class="action-button" data-tip={t('Pick')} data-shortcut="Alt+P" onClick={() => setAction('pick')}>
                 <Icon name="vcs/revert" />
               </button>
-              <button class="action-button" data-tip="Stop to Edit" data-shortcut="Alt+E" onClick={() => setAction('edit')}>
+              <button class="action-button" data-tip={t('Stop to Edit')} data-shortcut="Alt+E" onClick={() => setAction('edit')}>
                 <Icon name="run/pause" />
               </button>
               <span class="toolbar-separator" />
-              <button class="toolbar-button-text" data-tip="Reword" data-shortcut="Alt+R" onClick={() => setAction('reword')}>
-                Reword
+              <button class="toolbar-button-text" data-tip={t('Reword')} data-shortcut="Alt+R" onClick={() => setAction('reword')}>
+                {t('Reword')}
               </button>
               <span class="btn-split">
-                <button class="toolbar-button-text" data-tip="Squash" data-shortcut="Alt+S" onClick={() => setAction('squash')}>
-                  Squash
+                <button class="toolbar-button-text" data-tip={t('Squash')} data-shortcut="Alt+S" onClick={() => setAction('squash')}>
+                  {t('Squash')}
                 </button>
                 <button
                   class="toolbar-button-text"
                   style={{ padding: '0 2px' }}
-                  onClick={e => showMenu([{ label: 'Fixup', shortcut: 'Alt+F', action: () => setAction('fixup') }], anchorBelow(e.currentTarget as Element))}
+                  onClick={e => showMenu([{ label: t('Fixup'), shortcut: 'Alt+F', action: () => setAction('fixup') }], anchorBelow(e.currentTarget as Element))}
                 >
                   <Icon name="general/chevronDown" size={12} />
                 </button>
               </span>
-              <button class="toolbar-button-text" data-tip="Drop" data-shortcut="Alt+D" onClick={() => setAction('drop')}>
-                Drop
+              <button class="toolbar-button-text" data-tip={t('Drop')} data-shortcut="Alt+D" onClick={() => setAction('drop')}>
+                {t('Drop')}
               </button>
               <span style={{ flex: 1 }} />
               {modified && (
@@ -305,7 +306,7 @@ registerDialog<InteractiveRebaseProps>('ops.interactiveRebase', ({ props, submit
                     setRewording(null);
                   }}
                 >
-                  Reset
+                  {t('Reset')}
                 </span>
               )}
             </div>
@@ -403,7 +404,7 @@ registerDialog<InteractiveRebaseProps>('ops.interactiveRebase', ({ props, submit
                     }
                   }}
                 />
-                <span class="field-hint">Press Ctrl+Enter to apply changes</span>
+                <span class="field-hint">{t('Press Ctrl+Enter to apply changes')}</span>
               </div>
             )}
           </div>
@@ -446,7 +447,7 @@ function CommitDetails({ root, entry, commit }: { root: string; entry?: Entry; c
     };
   }, [commit?.hash]);
   const nodes = useMemo(() => tree(changes), [changes]);
-  if (!commit) return <div class="empty-text">Select commit to view changes</div>;
+  if (!commit) return <div class="empty-text">{t('Select commit to view changes')}</div>;
   const message = entry?.message ?? commit.body ?? commit.subject;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -458,14 +459,14 @@ function CommitDetails({ root, entry, commit }: { root: string; entry?: Entry; c
           selection={sel}
           onSelectionChange={setSel}
           onOpen={n => n.data && call('showDiff', { change: n.data, hash: commit.hash })}
-          emptyText="No changes"
+          emptyText={t('No changes')}
         />
       </div>
       <div class="details-pane">
         <div style={{ fontWeight: 600, marginBottom: '6px' }}>{message.split('\n')[0]}</div>
         {message.includes('\n') && <div style={{ marginBottom: '6px' }}>{message.split('\n').slice(1).join('\n').trim()}</div>}
         <div class="secondary">
-          <span class="mono-text">{commit.hash.slice(0, 8)}</span> {commit.author} on {formatDate(commit.date)}
+          <span class="mono-text">{commit.hash.slice(0, 8)}</span> {t('{0} on {1}', commit.author, formatDate(commit.date))}
         </div>
       </div>
     </div>

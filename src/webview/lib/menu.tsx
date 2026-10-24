@@ -1,6 +1,7 @@
 import { ComponentChildren, render } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Icon } from './icons';
+import { t } from './l10n';
 
 export interface MenuItem {
   label: string;
@@ -260,7 +261,7 @@ function MenuList({ entries, close, title, searchable, depth = 0 }: { entries: M
           </div>
         ),
       )}
-      {visible.length === 0 && <div class="menu-item disabled">Nothing found</div>}
+      {visible.length === 0 && <div class="menu-item disabled">{t('Nothing found')}</div>}
       {submenu && (
         <SubmenuPopup
           anchor={submenu.anchor}

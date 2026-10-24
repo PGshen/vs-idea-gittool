@@ -82,9 +82,9 @@ export function shortHash(ref: string) {
 }
 
 function revLabel(ref: string) {
-  if (ref === REV_EMPTY) return 'Empty';
-  if (ref === REV_INDEX) return 'Staged';
-  if (ref === 'WORKTREE') return 'Local';
+  if (ref === REV_EMPTY) return vscode.l10n.t('Empty');
+  if (ref === REV_INDEX) return vscode.l10n.t('Staged');
+  if (ref === 'WORKTREE') return vscode.l10n.t('Local');
   return shortHash(ref);
 }
 
@@ -92,7 +92,12 @@ function revLabel(ref: string) {
  * Opens a diff of one change between two revisions.
  * `right` may be 'WORKTREE' to compare with the local file.
  */
-export async function openChangeDiff(change: Change, left: string, right: string, opts: { preview?: boolean; viewColumn?: vscode.ViewColumn } = {}) {
+export async function openChangeDiff(
+  change: Change,
+  left: string,
+  right: string,
+  opts: { preview?: boolean; viewColumn?: vscode.ViewColumn; preserveFocus?: boolean } = {},
+): Promise<{ original: vscode.Uri; modified: vscode.Uri }> {
   const leftPath = change.oldPath ?? change.path;
   const leftUri = change.status === 'A' || change.status === '?' ? toGitUri(change.root, leftPath, REV_EMPTY) : toGitUri(change.root, leftPath, left);
   let rightUri: vscode.Uri;
@@ -104,7 +109,9 @@ export async function openChangeDiff(change: Change, left: string, right: string
   await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, title, {
     preview: opts.preview ?? true,
     viewColumn: opts.viewColumn,
+    preserveFocus: opts.preserveFocus,
   } satisfies vscode.TextDocumentShowOptions);
+  return { original: leftUri, modified: rightUri };
 }
 
 /**

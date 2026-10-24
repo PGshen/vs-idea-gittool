@@ -41,7 +41,8 @@
     "watch": "node scripts/build.mjs --watch",
     "typecheck": "tsc -p . --noEmit && tsc -p src/webview --noEmit",
     "test": "node scripts/test.mjs",
-    "package": "npm run contrib && node scripts/build.mjs --production && vsce package --no-dependencies --allow-missing-repository"
+    "package": "npm run contrib && node scripts/build.mjs --production && vsce package --no-dependencies --allow-missing-repository",
+    "l10n": "node scripts/l10n-check.mjs"
   },
   "contributes": {
     "configuration": {
@@ -50,7 +51,7 @@
         "ideagittool.gitPath": {
           "type": "string",
           "default": "",
-          "description": "Path to the Git executable. Leave empty to use git from PATH."
+          "description": "%config.gitPath.description%"
         },
         "ideagittool.appearance": {
           "type": "string",
@@ -59,11 +60,11 @@
             "intellij"
           ],
           "enumDescriptions": [
-            "Native VS Code look: buttons, inputs, lists, menus, colors and fonts of the current VS Code theme, with the IntelliJ layout.",
-            "IntelliJ New UI look: the IntelliJ light/dark palette (picked by the VS Code theme kind) and IntelliJ widget shapes."
+            "%config.appearance.enumDescriptions.0%",
+            "%config.appearance.enumDescriptions.1%"
           ],
           "default": "vscode",
-          "description": "Look of the IdeaGitTool views and dialogs. The layout and the features are the same in both."
+          "description": "%config.appearance.description%"
         },
         "ideagittool.untrackedFiles": {
           "type": "string",
@@ -73,52 +74,52 @@
             "hide"
           ],
           "default": "all",
-          "description": "How to show unversioned files in the Commit view."
+          "description": "%config.untrackedFiles.description%"
         },
         "ideagittool.showIgnoredFiles": {
           "type": "boolean",
           "default": false,
-          "description": "Show ignored files in the Commit view."
+          "description": "%config.showIgnoredFiles.description%"
         },
         "ideagittool.repositoryScanMaxDepth": {
           "type": "number",
           "default": 1,
-          "description": "How deep to look for nested Git repositories below each workspace folder."
+          "description": "%config.repositoryScanMaxDepth.description%"
         },
         "ideagittool.dialogs.openInNewWindow": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Open dialogs (Push, Rebase, Conflicts, …) and the merge window in their own window, like IntelliJ's floating dialogs, instead of an editor tab. Uses VS Code's *Move Editor into New Window*; the window size and position are chosen by VS Code."
+          "markdownDescription": "%config.dialogs.openInNewWindow.markdownDescription%"
         },
         "ideagittool.fileStatusColors": {
           "type": "boolean",
           "default": true,
-          "description": "Color file names in the Explorer and editor tabs by their Git status, like IntelliJ."
+          "description": "%config.fileStatusColors.description%"
         },
         "ideagittool.commit.gpgSign": {
           "type": "boolean",
           "default": false,
-          "description": "Sign commits with GPG key (git commit -S). Like IntelliJ, this is a setting, not a commit option."
+          "description": "%config.commit.gpgSign.description%"
         },
         "ideagittool.commit.includeActiveChangelist": {
           "type": "boolean",
           "default": false,
-          "description": "Include new changes of the active changelist into the commit automatically (check them in the Commit tool window)."
+          "description": "%config.commit.includeActiveChangelist.description%"
         },
         "ideagittool.commit.skipHooks": {
           "type": "boolean",
           "default": false,
-          "description": "Do not run Git commit hooks (commit always runs with '--no-verify')."
+          "description": "%config.commit.skipHooks.description%"
         },
         "ideagittool.intellijShortcuts": {
           "type": "boolean",
           "default": true,
-          "description": "Use IntelliJ keyboard shortcuts for Git actions (Ctrl+T Update Project, Ctrl+Shift+K Push, Ctrl+Shift+` Branches, Alt+` VCS Operations Popup, Ctrl+Alt+N New Branch)."
+          "description": "%config.intellijShortcuts.description%"
         },
         "ideagittool.merge.useVsCodeMergeEditor": {
           "type": "boolean",
           "default": false,
-          "description": "Resolve Manually… opens VS Code's merge editor instead of the IntelliJ-style three-pane merge window."
+          "description": "%config.merge.useVsCodeMergeEditor.description%"
         },
         "ideagittool.merge.handleConflicts": {
           "type": "string",
@@ -128,12 +129,12 @@
             "never"
           ],
           "enumDescriptions": [
-            "Ask once per workspace, when the first conflict appears.",
-            "Resolve conflicts with IdeaGitTool: turn off VS Code's merge conflict CodeLens and decorations (merge-conflict.codeLens.enabled, merge-conflict.decorators.enabled) and the automatic merge editor (git.mergeEditor). Run \"Restore VS Code's Built-in Merge Conflict UI\" to undo.",
-            "Keep VS Code's built-in conflict UI as it is; IdeaGitTool never changes those settings."
+            "%config.merge.handleConflicts.enumDescriptions.0%",
+            "%config.merge.handleConflicts.enumDescriptions.1%",
+            "%config.merge.handleConflicts.enumDescriptions.2%"
           ],
           "default": "ask",
-          "markdownDescription": "Whether IdeaGitTool handles merge conflicts in the editor instead of VS Code's built-in conflict UI. IdeaGitTool changes VS Code's settings only after you agree (or choose `always` here)."
+          "markdownDescription": "%config.merge.handleConflicts.markdownDescription%"
         },
         "ideagittool.merge.contextLines": {
           "type": "number",
@@ -145,55 +146,55 @@
             -1
           ],
           "enumDescriptions": [
-            "1 line",
-            "2 lines",
-            "4 lines",
-            "8 lines",
-            "Do not collapse"
+            "%config.merge.contextLines.enumDescriptions.0%",
+            "%config.merge.contextLines.enumDescriptions.1%",
+            "%config.merge.contextLines.enumDescriptions.2%",
+            "%config.merge.contextLines.enumDescriptions.3%",
+            "%config.merge.contextLines.enumDescriptions.4%"
           ],
           "default": 4,
-          "description": "Diff & Merge: the number of unchanged lines kept around changes by Collapse Unchanged Fragments in the merge window."
+          "description": "%config.merge.contextLines.description%"
         },
         "ideagittool.localHistory.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Record Local History: file saves, creations, deletions, renames and external changes (git operations)."
+          "description": "%config.localHistory.enabled.description%"
         },
         "ideagittool.localHistory.retentionDays": {
           "type": "number",
           "default": 5,
           "minimum": 1,
-          "description": "Keep Local History for this number of days (IntelliJ: \"Keep local history for N working days\")."
+          "description": "%config.localHistory.retentionDays.description%"
         },
         "ideagittool.log.showInEditor": {
           "type": "boolean",
           "default": false,
-          "description": "Show the log in the editor window, like Rebased. When off (the default), the log is shown in the \"Git\" panel at the bottom, like in JetBrains IDEs."
+          "description": "%config.log.showInEditor.description%"
         },
         "ideagittool.log.openOnStartup": {
           "type": "boolean",
           "default": true,
-          "description": "Show the Git log when a workspace with a Git repository is opened (in the \"Git\" panel, or in the editor with ideagittool.log.showInEditor)."
+          "description": "%config.log.openOnStartup.description%"
         },
         "ideagittool.annotate.showAuthor": {
           "type": "boolean",
           "default": true,
-          "description": "Annotate with Git Blame: show the author."
+          "description": "%config.annotate.showAuthor.description%"
         },
         "ideagittool.annotate.showDate": {
           "type": "boolean",
           "default": true,
-          "description": "Annotate with Git Blame: show the date."
+          "description": "%config.annotate.showDate.description%"
         },
         "ideagittool.annotate.showRevision": {
           "type": "boolean",
           "default": false,
-          "description": "Annotate with Git Blame: show the revision."
+          "description": "%config.annotate.showRevision.description%"
         },
         "ideagittool.annotate.preferCommitDate": {
           "type": "boolean",
           "default": false,
-          "description": "Annotate with Git Blame: show the commit timestamp instead of the author timestamp."
+          "description": "%config.annotate.preferCommitDate.description%"
         },
         "ideagittool.annotate.names": {
           "type": "string",
@@ -205,7 +206,7 @@
             "email"
           ],
           "default": "first",
-          "description": "Annotate with Git Blame: how to show author names."
+          "description": "%config.annotate.names.description%"
         },
         "ideagittool.annotate.colors": {
           "type": "string",
@@ -215,32 +216,32 @@
             "hide"
           ],
           "default": "order",
-          "description": "Annotate with Git Blame: background colors by commit order (age), by author, or none."
+          "description": "%config.annotate.colors.description%"
         },
         "ideagittool.annotate.ignoreWhitespace": {
           "type": "boolean",
           "default": false,
-          "description": "Annotate with Git Blame: ignore whitespace changes (-w)."
+          "description": "%config.annotate.ignoreWhitespace.description%"
         },
         "ideagittool.annotate.detectMovementsWithinFile": {
           "type": "boolean",
           "default": false,
-          "description": "Annotate with Git Blame: detect moved lines within the file (-M)."
+          "description": "%config.annotate.detectMovementsWithinFile.description%"
         },
         "ideagittool.annotate.detectMovementsAcrossFiles": {
           "type": "boolean",
           "default": false,
-          "description": "Annotate with Git Blame: detect lines moved from other files (-C)."
+          "description": "%config.annotate.detectMovementsAcrossFiles.description%"
         },
         "ideagittool.inlineBlame.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Show Git blame information inline: the author, date and subject of the last commit that changed the caret line, after the end of the line (like IntelliJ)."
+          "description": "%config.inlineBlame.enabled.description%"
         },
         "ideagittool.intellijShortcutsInEditor": {
           "type": "boolean",
           "default": false,
-          "description": "Also use Ctrl+Shift+K for Push while a text editor has focus (it replaces VS Code's Delete Line)."
+          "description": "%config.intellijShortcutsInEditor.description%"
         },
         "ideagittool.updateMethod": {
           "type": "string",
@@ -250,17 +251,17 @@
             "branchDefault"
           ],
           "enumDescriptions": [
-            "Merge incoming changes into the current branch",
-            "Rebase the current branch on top of incoming changes",
-            "Branch Default (git config branch.<name>.rebase / pull.rebase)"
+            "%config.updateMethod.enumDescriptions.0%",
+            "%config.updateMethod.enumDescriptions.1%",
+            "%config.updateMethod.enumDescriptions.2%"
           ],
           "default": "merge",
-          "description": "Update method used by Update Project."
+          "description": "%config.updateMethod.description%"
         },
         "ideagittool.update.showDialog": {
           "type": "boolean",
           "default": true,
-          "description": "Show the Update Project dialog before updating."
+          "description": "%config.update.showDialog.description%"
         },
         "ideagittool.update.saveChangesPolicy": {
           "type": "string",
@@ -270,10 +271,10 @@
           ],
           "default": "stash",
           "enumDescriptions": [
-            "Using Stash",
-            "Using Shelve"
+            "%config.update.saveChangesPolicy.enumDescriptions.0%",
+            "%config.update.saveChangesPolicy.enumDescriptions.1%"
           ],
-          "description": "Clean working tree using: Stash / Shelve. Local changes are saved before Update Project, Smart Checkout and Smart Merge, and restored afterwards."
+          "description": "%config.update.saveChangesPolicy.description%"
         },
         "ideagittool.push.tags": {
           "type": "string",
@@ -283,12 +284,12 @@
             "current"
           ],
           "default": "none",
-          "description": "Push tags option of the Push dialog."
+          "description": "%config.push.tags.description%"
         },
         "ideagittool.push.runHooks": {
           "type": "boolean",
           "default": true,
-          "description": "Run Git hooks on push."
+          "description": "%config.push.runHooks.description%"
         },
         "ideagittool.push.autoUpdateOnRejected": {
           "type": "string",
@@ -298,143 +299,144 @@
             "rebase"
           ],
           "default": "",
-          "description": "Update method to use silently when a push is rejected. Empty: ask with the Push Rejected dialog."
+          "description": "%config.push.autoUpdateOnRejected.description%"
         },
         "ideagittool.fetch.prune": {
           "type": "boolean",
           "default": false,
-          "description": "Prune obsolete remote references on fetch."
+          "description": "%config.fetch.prune.description%"
         },
         "ideagittool.branches.showRecent": {
           "type": "boolean",
           "default": true,
-          "description": "Show recent branches in the Branches tab."
+          "description": "%config.branches.showRecent.description%"
         },
         "ideagittool.branches.showTags": {
           "type": "boolean",
           "default": true,
-          "description": "Show tags in the Branches tab."
+          "description": "%config.branches.showTags.description%"
         },
         "ideagittool.branches.groupByDirectory": {
           "type": "boolean",
           "default": true,
-          "description": "Branches tab: group branches by directory (\"feature/x\" under a \"feature\" folder)."
+          "description": "%config.branches.groupByDirectory.description%"
         },
         "ideagittool.branches.groupByRepository": {
           "type": "boolean",
           "default": true,
-          "description": "Branches tab: group branches by repository when the workspace has several repositories."
+          "description": "%config.branches.groupByRepository.description%"
         },
         "ideagittool.branches.searchActions": {
           "type": "boolean",
           "default": true,
-          "description": "Branches tab: include actions (Update Project…, Commit…, …) in the search results."
+          "description": "%config.branches.searchActions.description%"
         },
         "ideagittool.branches.syncControl": {
           "type": "boolean",
           "default": true,
-          "description": "Execute branch operations on all roots: with several repositories, branches that exist in all of them are shown once in the Branches tab and their actions run in every repository."
+          "description": "%config.branches.syncControl.description%"
         }
       }
     },
     "commands": [
       {
         "command": "ideagittool.showConsole",
-        "title": "Show Git Console",
-        "category": "IdeaGitTool"
+        "title": "%command.showConsole.title%",
+        "category": "IdeaGitTool",
+        "icon": "$(terminal)"
       },
       {
         "command": "ideagittool.commit",
-        "title": "Commit…",
+        "title": "%command.commit.title%",
         "category": "IdeaGitTool",
         "icon": "$(git-commit)"
       },
       {
         "command": "ideagittool.commitAndPush",
-        "title": "Commit and Push…",
+        "title": "%command.commitAndPush.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.resolveConflicts",
-        "title": "Resolve Conflicts…",
+        "title": "%command.resolveConflicts.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.refreshChanges",
-        "title": "Refresh",
+        "title": "%command.refreshChanges.title%",
         "category": "IdeaGitTool",
         "icon": "$(refresh)"
       },
       {
         "command": "ideagittool.rollback",
-        "title": "Rollback…",
+        "title": "%command.rollback.title%",
         "category": "IdeaGitTool",
         "icon": "$(discard)"
       },
       {
         "command": "ideagittool.addToVcs",
-        "title": "Add to VCS",
+        "title": "%command.addToVcs.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.addToGitignore",
-        "title": "Add to .gitignore",
+        "title": "%command.addToGitignore.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.showLocalDiff",
-        "title": "Compare with Same Repository Version",
+        "title": "%command.showLocalDiff.title%",
         "category": "IdeaGitTool",
         "icon": "$(diff)"
       },
       {
         "command": "ideagittool.shelve",
-        "title": "Shelve Changes…",
+        "title": "%command.shelve.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.shelveSilently",
-        "title": "Shelve Silently",
+        "title": "%command.shelveSilently.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.unshelve",
-        "title": "Unshelve…",
+        "title": "%command.unshelve.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.showShelf",
-        "title": "Show Shelf",
+        "title": "%command.showShelf.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.showStashes",
-        "title": "Show Stashes",
+        "title": "%command.showStashes.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.stash",
-        "title": "Stash Changes…",
+        "title": "%command.stash.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.unstash",
-        "title": "Unstash Changes…",
+        "title": "%command.unstash.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.newChangelist",
-        "title": "New Changelist…",
+        "title": "%command.newChangelist.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.importPatches",
-        "title": "Import Patches…",
+        "title": "%command.importPatches.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.resolveConflictsInFile",
-        "title": "Resolve Conflicts… (IdeaGitTool)",
+        "title": "%command.resolveConflictsInFile.title%",
         "category": "IdeaGitTool",
         "icon": {
           "light": "media/icons/vcs/merge.svg",
@@ -443,329 +445,329 @@
       },
       {
         "command": "ideagittool.merge.useIdeaGitToolForConflicts",
-        "title": "Use IdeaGitTool for Merge Conflicts",
+        "title": "%command.merge.useIdeaGitToolForConflicts.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.merge.restoreVsCodeConflictUi",
-        "title": "Restore VS Code's Built-in Merge Conflict UI",
+        "title": "%command.merge.restoreVsCodeConflictUi.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.localHistory.showHistory",
-        "title": "Show History…",
-        "category": "IdeaGitTool: Local History",
+        "title": "%command.localHistory.showHistory.title%",
+        "category": "%category.IdeaGitToolLocalHistory%",
         "icon": "$(history)"
       },
       {
         "command": "ideagittool.localHistory.showSelectionHistory",
-        "title": "Show History for Selection…",
-        "category": "IdeaGitTool: Local History"
+        "title": "%command.localHistory.showSelectionHistory.title%",
+        "category": "%category.IdeaGitToolLocalHistory%"
       },
       {
         "command": "ideagittool.localHistory.showProjectHistory",
-        "title": "Show Project History…",
-        "category": "IdeaGitTool: Local History"
+        "title": "%command.localHistory.showProjectHistory.title%",
+        "category": "%category.IdeaGitToolLocalHistory%"
       },
       {
         "command": "ideagittool.localHistory.recentChanges",
-        "title": "Recent Changes",
-        "category": "IdeaGitTool: Local History"
+        "title": "%command.localHistory.recentChanges.title%",
+        "category": "%category.IdeaGitToolLocalHistory%"
       },
       {
         "command": "ideagittool.localHistory.putLabel",
-        "title": "Put Label…",
-        "category": "IdeaGitTool: Local History"
+        "title": "%command.localHistory.putLabel.title%",
+        "category": "%category.IdeaGitToolLocalHistory%"
       },
       {
         "command": "ideagittool.localHistory.putSystemLabel",
-        "title": "Put System Label",
-        "category": "IdeaGitTool: Local History"
+        "title": "%command.localHistory.putSystemLabel.title%",
+        "category": "%category.IdeaGitToolLocalHistory%"
       },
       {
         "command": "ideagittool.rollbackFile",
-        "title": "Rollback File…",
+        "title": "%command.rollbackFile.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.removeFromVcs",
-        "title": "Remove from VCS",
+        "title": "%command.removeFromVcs.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.revertResolved",
-        "title": "Revert Resolved",
+        "title": "%command.revertResolved.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.createPatchFromChanges",
-        "title": "Create Patch from Local Changes…",
+        "title": "%command.createPatchFromChanges.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.unshelveSilently",
-        "title": "Unshelve Silently",
+        "title": "%command.unshelveSilently.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.copyPath",
-        "title": "Copy Path",
+        "title": "%command.copyPath.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.noop",
-        "title": "No Operation",
+        "title": "%command.noop.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.copyPath.absolute",
-        "title": "Absolute Path"
+        "title": "%command.copyPath.absolute.title%"
       },
       {
         "command": "ideagittool.copyPath.name",
-        "title": "File Name"
+        "title": "%command.copyPath.name.title%"
       },
       {
         "command": "ideagittool.copyPath.lineNumber",
-        "title": "Path with Line Number"
+        "title": "%command.copyPath.lineNumber.title%"
       },
       {
         "command": "ideagittool.copyPath.contentRoot",
-        "title": "Path from Content Root"
+        "title": "%command.copyPath.contentRoot.title%"
       },
       {
         "command": "ideagittool.copyPath.repo",
-        "title": "Path From Repository Root"
+        "title": "%command.copyPath.repo.title%"
       },
       {
         "command": "ideagittool.copyPath.reference",
-        "title": "Copy Reference"
+        "title": "%command.copyPath.reference.title%"
       },
       {
         "command": "ideagittool.showLog",
-        "title": "Show Git Log",
+        "title": "%command.showLog.title%",
         "category": "IdeaGitTool",
-        "icon": "$(git-commit)"
+        "icon": "$(history)"
       },
       {
         "command": "ideagittool.log.newTab",
-        "title": "Open New Git Log Tab",
+        "title": "%command.log.newTab.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.log.selectCommit",
-        "title": "Show in Git Log",
+        "title": "%command.log.selectCommit.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.showFileHistory",
-        "title": "Show History",
+        "title": "%command.showFileHistory.title%",
         "category": "IdeaGitTool",
         "icon": "$(history)"
       },
       {
         "command": "ideagittool.showHistoryForSelection",
-        "title": "Show History for Selection",
+        "title": "%command.showHistoryForSelection.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.annotate",
-        "title": "Annotate with Git Blame",
+        "title": "%command.annotate.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.annotateClose",
-        "title": "Close Annotations",
+        "title": "%command.annotateClose.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.annotateOptions",
-        "title": "Annotations View Options",
+        "title": "%command.annotateOptions.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.annotateRevision",
-        "title": "Annotate Revision",
+        "title": "%command.annotateRevision.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.compareWithRevision",
-        "title": "Compare with Revision…",
+        "title": "%command.compareWithRevision.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.compareWithBranch",
-        "title": "Compare with Branch or Tag…",
+        "title": "%command.compareWithBranch.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.compareRefs",
-        "title": "Compare with Branch…",
+        "title": "%command.compareRefs.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.compareRefs.files",
-        "title": "Show Files Diff",
+        "title": "%command.compareRefs.files.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.showCommitDiff",
-        "title": "Show Commit Diff",
+        "title": "%command.showCommitDiff.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.showRepositoryAtRevision",
-        "title": "Show Repository at Revision",
+        "title": "%command.showRepositoryAtRevision.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.copyText",
-        "title": "Copy",
+        "title": "%command.copyText.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.toggleInlineBlame",
-        "title": "Toggle Inline Git Blame",
+        "title": "%command.toggleInlineBlame.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.push",
-        "title": "Push…",
+        "title": "%command.push.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.fetch",
-        "title": "Fetch",
+        "title": "%command.fetch.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.pull",
-        "title": "Pull…",
+        "title": "%command.pull.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.updateProject",
-        "title": "Update Project…",
+        "title": "%command.updateProject.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.remotes",
-        "title": "Manage Remotes…",
+        "title": "%command.remotes.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.clone",
-        "title": "Clone…",
+        "title": "%command.clone.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.init",
-        "title": "Create Git Repository…",
+        "title": "%command.init.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.unshallow",
-        "title": "Unshallow repository",
+        "title": "%command.unshallow.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branches",
-        "title": "Branches…",
+        "title": "%command.branches.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.createBranch",
-        "title": "New Branch…",
+        "title": "%command.createBranch.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.checkoutTagOrRevision",
-        "title": "Checkout Tag or Revision…",
+        "title": "%command.checkoutTagOrRevision.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.merge",
-        "title": "Merge…",
+        "title": "%command.merge.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.rebase",
-        "title": "Rebase…",
+        "title": "%command.rebase.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.resetHead",
-        "title": "Reset HEAD…",
+        "title": "%command.resetHead.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.createTag",
-        "title": "New Tag…",
+        "title": "%command.createTag.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.createPatch",
-        "title": "Create Patch from Local Changes…",
+        "title": "%command.createPatch.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.applyPatch",
-        "title": "Apply Patch…",
+        "title": "%command.applyPatch.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.applyPatchFromClipboard",
-        "title": "Apply Patch from Clipboard…",
+        "title": "%command.applyPatchFromClipboard.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.abortOperation",
-        "title": "Abort Merge / Rebase / Cherry-Pick / Revert",
+        "title": "%command.abortOperation.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.continueOperation",
-        "title": "Continue Rebase / Cherry-Pick / Commit Merge",
+        "title": "%command.continueOperation.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.skipCommit",
-        "title": "Skip Commit",
+        "title": "%command.skipCommit.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.mainMenu",
-        "title": "Git Menu…",
+        "title": "%command.mainMenu.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.vcsOperationsPopup",
-        "title": "VCS Operations Popup…",
+        "title": "%command.vcsOperationsPopup.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.currentFileMenu",
-        "title": "Git: Current File…",
+        "title": "%command.currentFileMenu.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.copyBranchName",
-        "title": "Copy Current Branch Name",
+        "title": "%command.copyBranchName.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.updateForcePushedBranch",
-        "title": "Update Force-Pushed Branch",
+        "title": "%command.updateForcePushedBranch.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.resetToRemoteBranch",
-        "title": "Reset to the Remote Branch",
+        "title": "%command.resetToRemoteBranch.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.worktrees.create",
-        "title": "New Worktree…",
+        "title": "%command.worktrees.create.title%",
         "category": "IdeaGitTool",
         "icon": {
           "light": "media/icons/general/add.svg",
@@ -774,12 +776,12 @@
       },
       {
         "command": "ideagittool.worktrees.show",
-        "title": "Worktrees…",
+        "title": "%command.worktrees.show.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.worktrees.refresh",
-        "title": "Refresh Worktrees",
+        "title": "%command.worktrees.refresh.title%",
         "category": "IdeaGitTool",
         "icon": {
           "light": "media/icons/general/refresh.svg",
@@ -788,7 +790,7 @@
       },
       {
         "command": "ideagittool.worktrees.prune",
-        "title": "Prune Worktrees",
+        "title": "%command.worktrees.prune.title%",
         "category": "IdeaGitTool",
         "icon": {
           "light": "media/icons/actions/clearCash.svg",
@@ -797,7 +799,7 @@
       },
       {
         "command": "ideagittool.worktrees.open",
-        "title": "Open Worktree…",
+        "title": "%command.worktrees.open.title%",
         "category": "IdeaGitTool",
         "icon": {
           "light": "media/icons/general/open.svg",
@@ -806,7 +808,7 @@
       },
       {
         "command": "ideagittool.worktrees.delete",
-        "title": "Delete Worktree…",
+        "title": "%command.worktrees.delete.title%",
         "category": "IdeaGitTool",
         "icon": {
           "light": "media/icons/general/delete.svg",
@@ -815,162 +817,162 @@
       },
       {
         "command": "ideagittool.worktrees.lock",
-        "title": "Lock Worktree",
+        "title": "%command.worktrees.lock.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.worktrees.unlock",
-        "title": "Unlock Worktree",
+        "title": "%command.worktrees.unlock.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.checkout",
-        "title": "branch.checkout",
+        "title": "%command.branch.checkout.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.newBranchFrom",
-        "title": "branch.newBranchFrom",
+        "title": "%command.branch.newBranchFrom.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.checkoutAndRebase",
-        "title": "branch.checkoutAndRebase",
+        "title": "%command.branch.checkoutAndRebase.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.checkoutAndUpdate",
-        "title": "branch.checkoutAndUpdate",
+        "title": "%command.branch.checkoutAndUpdate.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.compare",
-        "title": "branch.compare",
+        "title": "%command.branch.compare.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.showDiffWithWorkingTree",
-        "title": "branch.showDiffWithWorkingTree",
+        "title": "%command.branch.showDiffWithWorkingTree.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.rebaseCurrentOnto",
-        "title": "branch.rebaseCurrentOnto",
+        "title": "%command.branch.rebaseCurrentOnto.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.mergeIntoCurrent",
-        "title": "branch.mergeIntoCurrent",
+        "title": "%command.branch.mergeIntoCurrent.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.pullRebase",
-        "title": "branch.pullRebase",
+        "title": "%command.branch.pullRebase.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.pullMerge",
-        "title": "branch.pullMerge",
+        "title": "%command.branch.pullMerge.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.push",
-        "title": "branch.push",
+        "title": "%command.branch.push.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.update",
-        "title": "branch.update",
+        "title": "%command.branch.update.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.rename",
-        "title": "branch.rename",
+        "title": "%command.branch.rename.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.delete",
-        "title": "branch.delete",
+        "title": "%command.branch.delete.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.toggleFavorite",
-        "title": "branch.toggleFavorite",
+        "title": "%command.branch.toggleFavorite.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.branch.trackRemote",
-        "title": "branch.trackRemote",
+        "title": "%command.branch.trackRemote.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.tag.checkout",
-        "title": "tag.checkout",
+        "title": "%command.tag.checkout.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.tag.mergeIntoCurrent",
-        "title": "tag.mergeIntoCurrent",
+        "title": "%command.tag.mergeIntoCurrent.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.tag.push",
-        "title": "tag.push",
+        "title": "%command.tag.push.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.tag.delete",
-        "title": "tag.delete",
+        "title": "%command.tag.delete.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.cherryPick",
-        "title": "Cherry-Pick",
+        "title": "%command.cherryPick.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.revertCommits",
-        "title": "Revert Commit",
+        "title": "%command.revertCommits.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.undoCommit",
-        "title": "Undo Commit…",
+        "title": "%command.undoCommit.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.rewordCommit",
-        "title": "Edit Commit Message…",
+        "title": "%command.rewordCommit.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.fixupCommit",
-        "title": "Fixup…",
+        "title": "%command.fixupCommit.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.squashCommits",
-        "title": "Squash Commits…",
+        "title": "%command.squashCommits.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.dropCommits",
-        "title": "Drop Commits",
+        "title": "%command.dropCommits.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.interactiveRebase",
-        "title": "Interactively Rebase from Here…",
+        "title": "%command.interactiveRebase.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.checkoutRevision",
-        "title": "Checkout Revision",
+        "title": "%command.checkoutRevision.title%",
         "category": "IdeaGitTool"
       },
       {
         "command": "ideagittool.diff.openSource",
-        "title": "Jump to Source from Diff",
+        "title": "%command.diff.openSource.title%",
         "category": "IdeaGitTool",
         "enablement": "isInDiffEditor || inDiffEditor || inMultiDiffEditor || textCompareEditorActive || activeEditor == multiDiffEditor"
       }
@@ -996,27 +998,59 @@
         {
           "type": "webview",
           "id": "ideagittool.commit",
-          "name": "Commit",
+          "name": "%view.commit.name%",
           "icon": "media/activity/ideagittool.svg",
-          "contextualTitle": "Commit"
+          "contextualTitle": "%view.commit.contextualTitle%"
         }
       ],
       "ideagittool-panel": [
         {
           "type": "webview",
           "id": "ideagittool.logView",
-          "name": "Log",
+          "name": "%view.logView.name%",
           "when": "ideagittool.logInPanel"
         },
         {
           "id": "ideagittool.worktrees",
-          "name": "Worktrees",
+          "name": "%view.worktrees.name%",
           "when": "ideagittool.hasRepository",
           "visibility": "collapsed"
         }
       ]
     },
     "menus": {
+      "view/title": [
+        {
+          "command": "ideagittool.showLog",
+          "when": "view == ideagittool.commit",
+          "group": "navigation@1"
+        },
+        {
+          "command": "ideagittool.showConsole",
+          "when": "view == ideagittool.commit",
+          "group": "navigation@2"
+        },
+        {
+          "command": "ideagittool.worktrees.create",
+          "when": "view == ideagittool.worktrees",
+          "group": "navigation@1"
+        },
+        {
+          "command": "ideagittool.worktrees.refresh",
+          "when": "view == ideagittool.worktrees",
+          "group": "navigation@2"
+        },
+        {
+          "command": "ideagittool.worktrees.delete",
+          "when": "view == ideagittool.worktrees",
+          "group": "navigation@3"
+        },
+        {
+          "command": "ideagittool.worktrees.prune",
+          "when": "view == ideagittool.worktrees",
+          "group": "navigation@4"
+        }
+      ],
       "explorer/context": [
         {
           "submenu": "ideagittool.localHistory",
@@ -1536,28 +1570,6 @@
           "group": "9_ideagittool"
         }
       ],
-      "view/title": [
-        {
-          "command": "ideagittool.worktrees.create",
-          "when": "view == ideagittool.worktrees",
-          "group": "navigation@1"
-        },
-        {
-          "command": "ideagittool.worktrees.refresh",
-          "when": "view == ideagittool.worktrees",
-          "group": "navigation@2"
-        },
-        {
-          "command": "ideagittool.worktrees.delete",
-          "when": "view == ideagittool.worktrees",
-          "group": "navigation@3"
-        },
-        {
-          "command": "ideagittool.worktrees.prune",
-          "when": "view == ideagittool.worktrees",
-          "group": "navigation@4"
-        }
-      ],
       "view/item/context": [
         {
           "command": "ideagittool.worktrees.open",
@@ -1689,7 +1701,7 @@
     "colors": [
       {
         "id": "ideagittool.fileStatus.modified",
-        "description": "Modified file (IntelliJ FILESTATUS_MODIFIED)",
+        "description": "%color.fileStatus.modified.description%",
         "defaults": {
           "dark": "#70AEFF",
           "light": "#0033B3",
@@ -1699,7 +1711,7 @@
       },
       {
         "id": "ideagittool.fileStatus.added",
-        "description": "Added file (FILESTATUS_ADDED)",
+        "description": "%color.fileStatus.added.description%",
         "defaults": {
           "dark": "#73BD79",
           "light": "#067D17",
@@ -1709,7 +1721,7 @@
       },
       {
         "id": "ideagittool.fileStatus.deleted",
-        "description": "Deleted file (FILESTATUS_DELETED)",
+        "description": "%color.fileStatus.deleted.description%",
         "defaults": {
           "dark": "#6F737A",
           "light": "#6C707E",
@@ -1719,7 +1731,7 @@
       },
       {
         "id": "ideagittool.fileStatus.unknown",
-        "description": "Unversioned file (FILESTATUS_UNKNOWN)",
+        "description": "%color.fileStatus.unknown.description%",
         "defaults": {
           "dark": "#E88F89",
           "light": "#B23247",
@@ -1729,7 +1741,7 @@
       },
       {
         "id": "ideagittool.fileStatus.ignored",
-        "description": "Ignored file (FILESTATUS_IDEA_FILESTATUS_IGNORED)",
+        "description": "%color.fileStatus.ignored.description%",
         "defaults": {
           "dark": "#D69A6B",
           "light": "#8C4F00",
@@ -1739,7 +1751,7 @@
       },
       {
         "id": "ideagittool.fileStatus.conflict",
-        "description": "File with merge conflicts (FILESTATUS_MERGED_WITH_CONFLICTS)",
+        "description": "%color.fileStatus.conflict.description%",
         "defaults": {
           "dark": "#DE6A66",
           "light": "#DE1B2E",
@@ -1749,7 +1761,7 @@
       },
       {
         "id": "ideagittool.inlineBlame.foreground",
-        "description": "Text color of the inline Git blame after the caret line.",
+        "description": "%color.inlineBlame.foreground.description%",
         "defaults": {
           "dark": "editorCodeLens.foreground",
           "light": "editorCodeLens.foreground",
@@ -1760,11 +1772,11 @@
     "submenus": [
       {
         "id": "ideagittool.localHistory",
-        "label": "Local History"
+        "label": "%submenu.localHistory.label%"
       },
       {
         "id": "ideagittool.copyReference",
-        "label": "Copy Path/Reference…"
+        "label": "%submenu.copyReference.label%"
       },
       {
         "id": "ideagittool.git.file",
@@ -1774,7 +1786,7 @@
     "viewsWelcome": [
       {
         "view": "ideagittool.worktrees",
-        "contents": "No linked worktrees\n[Create worktree…](command:ideagittool.worktrees.create)\n[What is a Git worktree](https://git-scm.com/docs/git-worktree)"
+        "contents": "%viewsWelcome.worktrees.contents%"
       }
     ]
   },
@@ -1793,5 +1805,6 @@
     "playwright-core": "^1.48.2",
     "preact": "^10.24.3",
     "typescript": "^5.6.3"
-  }
+  },
+  "l10n": "./l10n"
 }

@@ -222,7 +222,7 @@ class AnnotationController implements vscode.Disposable {
     }
     const target = this.resolve(editor.document.uri);
     if (!target) {
-      void vscode.window.showWarningMessage('The file is not under Git version control.');
+      void vscode.window.showWarningMessage(vscode.l10n.t('The file is not under Git version control.'));
       return;
     }
     this.annotated.set(key, target);
@@ -260,7 +260,7 @@ class AnnotationController implements vscode.Disposable {
     const r = await a.repo.exec(args, { input, allowFailure: true, quiet: true });
     if (r.exitCode !== 0) {
       this.annotated.delete(key);
-      void vscode.window.showErrorMessage(`Cannot annotate ${a.path}: ${r.stderr.trim()}`);
+      void vscode.window.showErrorMessage(vscode.l10n.t('Cannot annotate {0}: {1}', a.path, r.stderr.trim()));
       this.updateContext();
       return;
     }
@@ -321,17 +321,17 @@ class AnnotationController implements vscode.Disposable {
     const md = new vscode.MarkdownString(undefined, true);
     md.isTrusted = true;
     md.appendMarkdown(`**${escapeMd(c.summary)}**\n\n`);
-    md.appendMarkdown(`$(git-commit) \`${c.hash.slice(0, 8)}\` ${escapeMd(c.author)} <${escapeMd(c.authorMail)}> on ${date}\n\n`);
+    md.appendMarkdown(`$(git-commit) \`${c.hash.slice(0, 8)}\` ${vscode.l10n.t('{0} <{1}> on {2}', escapeMd(c.author), escapeMd(c.authorMail), date)}\n\n`);
     md.appendMarkdown(
       [
-        `[Show in Git Log](${cmd('ideagittool.log.selectCommit', { root: repo.root, hash: c.hash })})`,
-        `[Show Diff](${cmd('ideagittool.showCommitDiff', { root: repo.root, hash: c.hash, path: c.filename })})`,
-        `[Show All Affected Files](${cmd('ideagittool.showCommitDiff', { root: repo.root, hash: c.hash })})`,
-        c.previous ? `[Annotate Previous Revision](${cmd('ideagittool.annotateRevision', { root: repo.root, hash: c.previous.hash, path: c.previous.path })})` : '',
-        `[Copy Revision Number](${cmd('ideagittool.copyText', c.hash)})`,
-        `[Show in File History](${cmd('ideagittool.showFileHistory', { root: repo.root, path: c.filename })})`,
-        `[View Options…](${cmd('ideagittool.annotateOptions', {})})`,
-        `[Close Annotations](${cmd('ideagittool.annotateClose', {})})`,
+        `[${vscode.l10n.t('Show in Git Log')}](${cmd('ideagittool.log.selectCommit', { root: repo.root, hash: c.hash })})`,
+        `[${vscode.l10n.t('Show Diff')}](${cmd('ideagittool.showCommitDiff', { root: repo.root, hash: c.hash, path: c.filename })})`,
+        `[${vscode.l10n.t('Show All Affected Files')}](${cmd('ideagittool.showCommitDiff', { root: repo.root, hash: c.hash })})`,
+        c.previous ? `[${vscode.l10n.t('Annotate Previous Revision')}](${cmd('ideagittool.annotateRevision', { root: repo.root, hash: c.previous.hash, path: c.previous.path })})` : '',
+        `[${vscode.l10n.t('Copy Revision Number')}](${cmd('ideagittool.copyText', c.hash)})`,
+        `[${vscode.l10n.t('Show in File History')}](${cmd('ideagittool.showFileHistory', { root: repo.root, path: c.filename })})`,
+        `[${vscode.l10n.t('View Options…')}](${cmd('ideagittool.annotateOptions', {})})`,
+        `[${vscode.l10n.t('Close Annotations')}](${cmd('ideagittool.annotateClose', {})})`,
       ]
         .filter(Boolean)
         .join(' &nbsp;·&nbsp; '),
@@ -383,27 +383,27 @@ export function registerAnnotate(ctx: Ctx): { isAnnotated(uri: vscode.Uri): bool
     const toggle = (label: string, key: keyof AnnotateOptions): Item => ({ label: `${o[key] ? '$(check)' : '$(blank)'} ${label}`, key, value: !o[key] });
     const radio = (label: string, key: keyof AnnotateOptions, value: string): Item => ({ label: `${o[key] === value ? '$(circle-filled)' : '$(blank)'} ${label}`, key, value });
     const items: Item[] = [
-      { label: 'View', kind: vscode.QuickPickItemKind.Separator },
-      toggle('Author', 'showAuthor'),
-      toggle('Date', 'showDate'),
-      toggle('Revision', 'showRevision'),
-      toggle('Show Commit Timestamp', 'preferCommitDate'),
-      { label: 'Colors', kind: vscode.QuickPickItemKind.Separator },
-      radio('Hide', 'colors', 'hide'),
-      radio('Author', 'colors', 'author'),
-      radio('Order', 'colors', 'order'),
-      { label: 'Names', kind: vscode.QuickPickItemKind.Separator },
-      radio('Full Name', 'names', 'full'),
-      radio('First Name', 'names', 'first'),
-      radio('Last Name', 'names', 'last'),
-      radio('Initials', 'names', 'initials'),
-      radio('Email', 'names', 'email'),
-      { label: 'Options', kind: vscode.QuickPickItemKind.Separator },
-      toggle('Ignore Whitespaces', 'ignoreWhitespace'),
-      toggle('Detect Movements Within File', 'detectMovementsWithinFile'),
-      toggle('Detect Movements Across Files', 'detectMovementsAcrossFiles'),
+      { label: vscode.l10n.t('View'), kind: vscode.QuickPickItemKind.Separator },
+      toggle(vscode.l10n.t('Author'), 'showAuthor'),
+      toggle(vscode.l10n.t('Date'), 'showDate'),
+      toggle(vscode.l10n.t('Revision'), 'showRevision'),
+      toggle(vscode.l10n.t('Show Commit Timestamp'), 'preferCommitDate'),
+      { label: vscode.l10n.t('Colors'), kind: vscode.QuickPickItemKind.Separator },
+      radio(vscode.l10n.t('Hide'), 'colors', 'hide'),
+      radio(vscode.l10n.t('Author'), 'colors', 'author'),
+      radio(vscode.l10n.t('Order'), 'colors', 'order'),
+      { label: vscode.l10n.t('Names'), kind: vscode.QuickPickItemKind.Separator },
+      radio(vscode.l10n.t('Full Name'), 'names', 'full'),
+      radio(vscode.l10n.t('First Name'), 'names', 'first'),
+      radio(vscode.l10n.t('Last Name'), 'names', 'last'),
+      radio(vscode.l10n.t('Initials'), 'names', 'initials'),
+      radio(vscode.l10n.t('Email'), 'names', 'email'),
+      { label: vscode.l10n.t('Options'), kind: vscode.QuickPickItemKind.Separator },
+      toggle(vscode.l10n.t('Ignore Whitespaces'), 'ignoreWhitespace'),
+      toggle(vscode.l10n.t('Detect Movements Within File'), 'detectMovementsWithinFile'),
+      toggle(vscode.l10n.t('Detect Movements Across Files'), 'detectMovementsAcrossFiles'),
     ];
-    const picked = await vscode.window.showQuickPick(items, { title: 'Annotations' });
+    const picked = await vscode.window.showQuickPick(items, { title: vscode.l10n.t('Annotations') });
     if (picked?.key) await c.update(picked.key, picked.value, vscode.ConfigurationTarget.Global);
   });
   ctx.command('ideagittool.copyText', (text: string) => vscode.env.clipboard.writeText(text));

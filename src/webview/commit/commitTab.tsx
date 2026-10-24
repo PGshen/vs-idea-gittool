@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { ActionButton, Separator, Split, Toolbar, Tree, TreeNode } from '../lib/components';
 import { anchorAt, MenuEntry, showMenu } from '../lib/menu';
+import { t } from '../lib/l10n';
 import { call, persist, persisted, send } from '../lib/rpc';
 import { changeKey, CommitRepoInfo, CommitViewState } from '../../shared/commitProtocol';
 import { Change } from '../../shared/types';
@@ -10,26 +11,38 @@ import { CommitPanel } from './commitPanel';
 const keysOf = (changes: Change[]) => changes.map(changeKey);
 
 export function operationText(r: CommitRepoInfo, multi: boolean): string {
-  const where = multi ? ` in ${r.name}` : '';
+  const where = (text: string) => (multi ? t('{0} in {1}', text, r.name) : text);
+  const head = r.rebaseHeadName;
+  const target = r.operationTarget;
   switch (r.operation) {
     case 'rebase':
-      return `Rebasing${r.rebaseHeadName ? ` ${r.rebaseHeadName}` : ''}${r.operationTarget ? ` onto ${r.operationTarget}` : ''}${where}`;
+      return where(
+        head && target ? t('Rebasing {0} onto {1}', head, target) : head ? t('Rebasing {0}', head) : target ? t('Rebasing onto {0}', target) : t('Rebasing'),
+      );
     case 'merge':
-      return `Merging${r.operationTarget ? ` ${r.operationTarget}` : ''} into ${r.branch ?? 'HEAD'}${where}`;
+      return where(target ? t('Merging {0} into {1}', target, r.branch ?? 'HEAD') : t('Merging into {0}', r.branch ?? 'HEAD'));
     case 'cherry-pick':
-      return `Cherry-picking${r.operationTarget ? ` ${r.operationTarget}` : ''}${where}`;
+      return where(target ? t('Cherry-picking {0}', target) : t('Cherry-picking'));
     case 'revert':
-      return `Reverting${r.operationTarget ? ` ${r.operationTarget}` : ''}${where}`;
+      return where(target ? t('Reverting {0}', target) : t('Reverting'));
     case 'am':
-      return `Applying patches${where}`;
+      return where(t('Applying patches'));
     case 'bisect':
-      return `Bisecting${where}`;
+      return where(t('Bisecting'));
     default:
       return '';
   }
 }
 
-const OPERATION_NAMES: Record<string, string> = { rebase: 'Rebase', merge: 'Merge', 'cherry-pick': 'Cherry-Pick', revert: 'Revert', am: 'Apply', bisect: 'Bisect' };
+/** "Continue …" / "Abort …" links of the operation banner. */
+const OPERATION_ACTIONS: Record<string, { continue: string; abort: string }> = {
+  rebase: { continue: t('Continue Rebase'), abort: t('Abort Rebase') },
+  merge: { continue: t('Continue Merge'), abort: t('Abort Merge') },
+  'cherry-pick': { continue: t('Continue Cherry-Pick'), abort: t('Abort Cherry-Pick') },
+  revert: { continue: t('Continue Revert'), abort: t('Abort Revert') },
+  am: { continue: t('Continue Apply'), abort: t('Abort Apply') },
+  bisect: { continue: t('Continue Bisect'), abort: t('Abort Bisect') },
+};
 
 export function CommitTab({ state, visible }: { state: CommitViewState; visible: boolean }) {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(persisted<string[]>('expanded', [])));
@@ -47,13 +60,13 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
     if (state.conflicts.length) {
       out.push({
         key: 'conflicts',
-        label: 'Merge Conflicts',
-        text: 'Merge Conflicts',
+        label: t('Merge Conflicts'),
+        text: t('Merge Conflicts'),
         hint: (
           <>
             {countText(state.conflicts.length)}
             <span class="conflict-link" onClick={e => (e.stopPropagation(), send('resolveConflicts', {}))}>
-              Resolve
+              {t('Resolve')}
             </span>
           </>
         ),
@@ -81,8 +94,8 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
     if (state.unversioned.length) {
       out.push({
         key: 'unversioned',
-        label: 'Unversioned Files',
-        text: 'Unversioned Files',
+        label: t('Unversioned Files'),
+        text: t('Unversioned Files'),
         hint: countText(state.unversioned.length),
         checkable: true,
         children: groupFiles(state.unversioned, 'unversioned/', { ...groupOpts, checkable: true }),
@@ -92,8 +105,8 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
     if (state.ignored.length) {
       out.push({
         key: 'ignored',
-        label: 'Ignored Files',
-        text: 'Ignored Files',
+        label: t('Ignored Files'),
+        text: t('Ignored Files'),
         hint: countText(state.ignored.length),
         children: groupFiles(state.ignored, 'ignored/', { ...groupOpts, checkable: false }),
         data: { kind: 'ignored' },
@@ -168,96 +181,96 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
     const single = files.length === 1 ? files[0] : undefined;
     const entries: MenuEntry[] = [];
     const inOperation = state.repos.some(r => r.operation !== 'none');
-    const revertResolved: MenuEntry = { label: 'Revert Resolved', icon: 'vcs/revert', disabled: !inOperation || !tracked.length, action: () => send('revertResolved', { keys: keysOf(tracked) }) };
-    const rollbackFile: MenuEntry = { label: 'Rollback File…', disabled: !tracked.length, action: () => send('rollback', { keys: keysOf(tracked) }) };
+    const revertResolved: MenuEntry = { label: t('Revert Resolved'), icon: 'vcs/revert', disabled: !inOperation || !tracked.length, action: () => send('revertResolved', { keys: keysOf(tracked) }) };
+    const rollbackFile: MenuEntry = { label: t('Rollback File…'), disabled: !tracked.length, action: () => send('rollback', { keys: keysOf(tracked) }) };
     const localHistory: MenuEntry = {
-      label: 'Local History',
+      label: t('Local History'),
       children: [
-        { label: 'Show History…', disabled: !single, action: () => send('localHistory', { key: changeKey(single!), action: 'show' }) },
-        { label: 'Show History for Selection…', disabled: true },
+        { label: t('Show History…'), disabled: !single, action: () => send('localHistory', { key: changeKey(single!), action: 'show' }) },
+        { label: t('Show History for Selection…'), disabled: true },
         { separator: true },
-        { label: 'Show Project History…', action: () => send('localHistory', { key: '', action: 'project' }) },
-        { label: 'Recent Changes', shortcut: 'Alt+Shift+C', action: () => send('localHistory', { key: '', action: 'recent' }) },
-        { label: 'Put Label…', action: () => send('localHistory', { key: '', action: 'label' }) },
+        { label: t('Show Project History…'), action: () => send('localHistory', { key: '', action: 'project' }) },
+        { label: t('Recent Changes'), shortcut: 'Alt+Shift+C', action: () => send('localHistory', { key: '', action: 'recent' }) },
+        { label: t('Put Label…'), action: () => send('localHistory', { key: '', action: 'label' }) },
       ],
     };
     if (conflicts.length) {
       entries.push(
-        { label: 'Merge…', icon: 'vcs/merge', disabled: conflicts.length !== 1, action: () => send('mergeConflict', { key: changeKey(conflicts[0]) }) },
-        { label: 'Accept Theirs', action: () => send('acceptTheirs', { keys: keysOf(conflicts) }) },
-        { label: 'Accept Yours', action: () => send('acceptYours', { keys: keysOf(conflicts) }) },
+        { label: t('Merge…'), icon: 'vcs/merge', disabled: conflicts.length !== 1, action: () => send('mergeConflict', { key: changeKey(conflicts[0]) }) },
+        { label: t('Accept Theirs'), action: () => send('acceptTheirs', { keys: keysOf(conflicts) }) },
+        { label: t('Accept Yours'), action: () => send('acceptYours', { keys: keysOf(conflicts) }) },
         { separator: true },
       );
     }
     entries.push(
       revertResolved,
-      { label: files.length > 1 ? 'Commit Files…' : 'Commit File…', disabled: !files.length, action: () => commitSelected(files) },
-      { label: 'Rollback…', icon: 'vcs/revert', shortcut: 'Ctrl+Alt+Z', disabled: !tracked.length, action: () => send('rollback', { keys: keysOf(tracked) }) },
+      { label: files.length > 1 ? t('Commit Files…') : t('Commit File…'), disabled: !files.length, action: () => commitSelected(files) },
+      { label: t('Rollback…'), icon: 'vcs/revert', shortcut: 'Ctrl+Alt+Z', disabled: !tracked.length, action: () => send('rollback', { keys: keysOf(tracked) }) },
       rollbackFile,
-      { label: 'Move to Another Changelist…', shortcut: 'Alt+Shift+M', disabled: !tracked.length, action: () => send('moveToChangelist', { keys: keysOf(tracked) }) },
-      { label: 'Show Diff', icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: !files.length, action: () => showDiff(files) },
-      { label: 'Jump to Source', shortcut: 'F4', disabled: !files.some(f => f.status !== 'D'), action: () => openSource(files) },
+      { label: t('Move to Another Changelist…'), shortcut: 'Alt+Shift+M', disabled: !tracked.length, action: () => send('moveToChangelist', { keys: keysOf(tracked) }) },
+      { label: t('Show Diff'), icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: !files.length, action: () => showDiff(files) },
+      { label: t('Jump to Source'), shortcut: 'F4', disabled: !files.some(f => f.status !== 'D'), action: () => openSource(files) },
       {
-        label: 'Copy Path/Reference…',
+        label: t('Copy Path/Reference…'),
         disabled: !files.length,
         children: [
-          { label: 'Absolute Path', shortcut: 'Ctrl+Shift+C', action: () => send('copyPath', { keys, kind: 'absolute' }) },
-          { label: 'File Name', action: () => send('copyPath', { keys, kind: 'name' }) },
+          { label: t('Absolute Path'), shortcut: 'Ctrl+Shift+C', action: () => send('copyPath', { keys, kind: 'absolute' }) },
+          { label: t('File Name'), action: () => send('copyPath', { keys, kind: 'name' }) },
           { separator: true },
-          { label: 'Path with Line Number', action: () => send('copyPath', { keys, kind: 'lineNumber' }) },
-          { label: 'Path from Content Root', action: () => send('copyPath', { keys, kind: 'contentRoot' }) },
-          { label: 'Path From Repository Root', action: () => send('copyPath', { keys, kind: 'repo' }) },
+          { label: t('Path with Line Number'), action: () => send('copyPath', { keys, kind: 'lineNumber' }) },
+          { label: t('Path from Content Root'), action: () => send('copyPath', { keys, kind: 'contentRoot' }) },
+          { label: t('Path From Repository Root'), action: () => send('copyPath', { keys, kind: 'repo' }) },
           { separator: true },
-          { label: 'Copy Reference', shortcut: 'Ctrl+Alt+Shift+C', action: () => send('copyPath', { keys, kind: 'reference' }) },
+          { label: t('Copy Reference'), shortcut: 'Ctrl+Alt+Shift+C', action: () => send('copyPath', { keys, kind: 'reference' }) },
         ],
       },
       { separator: true },
-      { label: 'Delete', shortcut: 'Delete', disabled: !files.some(f => f.status !== 'D'), action: () => send('deleteFiles', { keys }) },
-      { label: 'Add to VCS', shortcut: 'Ctrl+Alt+A', disabled: !unversioned.length, action: () => send('addToVcs', { keys: keysOf(unversioned) }) },
-      { label: 'Add to .gitignore', disabled: !unversioned.length, action: () => send('ignore', { keys: keysOf(unversioned) }) },
-      { label: 'Remove from VCS', icon: 'general/remove', disabled: !tracked.length, action: () => send('removeFromVcs', { keys: keysOf(tracked) }) },
+      { label: t('Delete'), shortcut: 'Delete', disabled: !files.some(f => f.status !== 'D'), action: () => send('deleteFiles', { keys }) },
+      { label: t('Add to VCS'), shortcut: 'Ctrl+Alt+A', disabled: !unversioned.length, action: () => send('addToVcs', { keys: keysOf(unversioned) }) },
+      { label: t('Add to .gitignore'), disabled: !unversioned.length, action: () => send('ignore', { keys: keysOf(unversioned) }) },
+      { label: t('Remove from VCS'), icon: 'general/remove', disabled: !tracked.length, action: () => send('removeFromVcs', { keys: keysOf(tracked) }) },
       { separator: true },
-      { label: 'New Changelist…', icon: 'general/add', action: () => send('newChangelist', { keys: keysOf(tracked) }) },
+      { label: t('New Changelist…'), icon: 'general/add', action: () => send('newChangelist', { keys: keysOf(tracked) }) },
       {
-        label: 'Delete Changelist',
+        label: t('Delete Changelist'),
         icon: 'general/remove',
         disabled: !listNode || state.changelists.length <= 1,
         action: () => list && send('removeChangelist', { id: list.id }),
       },
-      { label: 'Set Active Changelist', icon: 'actions/selectAll', shortcut: 'Ctrl+Space', disabled: !list || list.isDefault, action: () => list && send('setActiveChangelist', { id: list.id }) },
-      { label: 'Edit Changelist…', icon: 'general/edit', shortcut: 'F2', disabled: !listNode, action: () => list && send('editChangelist', { id: list.id }) },
-      { label: 'Create Patch from Local Changes…', icon: 'vcs/patch', disabled: !files.length, action: () => send('createPatch', { keys }) },
-      { label: 'Copy as Patch to Clipboard', disabled: !files.length, action: () => send('copyPatch', { keys }) },
-      { label: 'Shelve Changes…', icon: 'vcsimpl/stash', disabled: !files.length, action: () => send('shelve', { keys }) },
+      { label: t('Set Active Changelist'), icon: 'actions/selectAll', shortcut: 'Ctrl+Space', disabled: !list || list.isDefault, action: () => list && send('setActiveChangelist', { id: list.id }) },
+      { label: t('Edit Changelist…'), icon: 'general/edit', shortcut: 'F2', disabled: !listNode, action: () => list && send('editChangelist', { id: list.id }) },
+      { label: t('Create Patch from Local Changes…'), icon: 'vcs/patch', disabled: !files.length, action: () => send('createPatch', { keys }) },
+      { label: t('Copy as Patch to Clipboard'), disabled: !files.length, action: () => send('copyPatch', { keys }) },
+      { label: t('Shelve Changes…'), icon: 'vcsimpl/stash', disabled: !files.length, action: () => send('shelve', { keys }) },
       { separator: true },
-      { label: 'Refresh', icon: 'general/refresh', action: () => send('refresh') },
+      { label: t('Refresh'), icon: 'general/refresh', action: () => send('refresh') },
       { separator: true },
       localHistory,
       {
         label: 'Git',
         children: [
-          { label: files.length > 1 ? 'Commit Files…' : 'Commit File…', disabled: !files.length, action: () => commitSelected(files) },
-          { label: 'Add', icon: 'general/add', shortcut: 'Ctrl+Alt+A', disabled: !unversioned.length, action: () => send('addToVcs', { keys: keysOf(unversioned) }) },
-          { label: 'Add to .gitignore', disabled: !unversioned.length, action: () => send('ignore', { keys: keysOf(unversioned) }) },
+          { label: files.length > 1 ? t('Commit Files…') : t('Commit File…'), disabled: !files.length, action: () => commitSelected(files) },
+          { label: t('Add'), icon: 'general/add', shortcut: 'Ctrl+Alt+A', disabled: !unversioned.length, action: () => send('addToVcs', { keys: keysOf(unversioned) }) },
+          { label: t('Add to .gitignore'), disabled: !unversioned.length, action: () => send('ignore', { keys: keysOf(unversioned) }) },
           { separator: true },
-          { label: 'Annotate with Git Blame', disabled: !single || single.status === '?' || single.status === 'A', action: () => send('annotate', { key: changeKey(single!) }) },
-          { label: 'Compare with Same Repository Version', icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: !single, action: () => showDiff([single!]) },
+          { label: t('Annotate with Git Blame'), disabled: !single || single.status === '?' || single.status === 'A', action: () => send('annotate', { key: changeKey(single!) }) },
+          { label: t('Compare with Same Repository Version'), icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: !single, action: () => showDiff([single!]) },
           {
-            label: 'Compare with Revision…',
+            label: t('Compare with Revision…'),
             disabled: !single || single.status === '?',
             action: () => send('gitCommand', { command: 'ideagittool.compareWithRevision', args: fileUriArg(single!) }),
           },
           {
-            label: 'Compare with Branch or Tag…',
+            label: t('Compare with Branch or Tag…'),
             disabled: !single || single.status === '?',
             action: () => send('gitCommand', { command: 'ideagittool.compareWithBranch', args: fileUriArg(single!) }),
           },
-          { label: 'Show History', icon: 'general/history', disabled: !single || single.status === '?', action: () => send('showHistory', { key: changeKey(single!) }) },
+          { label: t('Show History'), icon: 'general/history', disabled: !single || single.status === '?', action: () => send('showHistory', { key: changeKey(single!) }) },
           { separator: true },
-          { label: 'Rollback…', icon: 'vcs/revert', shortcut: 'Ctrl+Alt+Z', disabled: !tracked.length, action: () => send('rollback', { keys: keysOf(tracked) }) },
+          { label: t('Rollback…'), icon: 'vcs/revert', shortcut: 'Ctrl+Alt+Z', disabled: !tracked.length, action: () => send('rollback', { keys: keysOf(tracked) }) },
           rollbackFile,
           { separator: true },
-          { label: 'Resolve Conflicts…', disabled: !state.conflicts.length, action: () => send('resolveConflicts', {}) },
+          { label: t('Resolve Conflicts…'), disabled: !state.conflicts.length, action: () => send('resolveConflicts', {}) },
           revertResolved,
         ],
       },
@@ -304,11 +317,11 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
   };
 
   const viewOptions = (): MenuEntry[] => [
-    { separator: true, label: 'Group By' },
-    { label: 'Directory', shortcut: 'Ctrl+Alt+P', checked: settings.groupByDirectory, action: () => send('setSettings', { groupByDirectory: !settings.groupByDirectory }) },
-    ...(multiRepo ? [{ label: 'Repository', checked: settings.groupByRepository, action: () => send('setSettings', { groupByRepository: !settings.groupByRepository }) }] : []),
-    { separator: true, label: 'Show' },
-    { label: 'Ignored Files', icon: settings.showIgnored ? undefined : 'actions/toggleVisibility', checked: settings.showIgnored, action: () => send('setSettings', { showIgnored: !settings.showIgnored }) },
+    { separator: true, label: t('Group By') },
+    { label: t('Directory'), shortcut: 'Ctrl+Alt+P', checked: settings.groupByDirectory, action: () => send('setSettings', { groupByDirectory: !settings.groupByDirectory }) },
+    ...(multiRepo ? [{ label: t('Repository'), checked: settings.groupByRepository, action: () => send('setSettings', { groupByRepository: !settings.groupByRepository }) }] : []),
+    { separator: true, label: t('Show') },
+    { label: t('Ignored Files'), icon: settings.showIgnored ? undefined : 'actions/toggleVisibility', checked: settings.showIgnored, action: () => send('setSettings', { showIgnored: !settings.showIgnored }) },
   ];
 
   const changelistMenu = (): MenuEntry[] => {
@@ -316,11 +329,11 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
     const tracked = selectedFiles().filter(f => f.status !== '?' && f.status !== '!' && f.status !== 'U');
     const listSelected = selectedNodes().some(n => n.data?.kind === 'changelist');
     return [
-      { label: 'New Changelist…', icon: 'general/add', action: () => send('newChangelist', { keys: keysOf(tracked) }) },
-      { label: 'Edit Changelist…', icon: 'general/edit', shortcut: 'F2', disabled: !list, action: () => list && send('editChangelist', { id: list.id }) },
-      { label: 'Delete Changelist', icon: 'general/remove', disabled: !listSelected || state.changelists.length <= 1, action: () => list && send('removeChangelist', { id: list.id }) },
-      { label: 'Set Active Changelist', icon: 'actions/selectAll', shortcut: 'Ctrl+Space', disabled: !list || list.isDefault, action: () => list && send('setActiveChangelist', { id: list.id }) },
-      { label: 'Move to Another Changelist…', shortcut: 'Alt+Shift+M', disabled: !tracked.length, action: () => send('moveToChangelist', { keys: keysOf(tracked) }) },
+      { label: t('New Changelist…'), icon: 'general/add', action: () => send('newChangelist', { keys: keysOf(tracked) }) },
+      { label: t('Edit Changelist…'), icon: 'general/edit', shortcut: 'F2', disabled: !list, action: () => list && send('editChangelist', { id: list.id }) },
+      { label: t('Delete Changelist'), icon: 'general/remove', disabled: !listSelected || state.changelists.length <= 1, action: () => list && send('removeChangelist', { id: list.id }) },
+      { label: t('Set Active Changelist'), icon: 'actions/selectAll', shortcut: 'Ctrl+Space', disabled: !list || list.isDefault, action: () => list && send('setActiveChangelist', { id: list.id }) },
+      { label: t('Move to Another Changelist…'), shortcut: 'Alt+Shift+M', disabled: !tracked.length, action: () => send('moveToChangelist', { keys: keysOf(tracked) }) },
     ];
   };
 
@@ -329,17 +342,17 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
   return (
     <>
       <Toolbar class="changes-toolbar">
-        <ActionButton icon="general/refresh" tip="Refresh" onClick={() => send('refresh')} />
-        <ActionButton icon="vcs/revert" tip="Rollback…" shortcut="Ctrl+Alt+Z" onClick={rollback} />
-        <ActionButton icon="vcs/diff" tip="Show Diff" shortcut="Ctrl+D" disabled={!selectedFiles().length} onClick={() => showDiff()} />
-        <ActionButton icon="vcs/changelist" tip="Changelists" menu={changelistMenu} />
-        <ActionButton icon="vcs/shelve" tip="Shelve Silently" shortcut="Ctrl+Shift+H" onClick={() => send('shelveSilently', { keys: keysOf(selectedFiles()) })} />
-        <ActionButton icon="general/show" tip="View Options" menu={viewOptions} />
+        <ActionButton icon="general/refresh" tip={t('Refresh')} onClick={() => send('refresh')} />
+        <ActionButton icon="vcs/revert" tip={t('Rollback…')} shortcut="Ctrl+Alt+Z" onClick={rollback} />
+        <ActionButton icon="vcs/diff" tip={t('Show Diff')} shortcut="Ctrl+D" disabled={!selectedFiles().length} onClick={() => showDiff()} />
+        <ActionButton icon="vcs/changelist" tip={t('Changelists')} menu={changelistMenu} />
+        <ActionButton icon="vcs/shelve" tip={t('Shelve Silently')} shortcut="Ctrl+Shift+H" onClick={() => send('shelveSilently', { keys: keysOf(selectedFiles()) })} />
+        <ActionButton icon="general/show" tip={t('View Options')} menu={viewOptions} />
         <Separator />
-        <ActionButton icon="general/locate" tip="Select Opened File in Changes View" onClick={() => selectOpened()} />
+        <ActionButton icon="general/locate" tip={t('Select Opened File in Changes View')} onClick={() => selectOpened()} />
         <ActionButton
           icon="general/expandAll"
-          tip="Expand All"
+          tip={t('Expand All')}
           shortcut="Ctrl+="
           onClick={() => {
             const next = new Set([...expanded, ...allGroupKeys(nodes)]);
@@ -349,7 +362,7 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
         />
         <ActionButton
           icon="general/collapseAll"
-          tip="Collapse All"
+          tip={t('Collapse All')}
           shortcut="Ctrl+-"
           onClick={() => {
             setExpanded(new Set());
@@ -363,31 +376,31 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
           <span class="spacer" />
           {state.conflicts.some(c => c.root === r.root) ? (
             <span class="link" onClick={() => send('resolveConflicts', { root: r.root })}>
-              Resolve…
+              {t('Resolve…')}
             </span>
           ) : (
             r.operation !== 'bisect' && (
               <span class="link" onClick={() => send('operation', { action: 'continue', root: r.root })}>
-                Continue {OPERATION_NAMES[r.operation]}
+                {OPERATION_ACTIONS[r.operation]?.continue}
               </span>
             )
           )}
           {(r.operation === 'rebase' || r.operation === 'cherry-pick' || r.operation === 'revert') && (
             <span class="link" onClick={() => send('operation', { action: 'skip', root: r.root })}>
-              Skip Commit
+              {t('Skip Commit')}
             </span>
           )}
           <span class="link" onClick={() => send('operation', { action: 'abort', root: r.root })}>
-            Abort {OPERATION_NAMES[r.operation]}
+            {OPERATION_ACTIONS[r.operation]?.abort}
           </span>
         </div>
       ))}
       {state.conflicts.length > 0 && ops.length === 0 && (
         <div class="banner warning">
-          <span>Cannot proceed due to merge conflicts</span>
+          <span>{t('Cannot proceed due to merge conflicts')}</span>
           <span class="spacer" />
           <span class="link" onClick={() => send('resolveConflicts', {})}>
-            Resolve…
+            {t('Resolve…')}
           </span>
         </div>
       )}
@@ -421,9 +434,9 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
           }}
           emptyText={
             <>
-              <div>No changes</div>
+              <div>{t('No changes')}</div>
               <div class="secondary" style={{ marginTop: '4px' }}>
-                Modified files will appear here
+                {t('Modified files will appear here')}
               </div>
             </>
           }

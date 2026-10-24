@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { LogFiltersDto } from '../../shared/logProtocol';
 import { ActionButton } from '../lib/components';
 import { Icon } from '../lib/icons';
+import { t } from '../lib/l10n';
 import { anchorBelow, MenuEntry, showMenu } from '../lib/menu';
 import { call, persist, persisted } from '../lib/rpc';
 import { graphOptionsMenu, runCommitAction, viewOptionsMenu } from './menus';
@@ -32,7 +33,7 @@ function FilterChip({ name, value, onOpen, onClear, tip }: { name: string; value
           <span class="value">{value}</span>
           <span
             class="clear"
-            data-tip="Clear"
+            data-tip={t('Clear')}
             onClick={e => {
               e.stopPropagation();
               onClear();
@@ -56,16 +57,16 @@ function SearchField() {
   const [text, setText] = useState(s.filters.text);
   const timer = useRef<number>();
   useEffect(() => setText(s.filters.text), [s.filters.text]);
-  const apply = (t: string) => {
+  const apply = (v: string) => {
     clearTimeout(timer.current);
-    if (t !== store.filters.text) setFilter({ text: t });
+    if (v !== store.filters.text) setFilter({ text: v });
   };
   return (
-    <div class="search-field" data-tip="Filter by Commit Message or Hashes">
+    <div class="search-field" data-tip={t('Filter by Commit Message or Hashes')}>
       <Icon name="general/search" />
       <input
         id="text-filter"
-        placeholder="Text or hash"
+        placeholder={t('Text or hash')}
         value={text}
         spellcheck={false}
         onInput={e => {
@@ -85,14 +86,14 @@ function SearchField() {
         }}
       />
       {text && (
-        <button class="inline-toggle" data-tip="Clear" onClick={() => (setText(''), apply(''))}>
+        <button class="inline-toggle" data-tip={t('Clear')} onClick={() => (setText(''), apply(''))}>
           <Icon name="general/closeSmall" />
         </button>
       )}
-      <button class={`inline-toggle ${s.filters.regex ? 'on' : ''}`} data-tip="Regex" onClick={() => setFilter({ regex: !s.filters.regex })}>
+      <button class={`inline-toggle ${s.filters.regex ? 'on' : ''}`} data-tip={t('Regex')} onClick={() => setFilter({ regex: !s.filters.regex })}>
         <Icon name="inline/regex" />
       </button>
-      <button class={`inline-toggle ${s.filters.matchCase ? 'on' : ''}`} data-tip="Match Case" onClick={() => setFilter({ matchCase: !s.filters.matchCase })}>
+      <button class={`inline-toggle ${s.filters.matchCase ? 'on' : ''}`} data-tip={t('Match Case')} onClick={() => setFilter({ matchCase: !s.filters.matchCase })}>
         <Icon name="inline/matchCase" />
       </button>
     </div>
@@ -112,7 +113,7 @@ function branchMenu(): MenuEntry[] {
   const rec = recent('branch');
   const entries: MenuEntry[] = [
     {
-      label: 'Select…',
+      label: t('Select…'),
       action: async () => {
         const v = await call<string[] | undefined>('pickBranches');
         if (v?.length) pick(v)();
@@ -121,17 +122,17 @@ function branchMenu(): MenuEntry[] {
     { separator: true },
     { label: 'HEAD', action: pick(['HEAD']) },
   ];
-  if (favorites.length) entries.push({ label: 'Favorites', hint: favorites.join(', '), action: pick(favorites) });
+  if (favorites.length) entries.push({ label: t('Favorites'), hint: favorites.join(', '), action: pick(favorites) });
   if (rec.length) {
-    entries.push({ separator: true, label: 'Recent' });
+    entries.push({ separator: true, label: t('Recent') });
     for (const r of rec) entries.push({ label: r.join(', '), action: pick(r) });
   }
   entries.push({ separator: true });
-  entries.push({ label: 'Local', children: locals.map(r => ({ label: r.name, icon: r.favorite ? 'nodes/star' : undefined, action: pick([r.name]) })) });
+  entries.push({ label: t('Local'), children: locals.map(r => ({ label: r.name, icon: r.favorite ? 'nodes/star' : undefined, action: pick([r.name]) })) });
   const byRemote = new Map<string, string[]>();
   for (const r of remotes) byRemote.set(r.remote ?? '', [...(byRemote.get(r.remote ?? '') ?? []), r.name]);
   for (const [remote, names] of byRemote) entries.push({ label: remote, children: names.map(n => ({ label: n, action: pick([n]) })) });
-  if (tags.length) entries.push({ label: 'Tags', children: tags.map(r => ({ label: r.name, icon: 'nodes/tag', action: pick([r.name]) })) });
+  if (tags.length) entries.push({ label: t('Tags'), children: tags.map(r => ({ label: r.name, icon: 'nodes/tag', action: pick([r.name]) })) });
   return entries;
 }
 
@@ -144,9 +145,9 @@ async function userMenu(): Promise<MenuEntry[]> {
   const rec = recent('user');
   const entries: MenuEntry[] = [
     {
-      label: 'Select…',
+      label: t('Select…'),
       action: async () => {
-        const v = await call<string | undefined>('input', { title: 'Filter by User', prompt: 'Select one or more values separated with commas', value: store.filters.users.join(', ') });
+        const v = await call<string | undefined>('input', { title: t('Filter by User'), prompt: t('Select one or more values separated with commas'), value: store.filters.users.join(', ') });
         if (v) pick(v.split(',').map(x => x.trim()).filter(Boolean))();
       },
     },
@@ -154,7 +155,7 @@ async function userMenu(): Promise<MenuEntry[]> {
     { label: 'me', action: pick(['me']) },
   ];
   if (rec.length) {
-    entries.push({ separator: true, label: 'Recent' });
+    entries.push({ separator: true, label: t('Recent') });
     for (const r of rec) entries.push({ label: r.join(', '), action: pick(r) });
   }
   entries.push({ separator: true });
@@ -168,10 +169,10 @@ async function userMenu(): Promise<MenuEntry[]> {
 function dateMenu(): MenuEntry[] {
   const now = Math.floor(Date.now() / 1000);
   return [
-    { label: 'Last 24 hours', action: () => setFilter({ since: now - 86400, until: undefined }) },
-    { label: 'Last 7 days', action: () => setFilter({ since: now - 7 * 86400, until: undefined }) },
+    { label: t('Last 24 hours'), action: () => setFilter({ since: now - 86400, until: undefined }) },
+    { label: t('Last 7 days'), action: () => setFilter({ since: now - 7 * 86400, until: undefined }) },
     {
-      label: 'Select…',
+      label: t('Select…'),
       action: async () => {
         const since = await call<number | undefined>('pickDate', { which: 'since' });
         if (since === undefined) return;
@@ -186,7 +187,7 @@ function pathsMenu(): MenuEntry[] {
   const rec = recent('paths');
   const entries: MenuEntry[] = [
     {
-      label: 'Select…',
+      label: t('Select…'),
       action: async () => {
         const v = await call<string[] | undefined>('pickPaths');
         if (v?.length) {
@@ -197,14 +198,14 @@ function pathsMenu(): MenuEntry[] {
     },
   ];
   if (rec.length) {
-    entries.push({ separator: true, label: 'Recent' });
+    entries.push({ separator: true, label: t('Recent') });
     for (const r of rec) entries.push({ label: r.join(', '), action: () => setFilter({ paths: r }) });
   }
   if (store.init.multi) {
     // Roots of the multi-root log (VcsLogStructureFilter roots). Shown roots are checked.
     const all = store.repos.map(r => r.root);
     const shown = store.filters.roots?.length ? store.filters.roots : all;
-    entries.push({ separator: true, label: 'Roots' });
+    entries.push({ separator: true, label: t('Roots') });
     for (const r of store.repos) {
       const on = shown.includes(r.root);
       entries.push({
@@ -230,15 +231,15 @@ function pathsText(f: LogFiltersDto): string | undefined {
 }
 
 function dateText(f: LogFiltersDto) {
-  const d = (t: number) => new Date(t * 1000).toLocaleDateString();
+  const d = (ts: number) => new Date(ts * 1000).toLocaleDateString();
   const now = Date.now() / 1000;
   if (f.since && !f.until) {
-    if (Math.abs(now - 86400 - f.since) < 120) return 'Last 24 hours';
-    if (Math.abs(now - 7 * 86400 - f.since) < 120) return 'Last 7 days';
-    return `Since ${d(f.since)}`;
+    if (Math.abs(now - 86400 - f.since) < 120) return t('Last 24 hours');
+    if (Math.abs(now - 7 * 86400 - f.since) < 120) return t('Last 7 days');
+    return t('Since {0}', d(f.since));
   }
   if (f.since && f.until) return `${d(f.since)} - ${d(f.until)}`;
-  if (f.until) return `Until ${d(f.until)}`;
+  if (f.until) return t('Until {0}', d(f.until));
   return undefined;
 }
 
@@ -254,39 +255,39 @@ export function FilterBar({ onGoTo }: { onGoTo: () => void }) {
       <div class="filters">
         <SearchField />
         <FilterChip
-          name="Branch"
-          tip="Filter by Branch"
+          name={t('Branch')}
+          tip={t('Filter by Branch')}
           value={f.branches.length ? f.branches.join(', ') : undefined}
           onOpen={el => showMenu(branchMenu(), anchorBelow(el))}
           onClear={() => setFilter({ branches: [] })}
         />
-        {!history && <FilterChip name="User" tip="Filter by User" value={f.users.length ? f.users.join(', ') : undefined} onOpen={async el => showMenu(await userMenu(), anchorBelow(el))} onClear={() => setFilter({ users: [] })} />}
-        {!history && <FilterChip name="Date" tip="Filter by Date" value={dateText(f)} onOpen={el => showMenu(dateMenu(), anchorBelow(el))} onClear={() => setFilter({ since: undefined, until: undefined })} />}
+        {!history && <FilterChip name={t('User')} tip={t('Filter by User')} value={f.users.length ? f.users.join(', ') : undefined} onOpen={async el => showMenu(await userMenu(), anchorBelow(el))} onClear={() => setFilter({ users: [] })} />}
+        {!history && <FilterChip name={t('Date')} tip={t('Filter by Date')} value={dateText(f)} onOpen={el => showMenu(dateMenu(), anchorBelow(el))} onClear={() => setFilter({ since: undefined, until: undefined })} />}
         {!history && (
-          <FilterChip name="Paths" tip="Filter by Paths" value={pathsText(f)} onOpen={el => showMenu(pathsMenu(), anchorBelow(el))} onClear={() => setFilter({ paths: [], roots: [] })} />
+          <FilterChip name={t('Paths')} tip={t('Filter by Paths')} value={pathsText(f)} onOpen={el => showMenu(pathsMenu(), anchorBelow(el))} onClear={() => setFilter({ paths: [], roots: [] })} />
         )}
         {!history && (
           <span ref={graphRef}>
-            <ActionButton icon="vcslog/intelliSort" tip="Graph Options" toggled={s.options.sort !== 'date' || s.options.firstParent || !!s.options.noMerges || !!s.options.collapseLinear} menu={graphOptionsMenu} />
+            <ActionButton icon="vcslog/intelliSort" tip={t('Graph Options')} toggled={s.options.sort !== 'date' || s.options.firstParent || !!s.options.noMerges || !!s.options.collapseLinear} menu={graphOptionsMenu} />
           </span>
         )}
         {!history && <span class="toolbar-separator" />}
-        {!history && <ActionButton icon="general/openNewTab" tip="Open New Git Log Tab" shortcut="Alt+G" onClick={() => void call('newTab', { filters: store.filters })} />}
+        {!history && <ActionButton icon="general/openNewTab" tip={t('Open New Git Log Tab')} shortcut="Alt+G" onClick={() => void call('newTab', { filters: store.filters })} />}
       </div>
       {history ? (
         <>
-          <ActionButton icon="general/refresh" tip="Refresh" onClick={() => void call('refreshRepo').then(() => store.setFilters(store.filters))} />
-          <ActionButton icon="vcs/diff" tip="Show Diff" shortcut="Ctrl+D" disabled={!s.selection.size} onClick={() => runCommitAction('historyDiff')} />
-          <ActionButton icon="vcs/changes" tip="Show All Affected Files" shortcut="Alt+Shift+A" disabled={s.selection.size !== 1} onClick={() => runCommitAction('showDiff')} />
-          <ActionButton icon="general/show" tip="View Options" menu={viewOptionsMenu} />
-          <ActionButton icon="toolwindows/vcs" tip="Show in VCS Log" disabled={s.selection.size !== 1} onClick={() => runCommitAction('showInLog')} />
+          <ActionButton icon="general/refresh" tip={t('Refresh')} onClick={() => void call('refreshRepo').then(() => store.setFilters(store.filters))} />
+          <ActionButton icon="vcs/diff" tip={t('Show Diff')} shortcut="Ctrl+D" disabled={!s.selection.size} onClick={() => runCommitAction('historyDiff')} />
+          <ActionButton icon="vcs/changes" tip={t('Show All Affected Files')} shortcut="Alt+Shift+A" disabled={s.selection.size !== 1} onClick={() => runCommitAction('showDiff')} />
+          <ActionButton icon="general/show" tip={t('View Options')} menu={viewOptionsMenu} />
+          <ActionButton icon="toolwindows/vcs" tip={t('Show in VCS Log')} disabled={s.selection.size !== 1} onClick={() => runCommitAction('showInLog')} />
         </>
       ) : (
         <>
-          <ActionButton icon="general/refresh" tip="Refresh" shortcut="Ctrl+F5" onClick={() => void call('refreshRepo').then(() => store.setFilters(store.filters))} />
-          <ActionButton icon="dvcs/cherryPick" tip="Cherry-Pick" disabled={!selectedNotInHead || s.head.operation !== 'none'} onClick={() => runCommitAction('cherryPick')} />
-          <ActionButton icon="general/show" tip="View Options" menu={viewOptionsMenu} />
-          <ActionButton icon="general/search" tip="Go To Hash/Branch/Tag" shortcut="Ctrl+F" onClick={onGoTo} />
+          <ActionButton icon="general/refresh" tip={t('Refresh')} shortcut="Ctrl+F5" onClick={() => void call('refreshRepo').then(() => store.setFilters(store.filters))} />
+          <ActionButton icon="dvcs/cherryPick" tip={t('Cherry-Pick')} disabled={!selectedNotInHead || s.head.operation !== 'none'} onClick={() => runCommitAction('cherryPick')} />
+          <ActionButton icon="general/show" tip={t('View Options')} menu={viewOptionsMenu} />
+          <ActionButton icon="general/search" tip={t('Go To Hash/Branch/Tag')} shortcut="Ctrl+F" onClick={onGoTo} />
         </>
       )}
     </div>

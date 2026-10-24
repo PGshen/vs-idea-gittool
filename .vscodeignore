@@ -9,3 +9,4 @@ tsconfig.json
 **/*.map
 media/icons/PlatformIconMappings.json
 releases/**
+l10n/README.md
