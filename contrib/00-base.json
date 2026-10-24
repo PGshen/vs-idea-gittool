@@ -51,7 +51,8 @@
     {
       "command": "ideagittool.showConsole",
       "title": "Show Git Console",
-      "category": "IdeaGitTool"
+      "category": "IdeaGitTool",
+      "icon": "$(terminal)"
     }
   ],
   "viewsContainers": {

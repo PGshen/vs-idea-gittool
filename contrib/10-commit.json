@@ -121,6 +121,18 @@
     }
   ],
   "menus": {
+    "view/title": [
+      {
+        "command": "ideagittool.showLog",
+        "when": "view == ideagittool.commit",
+        "group": "navigation@1"
+      },
+      {
+        "command": "ideagittool.showConsole",
+        "when": "view == ideagittool.commit",
+        "group": "navigation@2"
+      }
+    ],
     "explorer/context": [],
     "editor/context": [],
     "editor/title/context": [],

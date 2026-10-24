@@ -1,6 +1,7 @@
 import { graphColor } from '../../git/graph';
 import type { GraphEdge, GraphRow } from '../../shared/types';
 import { t } from '../lib/l10n';
+import { theme } from '../lib/rpc';
 
 export const LANE = 14;
 export const ROW_H = 26;
@@ -11,11 +12,14 @@ let cache = new Map<number, string>();
 let sat = 0.6;
 let bri = 0.6;
 
-/** Re-reads VersionControl.Log.Graph saturation / brightness from the theme. Call after a theme change. */
+/**
+ * Re-reads VersionControl.Log.Graph saturation / brightness from the theme. Call after a theme change.
+ * The "vscode" appearance does not set them, so it gets the IntelliJ dark / light values by theme kind.
+ */
 export function updateGraphTheme() {
   const style = getComputedStyle(document.body);
   sat = parseFloat(style.getPropertyValue('--graph-saturation')) || 0.6;
-  bri = parseFloat(style.getPropertyValue('--graph-brightness')) || 0.6;
+  bri = parseFloat(style.getPropertyValue('--graph-brightness')) || (theme.dark ? 0.6 : 0.7);
   cache = new Map();
 }
 

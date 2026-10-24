@@ -342,7 +342,8 @@
       {
         "command": "ideagittool.showConsole",
         "title": "%command.showConsole.title%",
-        "category": "IdeaGitTool"
+        "category": "IdeaGitTool",
+        "icon": "$(terminal)"
       },
       {
         "command": "ideagittool.commit",
@@ -546,7 +547,7 @@
         "command": "ideagittool.showLog",
         "title": "%command.showLog.title%",
         "category": "IdeaGitTool",
-        "icon": "$(git-commit)"
+        "icon": "$(history)"
       },
       {
         "command": "ideagittool.log.newTab",
@@ -1018,6 +1019,38 @@
       ]
     },
     "menus": {
+      "view/title": [
+        {
+          "command": "ideagittool.showLog",
+          "when": "view == ideagittool.commit",
+          "group": "navigation@1"
+        },
+        {
+          "command": "ideagittool.showConsole",
+          "when": "view == ideagittool.commit",
+          "group": "navigation@2"
+        },
+        {
+          "command": "ideagittool.worktrees.create",
+          "when": "view == ideagittool.worktrees",
+          "group": "navigation@1"
+        },
+        {
+          "command": "ideagittool.worktrees.refresh",
+          "when": "view == ideagittool.worktrees",
+          "group": "navigation@2"
+        },
+        {
+          "command": "ideagittool.worktrees.delete",
+          "when": "view == ideagittool.worktrees",
+          "group": "navigation@3"
+        },
+        {
+          "command": "ideagittool.worktrees.prune",
+          "when": "view == ideagittool.worktrees",
+          "group": "navigation@4"
+        }
+      ],
       "explorer/context": [
         {
           "submenu": "ideagittool.localHistory",
@@ -1535,28 +1568,6 @@
           "command": "ideagittool.annotateOptions",
           "when": "ideagittool.annotated",
           "group": "9_ideagittool"
-        }
-      ],
-      "view/title": [
-        {
-          "command": "ideagittool.worktrees.create",
-          "when": "view == ideagittool.worktrees",
-          "group": "navigation@1"
-        },
-        {
-          "command": "ideagittool.worktrees.refresh",
-          "when": "view == ideagittool.worktrees",
-          "group": "navigation@2"
-        },
-        {
-          "command": "ideagittool.worktrees.delete",
-          "when": "view == ideagittool.worktrees",
-          "group": "navigation@3"
-        },
-        {
-          "command": "ideagittool.worktrees.prune",
-          "when": "view == ideagittool.worktrees",
-          "group": "navigation@4"
         }
       ],
       "view/item/context": [
