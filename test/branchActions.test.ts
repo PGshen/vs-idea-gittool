@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { refActionModel, shortcut, topActionModel, OPEN_WORKTREE, NEW_WORKTREE } from '../src/features/ops/branchActions';
-import { buildBranchRows, matchText } from '../src/shared/branchesTree';
+import { buildBranchRows, compareRefNames, matchText } from '../src/shared/branchesTree';
 import type { BranchesState } from '../src/shared/branchesProtocol';
 
 const labels = (items: { label: string; separator?: true }[]) => items.map(i => (i.separator ? '—' : i.label));
@@ -143,4 +143,9 @@ test('tree: synchronous control lists common branches, then repositories', () =>
   const firstBranch = rows.find(r => r.kind === 'branch');
   assert.ok(firstBranch && firstBranch.kind === 'branch' && firstBranch.root === undefined);
   assert.deepEqual(rows.filter(r => r.kind === 'repo').map(r => r.kind === 'repo' && r.label), ['r', 'q']);
+});
+
+test('tree: branch names sort numbers by value (issue #4)', () => {
+  const names = ['3.2.0.0-dev', '3.10.0.0-release', '3.1.1.0-qa', '3.10.0.0-dev', '2.5.0.0-release', '3.1.0.0-dev'];
+  assert.deepEqual([...names].sort(compareRefNames), ['2.5.0.0-release', '3.1.0.0-dev', '3.1.1.0-qa', '3.2.0.0-dev', '3.10.0.0-dev', '3.10.0.0-release']);
 });

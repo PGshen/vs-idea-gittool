@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
+import { compareRefNames } from '../../shared/branchesTree';
 import type { Ref } from '../../shared/types';
 import { ActionButton, Toolbar, Tree, TreeNode } from '../lib/components';
 import { Icon } from '../lib/icons';
@@ -29,7 +30,7 @@ function groupByDirectory(refs: Ref[], prefix: string, nameOf: (r: Ref) => strin
   }
   const toNodes = (d: Dir, path: string): Node[] => [
     ...[...d.dirs.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
+      .sort((a, b) => compareRefNames(a[0], b[0]))
       .map(([name, sub]) => ({ key: `${prefix}/${path}${name}`, label: name, text: name, icon: 'nodes/folder', children: toNodes(sub, `${path}${name}/`), data: { group: `${path}${name}` } })),
     ...d.leaves.map(l => makeLeaf(l.r, l.label)),
   ];
@@ -39,7 +40,7 @@ function groupByDirectory(refs: Ref[], prefix: string, nameOf: (r: Ref) => strin
 function branchSort(a: Ref, b: Ref) {
   if (a.current !== b.current) return a.current ? -1 : 1;
   if (!!a.favorite !== !!b.favorite) return a.favorite ? -1 : 1;
-  return a.name.localeCompare(b.name);
+  return compareRefNames(a.name, b.name);
 }
 
 /** Branches pane of the Git log (BranchesDashboardTreeComponent). */
@@ -92,7 +93,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
     const mine = (r: Ref) => !settings.showMyBranches || !s.myBranches || s.myBranches.has(s.init.multi ? `${r.root}\0${r.fullName}` : r.fullName);
     const locals = s.refs.filter(r => r.type === 'local' && match(r) && mine(r)).sort(branchSort);
     const remotes = settings.showMyBranches ? [] : s.refs.filter(r => r.type === 'remote' && match(r)).sort(branchSort);
-    const tags = s.refs.filter(r => r.type === 'tag' && match(r)).sort((a, b) => a.name.localeCompare(b.name));
+    const tags = s.refs.filter(r => r.type === 'tag' && match(r)).sort((a, b) => compareRefNames(a.name, b.name));
     const byRepo = s.init.multi && settings.branchesGroupByRepository;
     // Group by Repository: an extra level with one node per repository under Local / Remote / Tags.
     const perRepo = (refs: Ref[], prefix: string, build: (list: Ref[], key: string) => Node[]): Node[] =>

@@ -40,10 +40,17 @@ interface Dir {
   refs: { ref: BranchRef; leaf: string; match?: number[] }[];
 }
 
+const collator = new Intl.Collator(undefined, { numeric: true });
+
+/** Compares branch, tag and folder names with digit runs as numbers, so `3.2` sorts before `3.10`. */
+export function compareRefNames(a: string, b: string) {
+  return collator.compare(a, b);
+}
+
 function sortRefs(a: BranchRef, b: BranchRef) {
   if (!!a.current !== !!b.current) return a.current ? -1 : 1;
   if (!!a.favorite !== !!b.favorite) return a.favorite ? -1 : 1;
-  return a.name.localeCompare(b.name);
+  return compareRefNames(a.name, b.name);
 }
 
 export interface TreeOptions {
@@ -104,7 +111,7 @@ export function buildBranchRows(state: BranchesState, o: TreeOptions): BranchRow
     const hasCurrent = (d: Dir): boolean => d.refs.some(r => r.ref.current) || [...d.dirs.values()].some(hasCurrent);
     const count = (d: Dir): number => d.refs.length + [...d.dirs.values()].reduce((n, x) => n + count(x), 0);
     const emit = (d: Dir, depth: number) => {
-      for (const sub of [...d.dirs.values()].sort((a, b) => a.name.localeCompare(b.name))) {
+      for (const sub of [...d.dirs.values()].sort((a, b) => compareRefNames(a.name, b.name))) {
         if (count(sub) === 0) continue;
         const id = `${scope}|dir:${sub.path}`;
         const expanded = isOpen(id, hasCurrent(sub));
@@ -153,7 +160,7 @@ export function buildBranchRows(state: BranchesState, o: TreeOptions): BranchRow
         const name = r.remote ?? r.name.split('/')[0];
         byRemote.set(name, [...(byRemote.get(name) ?? []), r]);
       }
-      for (const [remote, refs] of [...byRemote].sort((a, b) => a[0].localeCompare(b[0]))) {
+      for (const [remote, refs] of [...byRemote].sort((a, b) => compareRefNames(a[0], b[0]))) {
         if (!s.groupByDirectory) {
           n += addRefs(refs, `${scopePrefix}remote`, d, root);
           continue;

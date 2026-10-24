@@ -1,3 +1,4 @@
+import { compareRefNames } from '../../shared/branchesTree';
 import { iconUrl } from '../lib/icons';
 
 export type RefKind = 'head' | 'local' | 'remote' | 'tag';
@@ -32,7 +33,7 @@ export function refLabels(refs: string[], o: RefLabelOptions): RefLabel[] {
   const out: RefLabel[] = [];
   if (head && !(o.currentBranch && locals.includes(o.currentBranch))) out.push({ text: 'HEAD', kinds: ['head'], tip: 'HEAD', names: ['HEAD'] });
   const usedRemotes = new Set<string>();
-  const sortedLocals = [...locals].sort((a, b) => (a === o.currentBranch ? -1 : b === o.currentBranch ? 1 : a.localeCompare(b)));
+  const sortedLocals = [...locals].sort((a, b) => (a === o.currentBranch ? -1 : b === o.currentBranch ? 1 : compareRefNames(a, b)));
   for (const l of sortedLocals) {
     const kind: RefKind = l === o.currentBranch ? 'head' : 'local';
     const tracking = o.compact ? remotes.filter(r => r.slice(r.indexOf('/') + 1) === l) : [];
