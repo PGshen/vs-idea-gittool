@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { openChangeDiff, openMultiDiff, REV_EMPTY, toGitUri } from '../../host/gitContent';
+import { compareRefNames } from '../../shared/branchesTree';
 import { Ref } from '../../shared/types';
 import { EMPTY_TREE, parseNameStatus } from './details';
 import { EMPTY_FILTERS } from './filters';
@@ -12,7 +13,7 @@ function refItems(repo: Repository) {
   const kind = (r: Ref) => (r.type === 'local' ? 'Local' : r.type === 'remote' ? 'Remote' : 'Tags');
   const items: (vscode.QuickPickItem & { ref?: string })[] = [];
   let last = '';
-  const sorted = [...repo.refs].sort((a, b) => ['local', 'remote', 'tag'].indexOf(a.type) - ['local', 'remote', 'tag'].indexOf(b.type) || a.name.localeCompare(b.name));
+  const sorted = [...repo.refs].sort((a, b) => ['local', 'remote', 'tag'].indexOf(a.type) - ['local', 'remote', 'tag'].indexOf(b.type) || compareRefNames(a.name, b.name));
   for (const r of sorted) {
     if (kind(r) !== last) {
       items.push({ label: kind(r), kind: vscode.QuickPickItemKind.Separator });
