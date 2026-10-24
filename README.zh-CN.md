@@ -13,12 +13,12 @@
 
 ### 用 .vsix 安装包安装（推荐）
 
-1. 从本仓库的 `releases/` 目录下载 [`ideagittool-0.4.0.vsix`](https://github.com/PGshen/vs-idea-gittool/raw/master/releases/ideagittool-0.4.0.vsix)。
+1. 从本仓库的 `releases/` 目录下载 [`ideagittool-0.4.2.vsix`](https://github.com/PGshen/vs-idea-gittool/raw/master/releases/ideagittool-0.4.2.vsix)。
 2. 任选一种方式安装：
    - 在 VS Code 里打开扩展视图（Ctrl+Shift+X / Cmd+Shift+X），点顶部的 `⋯` 菜单，选 **Install from VSIX…**（从 VSIX 安装），再选中下载的文件。
    - 或者在终端里运行：
      ```
-     code --install-extension ideagittool-0.4.0.vsix
+     code --install-extension ideagittool-0.4.2.vsix
      ```
 3. 如果 VS Code 提示重新加载窗口，点确定即可。
 
