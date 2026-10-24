@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Change } from '../../../../shared/types';
 import { buildDirectoryTree, Button, Checkbox, SplitButton, Tree, TreeNode, walkTree } from '../../../lib/components';
 import { fileIconName, Icon } from '../../../lib/icons';
+import { t } from '../../../lib/l10n';
 import { anchorBelow, showMenu } from '../../../lib/menu';
 import { call } from '../../../lib/rpc';
 import { DialogFrame } from '../../frame';
@@ -156,33 +157,33 @@ registerDialog<PushProps>('ops.push', ({ props, submit, cancel }) => {
       error={error}
       left={
         <>
-          <Checkbox checked={pushTags} onChange={setPushTags} label="Push tags:" />
+          <Checkbox checked={pushTags} onChange={setPushTags} label={t('Push tags:')} />
           <select class="combo" style={{ height: '24px' }} disabled={!pushTags} value={tagsMode} onChange={e => setTagsMode((e.currentTarget as HTMLSelectElement).value as 'all' | 'current')}>
-            <option value="all">All</option>
-            <option value="current">Current Branch</option>
+            <option value="all">{t('All')}</option>
+            <option value="current">{t('Current Branch')}</option>
           </select>
           <span style={{ width: '12px' }} />
-          <Checkbox checked={runHooks} onChange={setRunHooks} label="Run Git hooks" />
+          <Checkbox checked={runHooks} onChange={setRunHooks} label={t('Run Git hooks')} />
         </>
       }
       buttons={
         <>
-          <Button onClick={cancel}>Cancel</Button>
+          <Button onClick={cancel}>{t('Cancel')}</Button>
           {props.forceAllowed ? (
             <SplitButton
               primary
               onClick={() => doPush()}
               disabled={!canPush || busy}
               menu={() => [
-                { label: 'Push', action: () => doPush() },
-                { label: 'Force Push', action: () => doPush('lease') },
+                { label: t('Push'), action: () => doPush() },
+                { label: t('Force Push'), action: () => doPush('lease') },
               ]}
             >
-              {busy ? 'Pushing…' : 'Push'}
+              {busy ? t('Pushing…') : t('Push')}
             </SplitButton>
           ) : (
             <Button primary onClick={() => doPush()} disabled={!canPush || busy}>
-              Push
+              {t('Push')}
             </Button>
           )}
         </>
@@ -243,7 +244,7 @@ registerDialog<PushProps>('ops.push', ({ props, submit, cancel }) => {
                         <span class="editable" onMouseDown={e => e.stopPropagation()} onClick={() => setEditing({ root: r.root, what: 'target' })}>
                           {r.target}
                         </span>
-                        {r.isNew && <span class="push-tag" style={{ marginLeft: '6px' }}>{r.hasUpstream ? 'New' : 'New & Upstream'}</span>}
+                        {r.isNew && <span class="push-tag" style={{ marginLeft: '6px' }}>{r.hasUpstream ? t('New') : t('New & Upstream')}</span>}
                       </>
                     )}
                   </span>
@@ -262,15 +263,15 @@ registerDialog<PushProps>('ops.push', ({ props, submit, cancel }) => {
               </div>
             );
           })}
-          {totalCommits === 0 && repos.every(r => !r.isNew) && <div class="empty-text">No commits to push. Everything is up to date.</div>}
+          {totalCommits === 0 && repos.every(r => !r.isNew) && <div class="empty-text">{t('No commits to push. Everything is up to date.')}</div>}
         </div>
         <div class="push-right">
           <div class="toolbar" style={{ minHeight: '30px', borderBottom: '1px solid var(--border-subtle)' }}>
-            <span class="secondary">{changes.length ? `${changes.length} ${changes.length === 1 ? 'file' : 'files'}` : ''}</span>
+            <span class="secondary">{changes.length ? (changes.length === 1 ? t('1 file') : t('{0} files', changes.length)) : ''}</span>
             <span class="spacer" />
             <button
               class="action-button"
-              data-tip="Show Diff"
+              data-tip={t('Show Diff')}
               data-shortcut="Ctrl+D"
               disabled={fileSel.size === 0}
               onClick={() => openDiff()}
@@ -279,7 +280,7 @@ registerDialog<PushProps>('ops.push', ({ props, submit, cancel }) => {
             </button>
           </div>
           {loadingChanges && changes.length === 0 ? (
-            <div class="empty-text">Loading…</div>
+            <div class="empty-text">{t('Loading…')}</div>
           ) : (
             <Tree
               nodes={fileNodes}
@@ -288,7 +289,7 @@ registerDialog<PushProps>('ops.push', ({ props, submit, cancel }) => {
               selection={fileSel}
               onSelectionChange={s => setFileSel(s)}
               onOpen={n => n.data?.change && call('showDiff', { change: n.data.change, hash: n.data.change.hash })}
-              emptyText={multiSel.size ? 'No differences' : 'No commits selected'}
+              emptyText={multiSel.size ? t('No differences') : t('No commits selected')}
             />
           )}
           {detailsCommit && (
@@ -296,8 +297,8 @@ registerDialog<PushProps>('ops.push', ({ props, submit, cancel }) => {
               <div style={{ fontWeight: 600, marginBottom: '6px' }}>{detailsCommit.subject}</div>
               {detailsCommit.body && detailsCommit.body !== detailsCommit.subject && <div style={{ marginBottom: '6px' }}>{detailsCommit.body.split('\n').slice(1).join('\n').trim()}</div>}
               <div class="secondary">
-                <span class="mono-text">{detailsCommit.hash.slice(0, 8)}</span> {detailsCommit.author}
-                {detailsCommit.authorEmail && <> &lt;{detailsCommit.authorEmail}&gt;</>} on {formatDate(detailsCommit.date)}
+                <span class="mono-text">{detailsCommit.hash.slice(0, 8)}</span>{' '}
+                {t('{0} on {1}', detailsCommit.authorEmail ? `${detailsCommit.author} <${detailsCommit.authorEmail}>` : detailsCommit.author, formatDate(detailsCommit.date))}
               </div>
             </div>
           )}
@@ -381,7 +382,7 @@ function buildTree(changes: Change[]): TreeNode[] {
       text: c.path,
       icon: fileIconName(c.path),
       labelClass: `st-${c.status === '?' ? 'A' : c.status}`,
-      hint: c.oldPath ? `renamed from ${c.oldPath}` : undefined,
+      hint: c.oldPath ? t('renamed from {0}', c.oldPath) : undefined,
       data: { change: c },
     }),
     'push:',

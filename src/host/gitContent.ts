@@ -82,9 +82,9 @@ export function shortHash(ref: string) {
 }
 
 function revLabel(ref: string) {
-  if (ref === REV_EMPTY) return 'Empty';
-  if (ref === REV_INDEX) return 'Staged';
-  if (ref === 'WORKTREE') return 'Local';
+  if (ref === REV_EMPTY) return vscode.l10n.t('Empty');
+  if (ref === REV_INDEX) return vscode.l10n.t('Staged');
+  if (ref === 'WORKTREE') return vscode.l10n.t('Local');
   return shortHash(ref);
 }
 

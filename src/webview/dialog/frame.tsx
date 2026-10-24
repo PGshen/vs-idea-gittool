@@ -1,6 +1,7 @@
 import { ComponentChildren, JSX } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { Icon } from '../lib/icons';
+import { t } from '../lib/l10n';
 
 /**
  * IntelliJ DialogWrapper look: a window with a title bar, content with 16px insets and a
@@ -42,9 +43,9 @@ export function DialogFrame({
         e.preventDefault();
         onCancel();
       } else if (e.key === 'Enter' && onOk && !okDisabled) {
-        const t = e.target as HTMLElement;
-        const inTextArea = t.tagName === 'TEXTAREA';
-        if (t.tagName === 'BUTTON' && !t.classList.contains('primary')) return;
+        const el = e.target as HTMLElement;
+        const inTextArea = el.tagName === 'TEXTAREA';
+        if (el.tagName === 'BUTTON' && !el.classList.contains('primary')) return;
         if (!inTextArea || e.ctrlKey || e.metaKey) {
           e.preventDefault();
           onOk();
@@ -66,7 +67,7 @@ export function DialogFrame({
         <div class="dialog-title">
           <span>{title}</span>
           <span class="spacer" />
-          <button class="action-button" data-tip="Close" onClick={onCancel}>
+          <button class="action-button" data-tip={t('Close')} onClick={onCancel}>
             <Icon name="general/close" />
           </button>
         </div>

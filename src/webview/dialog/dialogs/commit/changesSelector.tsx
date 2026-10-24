@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { ActionButton, Toolbar, Tree, TreeNode } from '../../../lib/components';
+import { t } from '../../../lib/l10n';
 import { changeKey } from '../../../../shared/commitProtocol';
 import { Change } from '../../../../shared/types';
 import { allGroupKeys, countText, filesOfNodes, groupFiles, makeCheckState, NodeData } from '../../../commit/changesTree';
@@ -29,8 +30,8 @@ export function ChangesSelector({
     return [
       {
         key: 'root',
-        label: rootLabel ?? 'Changes',
-        text: rootLabel ?? 'Changes',
+        label: rootLabel ?? t('Changes'),
+        text: rootLabel ?? t('Changes'),
         hint: countText(files.length),
         checkable: true,
         children,
@@ -44,11 +45,11 @@ export function ChangesSelector({
   return (
     <div class="panel-box" style={{ flex: 1, minHeight: '180px' }}>
       <Toolbar style={{ minHeight: '30px' }}>
-        <ActionButton icon="general/expandAll" tip="Expand All" onClick={() => setExpanded(new Set(['root', ...allGroupKeys(nodes)]))} />
-        <ActionButton icon="general/collapseAll" tip="Collapse All" onClick={() => setExpanded(new Set())} />
+        <ActionButton icon="general/expandAll" tip={t('Expand All')} onClick={() => setExpanded(new Set(['root', ...allGroupKeys(nodes)]))} />
+        <ActionButton icon="general/collapseAll" tip={t('Collapse All')} onClick={() => setExpanded(new Set())} />
         <ActionButton
           icon="actions/groupByPackage"
-          tip="Group By Directory"
+          tip={t('Group By Directory')}
           shortcut="Ctrl+Alt+P"
           toggled={groupByDirectory}
           onClick={() => {
@@ -58,7 +59,7 @@ export function ChangesSelector({
         />
         <span class="spacer" style={{ flex: 1 }} />
         <span class="secondary" style={{ paddingRight: '6px' }}>
-          {included.size} of {countText(files.length)} selected
+          {t('{0} of {1} selected', included.size, countText(files.length))}
         </span>
       </Toolbar>
       <Tree<NodeData>

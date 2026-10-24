@@ -52,7 +52,7 @@ export function register(ctx: Ctx) {
   ctx.command('ideagittool.localHistory.showSelectionHistory', (uri?: unknown) => {
     const editor = vscode.window.activeTextEditor;
     if (!editor || editor.document.uri.scheme !== 'file') {
-      void vscode.window.showInformationMessage('Open a file and select lines to see their history');
+      void vscode.window.showInformationMessage(vscode.l10n.t('Open a file and select lines to see their history'));
       return;
     }
     if (uri instanceof vscode.Uri && normPath(uri.fsPath) !== normPath(editor.document.uri.fsPath)) return open(targetOf(uri));
@@ -61,10 +61,10 @@ export function register(ctx: Ctx) {
     open({ mode: 'selection', path: normPath(editor.document.uri.fsPath), selection: [sel.start.line, end] });
   });
   ctx.command('ideagittool.localHistory.putLabel', async () => {
-    const name = await vscode.window.showInputBox({ title: 'Put Label', prompt: 'Label name:', ignoreFocusOut: true, validateInput: v => (v.trim() ? undefined : 'Label name is empty') });
+    const name = await vscode.window.showInputBox({ title: vscode.l10n.t('Put Label'), prompt: vscode.l10n.t('Label name:'), ignoreFocusOut: true, validateInput: v => (v.trim() ? undefined : vscode.l10n.t('Label name is empty')) });
     if (!name?.trim()) return;
     rec.putLabel(name.trim());
-    void vscode.window.setStatusBarMessage(`Label ${name.trim()} created`, 4000);
+    void vscode.window.setStatusBarMessage(vscode.l10n.t('Label {0} created', name.trim()), 4000);
   });
   // For other features: "Before Update", "Before Rebase", … labels recorded around git operations.
   ctx.command('ideagittool.localHistory.putSystemLabel', (arg?: { root?: string; label: string } | string) => {
@@ -89,24 +89,24 @@ export function register(ctx: Ctx) {
         first.kind === 'label'
           ? `$(tag) ${first.label}`
           : evs.every(e => e.external)
-            ? 'External change'
+            ? vscode.l10n.t('External change')
             : files.length > 1
-              ? `Change ${files[0]} + ${files.length - 1} more`
+              ? vscode.l10n.t('Change {0} + {1} more', files[0], files.length - 1)
               : first.kind === 'create'
-                ? `Create ${files[0]}`
+                ? vscode.l10n.t('Create {0}', files[0])
                 : first.kind === 'delete'
-                  ? `Delete ${files[0]}`
+                  ? vscode.l10n.t('Delete {0}', files[0])
                   : first.kind === 'rename'
-                    ? `Rename ${path.posix.basename(first.oldPath ?? '')} to ${files[0]}`
-                    : `Change ${files[0] ?? ''}`;
+                    ? vscode.l10n.t('Rename {0} to {1}', path.posix.basename(first.oldPath ?? ''), files[0])
+                    : vscode.l10n.t('Change {0}', files[0] ?? '');
       picks.items.push({ id: first.id, label, description: relativeTime(Math.floor(evs[evs.length - 1].ts / 1000)) });
     }
     picks.items.sort((a, b) => b.id - a.id);
     if (!picks.items.length) {
-      void vscode.window.showInformationMessage('There are no changes');
+      void vscode.window.showInformationMessage(vscode.l10n.t('There are no changes'));
       return;
     }
-    const picked = await vscode.window.showQuickPick(picks.items.slice(0, 200), { title: 'Recent Changes', placeHolder: 'Search recent changes' });
+    const picked = await vscode.window.showQuickPick(picks.items.slice(0, 200), { title: vscode.l10n.t('Recent Changes'), placeHolder: vscode.l10n.t('Search recent changes') });
     if (picked) open({ mode: 'project' }, picked.id);
   });
 }

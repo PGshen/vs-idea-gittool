@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { Button, Split, Tree, TreeNode } from '../lib/components';
 import { anchorAt, MenuEntry, showMenu } from '../lib/menu';
+import { t } from '../lib/l10n';
 import { call, send } from '../lib/rpc';
 import { CommitViewState, StashInfo } from '../../shared/commitProtocol';
 import { Change } from '../../shared/types';
@@ -49,7 +50,7 @@ export function StashTab({ state }: { state: CommitViewState }) {
       text: s.message,
       prefix: <span class="secondary stash-ref">{s.ref.replace(/^stash@\{(\d+)\}$/, '$1')}</span>,
       hint: `${s.branch ?? ''}`,
-      tip: `${s.ref} created on ${s.branch ?? 'detached HEAD'} at ${formatDate(s.date)}`,
+      tip: s.branch ? t('{0} created on {1} at {2}', s.ref, s.branch, formatDate(s.date)) : t('{0} created on detached HEAD at {1}', s.ref, formatDate(s.date)),
       data: { kind: 'stash', id: s.ref, root: s.root },
     });
     if (!multi) return state.stashes.map(make);
@@ -75,14 +76,14 @@ export function StashTab({ state }: { state: CommitViewState }) {
   useEffect(() => setFileExpanded(new Set(allGroupKeys(fileNodes))), [fileNodes]);
 
   const stashMenu = (s: StashInfo | undefined): MenuEntry[] => [
-    { label: 'Pop', disabled: !s, action: () => s && send('stashApply', { root: s.root, ref: s.ref, pop: true }) },
-    { label: 'Apply', disabled: !s, action: () => s && send('stashApply', { root: s.root, ref: s.ref, pop: false }) },
-    { label: 'Unstash…', disabled: !s, action: () => s && send('unstashAs', { root: s.root, ref: s.ref }) },
-    { label: 'Drop', disabled: !s, action: () => s && send('stashDrop', { root: s.root, ref: s.ref, message: s.message }) },
-    { label: multi && s ? `Clear Stashes in ${state.repos.find(r => r.root === s.root)?.name}` : 'Clear', disabled: !s, action: () => s && send('stashClear', { root: s.root }) },
+    { label: t('Pop'), disabled: !s, action: () => s && send('stashApply', { root: s.root, ref: s.ref, pop: true }) },
+    { label: t('Apply'), disabled: !s, action: () => s && send('stashApply', { root: s.root, ref: s.ref, pop: false }) },
+    { label: t('Unstash…'), disabled: !s, action: () => s && send('unstashAs', { root: s.root, ref: s.ref }) },
+    { label: t('Drop'), disabled: !s, action: () => s && send('stashDrop', { root: s.root, ref: s.ref, message: s.message }) },
+    { label: multi && s ? t('Clear Stashes in {0}', String(state.repos.find(r => r.root === s.root)?.name)) : t('Clear'), disabled: !s, action: () => s && send('stashClear', { root: s.root }) },
     { separator: true },
-    { label: 'Show Diff', icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: !files?.length, action: () => files?.[0] && send('stashDiff', { file: files[0] }) },
-    { label: 'Compare with Local', disabled: !files?.length, action: () => files?.[0] && send('stashDiff', { file: files[0], withLocal: 'after' }) },
+    { label: t('Show Diff'), icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: !files?.length, action: () => files?.[0] && send('stashDiff', { file: files[0] }) },
+    { label: t('Compare with Local'), disabled: !files?.length, action: () => files?.[0] && send('stashDiff', { file: files[0], withLocal: 'after' }) },
   ];
 
   const selectedFile = (sel?: TreeNode<NodeData>[]) => {
@@ -95,10 +96,10 @@ export function StashTab({ state }: { state: CommitViewState }) {
     const f = selectedFile(sel);
     showMenu(
       [
-        { label: 'Show Diff', icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: !f, action: () => send('stashDiff', { file: f }) },
-        { label: 'Compare with Local', disabled: !f, action: () => send('stashDiff', { file: f, withLocal: 'after' }) },
-        { label: 'Compare Before with Local', disabled: !f, action: () => send('stashDiff', { file: f, withLocal: 'before' }) },
-        { label: 'Edit Source', icon: 'general/edit', shortcut: 'F4', disabled: !f, action: () => f && send('gitCommand', { command: 'vscode.open', args: { $uri: `${f.root}/${f.path}` } }) },
+        { label: t('Show Diff'), icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: !f, action: () => send('stashDiff', { file: f }) },
+        { label: t('Compare with Local'), disabled: !f, action: () => send('stashDiff', { file: f, withLocal: 'after' }) },
+        { label: t('Compare Before with Local'), disabled: !f, action: () => send('stashDiff', { file: f, withLocal: 'before' }) },
+        { label: t('Edit Source'), icon: 'general/edit', shortcut: 'F4', disabled: !f, action: () => f && send('gitCommand', { command: 'vscode.open', args: { $uri: `${f.root}/${f.path}` } }) },
       ],
       anchorAt(e),
     );
@@ -107,10 +108,10 @@ export function StashTab({ state }: { state: CommitViewState }) {
   if (!state.stashes.length) {
     return (
       <div class="empty-text">
-        No stashes or shelves added.
+        {t('No stashes or shelves added.')}
         <br />
         <span class="link" onClick={() => send('stashChanges')}>
-          Stash Changes…
+          {t('Stash Changes…')}
         </span>
       </div>
     );
@@ -149,14 +150,14 @@ export function StashTab({ state }: { state: CommitViewState }) {
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && f) return void send('stashDiff', { file: f }), true;
             return false;
           }}
-          emptyText={files ? 'No changes' : <span class="spinner" style={{ display: 'inline-block' }} />}
+          emptyText={files ? t('No changes') : <span class="spinner" style={{ display: 'inline-block' }} />}
         />
-        <div class="stash-buttons" data-tip="Apply — apply and keep the stash in the list. Pop — apply and remove the stash from the list.">
+        <div class="stash-buttons" data-tip={t('Apply — apply and keep the stash in the list. Pop — apply and remove the stash from the list.')}>
           <Button disabled={!selectedStash} onClick={() => selectedStash && send('stashApply', { root: selectedStash.root, ref: selectedStash.ref, pop: false })}>
-            Apply
+            {t('Apply')}
           </Button>
           <Button disabled={!selectedStash} onClick={() => selectedStash && send('stashApply', { root: selectedStash.root, ref: selectedStash.ref, pop: true })}>
-            Pop
+            {t('Pop')}
           </Button>
         </div>
       </div>

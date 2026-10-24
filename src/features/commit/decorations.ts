@@ -4,15 +4,15 @@ import { RepositoryManager } from '../../git/manager';
 import { ChangeStatus } from '../../shared/types';
 
 const COLORS: Partial<Record<ChangeStatus, { color: string; tooltip: string }>> = {
-  M: { color: 'ideagittool.fileStatus.modified', tooltip: 'Modified' },
-  R: { color: 'ideagittool.fileStatus.modified', tooltip: 'Renamed' },
-  T: { color: 'ideagittool.fileStatus.modified', tooltip: 'Type changed' },
-  C: { color: 'ideagittool.fileStatus.added', tooltip: 'Copied' },
-  A: { color: 'ideagittool.fileStatus.added', tooltip: 'Added' },
-  D: { color: 'ideagittool.fileStatus.deleted', tooltip: 'Deleted' },
-  U: { color: 'ideagittool.fileStatus.conflict', tooltip: 'Merged with conflicts' },
-  '?': { color: 'ideagittool.fileStatus.unknown', tooltip: 'Unversioned' },
-  '!': { color: 'ideagittool.fileStatus.ignored', tooltip: 'Ignored' },
+  M: { color: 'ideagittool.fileStatus.modified', tooltip: vscode.l10n.t('Modified') },
+  R: { color: 'ideagittool.fileStatus.modified', tooltip: vscode.l10n.t('Renamed') },
+  T: { color: 'ideagittool.fileStatus.modified', tooltip: vscode.l10n.t('Type changed') },
+  C: { color: 'ideagittool.fileStatus.added', tooltip: vscode.l10n.t('Copied') },
+  A: { color: 'ideagittool.fileStatus.added', tooltip: vscode.l10n.t('Added') },
+  D: { color: 'ideagittool.fileStatus.deleted', tooltip: vscode.l10n.t('Deleted') },
+  U: { color: 'ideagittool.fileStatus.conflict', tooltip: vscode.l10n.t('Merged with conflicts') },
+  '?': { color: 'ideagittool.fileStatus.unknown', tooltip: vscode.l10n.t('Unversioned') },
+  '!': { color: 'ideagittool.fileStatus.ignored', tooltip: vscode.l10n.t('Ignored') },
 };
 
 /**

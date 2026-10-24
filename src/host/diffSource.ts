@@ -25,7 +25,7 @@ export async function openDiffSource(resource?: unknown) {
   try {
     await vscode.workspace.fs.stat(source);
   } catch {
-    void vscode.window.showWarningMessage(`Source file is not available locally: ${source.fsPath}`);
+    void vscode.window.showWarningMessage(vscode.l10n.t('Source file is not available locally: {0}', source.fsPath));
     return;
   }
   const document = await vscode.workspace.openTextDocument(source);

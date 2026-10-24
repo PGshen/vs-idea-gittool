@@ -1,5 +1,6 @@
 import { buildDirectoryTree, CheckState, TreeNode, walkTree } from '../lib/components';
 import { FileIcon } from '../lib/icons';
+import { t } from '../lib/l10n';
 import { changeKey } from '../../shared/commitProtocol';
 import { Change } from '../../shared/types';
 
@@ -18,7 +19,7 @@ export interface GroupNodeData {
 export type NodeData = FileNodeData | GroupNodeData;
 
 export function countText(n: number) {
-  return n === 0 ? 'No files' : n === 1 ? '1 file' : `${n} files`;
+  return n === 0 ? t('No files') : n === 1 ? t('1 file') : t('{0} files', n);
 }
 
 function dirOf(p: string) {
@@ -41,7 +42,7 @@ export function fileNode(c: Change, o: FileNodeOptions): TreeNode<NodeData> {
   if (o.flat) hint = dirOf(c.path) || o.repoName?.(c.root);
   if (c.oldPath && c.oldPath !== c.path) {
     const from = dirOf(c.oldPath) === dirOf(c.path) ? c.oldPath.slice(c.oldPath.lastIndexOf('/') + 1) : c.oldPath;
-    hint = `${hint ? hint + ' ' : ''}— moved from ${from}`;
+    hint = `${hint ? hint + ' ' : ''}${t('— moved from {0}', from)}`;
   }
   return {
     key: o.key ? o.key(c) : changeKey(c),

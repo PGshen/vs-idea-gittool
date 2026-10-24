@@ -4,6 +4,7 @@ import '../lib/base.css';
 import './log.css';
 import { Split } from '../lib/components';
 import { Icon } from '../lib/icons';
+import { t } from '../lib/l10n';
 import { call, on, send } from '../lib/rpc';
 import { BranchesPanel } from './branches';
 import { RightPanel } from './changes';
@@ -40,7 +41,7 @@ function GoTo({ onClose }: { onClose: () => void }) {
       <input
         ref={input}
         class={`text-field ${error ? 'error' : ''}`}
-        placeholder="Enter hash or branch/tag name"
+        placeholder={t('Enter hash or branch/tag name')}
         value={value}
         list="go-to-refs"
         onInput={e => {
@@ -65,6 +66,19 @@ function GoTo({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** "Commits in <b>ref</b> that are not in <b>with</b>", with the ref names in bold in the translated text. */
+function commitsNotIn(ref: string, other: string) {
+  return t('Commits in {0} that are not in {1}')
+    .split(/(\{[01]\})/)
+    .map((p, i) => (p === '{0}' ? <b key={i}>{ref}</b> : p === '{1}' ? <b key={i}>{other}</b> : p));
+}
+
+/** "Rebasing 'main' is in progress [in repo]". */
+function operationText(op: string, branch: string | undefined, repo: string | undefined) {
+  if (repo !== undefined) return branch ? t("{0} '{1}' is in progress in {2}", op, branch, repo) : t('{0} is in progress in {1}', op, repo);
+  return branch ? t("{0} '{1}' is in progress", op, branch) : t('{0} is in progress', op);
+}
+
 function CompareBanner() {
   const s = useStore();
   const c = s.init.compare;
@@ -73,14 +87,14 @@ function CompareBanner() {
     <div class="banner compare-banner">
       <Icon name="vcs/diff" />
       <span>
-        Commits in <b>{c.ref}</b> that are not in <b>{c.with}</b>
+        {commitsNotIn(c.ref, c.with)}
       </span>
       <span class="spacer" />
       <span class="link" onClick={() => send('command', { id: 'ideagittool.compareRefs', args: { root: s.root, ref: c.with, with: c.ref } })}>
-        Swap Branches
+        {t('Swap Branches')}
       </span>
       <span class="link" onClick={() => send('command', { id: 'ideagittool.compareRefs.files', args: { root: s.root, ref: c.ref, with: c.with } })}>
-        Show Files Diff
+        {t('Show Files Diff')}
       </span>
     </div>
   );
@@ -91,7 +105,7 @@ function OperationBanner() {
   if (s.init.mode !== 'log') return null;
   // In a multi-root log every repository with an ongoing operation gets a banner.
   const repos = s.init.multi ? s.repos.filter(r => r.head.operation !== 'none') : s.head.operation !== 'none' ? [{ root: s.root, name: '', head: s.head }] : [];
-  const names: Record<string, string> = { rebase: 'Rebasing', merge: 'Merging', 'cherry-pick': 'Cherry-picking', revert: 'Reverting', bisect: 'Bisecting', am: 'Applying patches' };
+  const names: Record<string, string> = { rebase: t('Rebasing'), merge: t('Merging'), 'cherry-pick': t('Cherry-picking'), revert: t('Reverting'), bisect: t('Bisecting'), am: t('Applying patches') };
   return (
     <>
       {repos.map(r => {
@@ -100,21 +114,21 @@ function OperationBanner() {
         return (
           <div class="banner warning" key={r.root}>
             <span>
-              {names[op] ?? op} {branch ? `'${branch}'` : ''} is in progress{s.init.multi ? ` in ${r.name}` : ''}
+              {operationText(names[op] ?? op, branch, s.init.multi ? r.name : undefined)}
             </span>
             <span class="spacer" />
             {op !== 'bisect' && (
               <>
                 <span class="link" onClick={() => send('command', { id: 'ideagittool.continueOperation', args: { root: r.root } })}>
-                  Continue
+                  {t('Continue')}
                 </span>
                 {op === 'rebase' && (
                   <span class="link" onClick={() => send('command', { id: 'ideagittool.skipCommit', args: { root: r.root } })}>
-                    Skip
+                    {t('Skip')}
                   </span>
                 )}
                 <span class="link" onClick={() => send('command', { id: 'ideagittool.abortOperation', args: { root: r.root } })}>
-                  Abort
+                  {t('Abort')}
                 </span>
               </>
             )}
@@ -193,11 +207,11 @@ function App() {
     <div class="log-root">
       {!history && !showBranches && (
         <div class="branches-stripe">
-          <span class="stripe-toggle" data-tip="Show Branches" onClick={() => store.updateSettings({ showBranches: true })}>
+          <span class="stripe-toggle" data-tip={t('Show Branches')} onClick={() => store.updateSettings({ showBranches: true })}>
             <Icon name="general/chevronRight" />
           </span>
           <span class="stripe-label" onClick={() => store.updateSettings({ showBranches: true })}>
-            Branches
+            {t('Branches')}
           </span>
         </div>
       )}

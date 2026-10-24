@@ -5,6 +5,7 @@ import { showDialog } from '../../host/dialog';
 import { CancelledError, showError } from '../../host/webviewHost';
 import { GitError } from '../../git/exec';
 import { ChangesSaver, hasLocalChanges, OperationOutcome, smartOperation, StashSaver } from './engine';
+import { BOLD, boldTitle } from '../commit/mergeTool';
 
 export interface RootArg {
   root?: string;
@@ -50,6 +51,7 @@ export async function reportOutcome(
 ): Promise<boolean> {
   await repo.refresh();
   const name = texts.operation;
+  const opName = operationName(name);
   switch (outcome.kind) {
     case 'success':
       if (texts.success !== undefined || texts.successTitle) {
@@ -57,9 +59,11 @@ export async function reportOutcome(
       }
       return true;
     case 'stopped': {
-      const a = await vscode.window.showInformationMessage('Rebase stopped for editing', 'Continue', 'Abort');
-      if (a === 'Continue') await vscode.commands.executeCommand('ideagittool.continueOperation', { root: repo.root });
-      else if (a === 'Abort') await vscode.commands.executeCommand('ideagittool.abortOperation', { root: repo.root });
+      const continueLabel = vscode.l10n.t('Continue');
+      const abort = vscode.l10n.t('Abort');
+      const a = await vscode.window.showInformationMessage(vscode.l10n.t('Rebase stopped for editing'), continueLabel, abort);
+      if (a === continueLabel) await vscode.commands.executeCommand('ideagittool.continueOperation', { root: repo.root });
+      else if (a === abort) await vscode.commands.executeCommand('ideagittool.abortOperation', { root: repo.root });
       return false;
     }
     case 'conflicts': {
@@ -67,14 +71,14 @@ export async function reportOutcome(
       const op = repo.detectOperation();
       const title =
         op === 'rebase'
-          ? 'Rebase stopped due to conflicts'
+          ? vscode.l10n.t('Rebase stopped due to conflicts')
           : op === 'cherry-pick'
-            ? 'Cherry-pick was performed with conflicts'
+            ? vscode.l10n.t('Cherry-pick was performed with conflicts')
             : op === 'revert'
-              ? 'Revert was performed with conflicts'
+              ? vscode.l10n.t('Revert was performed with conflicts')
               : op === 'merge'
-                ? 'Merge conflicts'
-                : `${capitalize(name)} was performed with conflicts`;
+                ? vscode.l10n.t('Merge conflicts')
+                : vscode.l10n.t('{0} was performed with conflicts', capitalize(opName));
       // GitConflictResolver: the Conflicts dialog opens right away; the notification only tells about conflicts
       // left when it is closed (notifyUnresolvedRemain).
       const result = await resolveConflicts(repo);
@@ -84,25 +88,32 @@ export async function reportOutcome(
         // wait for the commit of the resolved changes.
         if (op2 === 'merge' && !texts.noCommit || op2 === 'rebase') await vscode.commands.executeCommand('ideagittool.continueOperation', { root: repo.root });
         else if (op2 === 'cherry-pick' || op2 === 'revert') {
-          const label = `Continue ${op2 === 'cherry-pick' ? 'Cherry-Pick' : 'Revert'}`;
-          const a = await vscode.window.showInformationMessage('All conflicts have been resolved', label);
+          const label = op2 === 'cherry-pick' ? vscode.l10n.t('Continue Cherry-Pick') : vscode.l10n.t('Continue Revert');
+          const a = await vscode.window.showInformationMessage(vscode.l10n.t('All conflicts have been resolved'), label);
           if (a === label) await vscode.commands.executeCommand('ideagittool.continueOperation', { root: repo.root });
         }
         return false;
       }
-      const actions = op2 !== 'none' ? ['Resolve…', `Abort ${capitalize(op2 === 'cherry-pick' ? 'Cherry-Pick' : op2)}`] : ['Resolve…'];
-      const a = await vscode.window.showWarningMessage(`${title}: There are pending unresolved conflicts.`, ...actions);
-      if (a === 'Resolve…') void vscode.commands.executeCommand('ideagittool.resolveConflicts', { root: repo.root });
-      else if (a?.startsWith('Abort')) await vscode.commands.executeCommand('ideagittool.abortOperation', { root: repo.root });
+      const resolve = vscode.l10n.t('Resolve…');
+      const abort = op2 !== 'none' ? abortLabel(op2) : undefined;
+      const actions = abort ? [resolve, abort] : [resolve];
+      const a = await vscode.window.showWarningMessage(vscode.l10n.t('{0}: There are pending unresolved conflicts.', title), ...actions);
+      if (a === resolve) void vscode.commands.executeCommand('ideagittool.resolveConflicts', { root: repo.root });
+      else if (a !== undefined && a === abort) await vscode.commands.executeCommand('ideagittool.abortOperation', { root: repo.root });
       return false;
     }
     case 'localChanges':
       void vscode.window.showErrorMessage(
-        `${texts.failedTitle ?? `${capitalize(name)} failed`}: your local changes to the following files would be overwritten by ${name}: ${outcome.files.join(', ')}`,
+        vscode.l10n.t(
+          '{0}: your local changes to the following files would be overwritten by {1}: {2}',
+          texts.failedTitle ?? vscode.l10n.t('{0} failed', capitalize(opName)),
+          opName,
+          outcome.files.join(', '),
+        ),
       );
       return false;
     case 'error':
-      showError(outcome.error, texts.failedTitle ?? `${capitalize(name)} failed`);
+      showError(outcome.error, texts.failedTitle ?? vscode.l10n.t('{0} failed', capitalize(opName)));
       return false;
   }
 }
@@ -123,6 +134,52 @@ export function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** Name of an operation id ('checkout', 'cherry-pick', …) in messages; other values are shown as they are. */
+export function operationName(op: string): string {
+  switch (op) {
+    case 'checkout':
+      return vscode.l10n.t('checkout');
+    case 'merge':
+      return vscode.l10n.t('merge');
+    case 'rebase':
+      return vscode.l10n.t('rebase');
+    case 'update':
+      return vscode.l10n.t('update');
+    case 'pull':
+      return vscode.l10n.t('pull');
+    case 'reset':
+      return vscode.l10n.t('reset');
+    case 'cherry-pick':
+      return vscode.l10n.t('cherry-pick');
+    case 'revert':
+      return vscode.l10n.t('revert');
+    case 'reword':
+      return vscode.l10n.t('reword');
+    default:
+      return op;
+  }
+}
+
+/** "Abort Rebase", "Abort Cherry-Pick", … for an operation in progress. */
+export function abortLabel(op: string): string {
+  switch (op) {
+    case 'rebase':
+      return vscode.l10n.t('Abort Rebase');
+    case 'merge':
+      return vscode.l10n.t('Abort Merge');
+    case 'cherry-pick':
+      return vscode.l10n.t('Abort Cherry-Pick');
+    case 'revert':
+      return vscode.l10n.t('Abort Revert');
+    case 'am':
+      return vscode.l10n.t('Abort {0}', vscode.l10n.t('Apply Patch'));
+    case 'bisect':
+      return vscode.l10n.t('Abort Bisect');
+    default:
+      return vscode.l10n.t('Abort {0}', capitalize(op));
+  }
+}
+
 /**
  * Runs an operation that can be blocked by local changes. When git refuses, shows the
  * "Git Checkout Problem" dialog (Smart Checkout / Force Checkout / Don't Checkout).
@@ -139,11 +196,11 @@ export async function withSmartOperation(
   const { destination } = opts;
   const first = await run(false);
   if (first.kind !== 'localChanges') return first;
-  const cap = capitalize(operation);
+  const cap = capitalize(operationName(operation));
   const choice = await showDialog<{ button: string }>(
     'ops.smartOperation',
     { operation, files: first.files, untracked: first.untracked, root: repo.root },
-    { title: `Git ${cap} Problem` },
+    { title: vscode.l10n.t('Git {0} Problem', cap) },
   );
   if (!choice || choice.button === 'dont') return undefined;
   if (choice.button === 'force') return run(true);
@@ -216,7 +273,7 @@ export class ShelveSaver implements ChangesSaver {
       if (r?.ok) return { kind: 'success', output: '' };
       const files = Array.isArray(r?.conflicts) ? r!.conflicts : repo.status.conflicts.map(c => c.path);
       if (files.length || r?.conflicts) return { kind: 'conflicts', output: '', files };
-      return { kind: 'error', output: '', error: new GitError('Could not unshelve local changes', ['unshelve'], 1, '', '') };
+      return { kind: 'error', output: '', error: new GitError(vscode.l10n.t('Could not unshelve local changes'), ['unshelve'], 1, '', '') };
     } catch (e) {
       return { kind: 'error', output: '', error: new GitError(e instanceof Error ? e.message : String(e), ['unshelve'], 1, '', '') };
     }
@@ -235,9 +292,9 @@ export function makeSaver(policy?: string, includeUntracked = false): ChangesSav
  */
 export function restoreConflictContext(method: 'stash' | 'shelve', operation: string, destination: string) {
   return {
-    description: `Uncommitted changes that were saved before ${operation} have conflicts with files from ${destination}`,
-    left: [{ text: `Uncommitted changes from the ${method === 'shelve' ? 'shelf' : 'stash'}` }],
-    right: [{ text: 'Changes from ' }, { text: destination, bold: true }],
+    description: vscode.l10n.t('Uncommitted changes that were saved before {0} have conflicts with files from {1}', operation, destination),
+    left: [{ text: method === 'shelve' ? vscode.l10n.t('Uncommitted changes from the shelf') : vscode.l10n.t('Uncommitted changes from the stash') }],
+    right: boldTitle(vscode.l10n.t('Changes from {0}', BOLD), destination),
     reverse: true,
   };
 }
@@ -248,23 +305,31 @@ export function restoreConflictContext(method: 'stash' | 'shelve', operation: st
  * "Local changes were not restored" when the changes stayed saved. Like IntelliJ, the stash / shelf is kept.
  */
 export async function reportRestore(repo: Repository, saver: ChangesSaver, operation: string, restore: OperationOutcome | undefined, kept: boolean, destination?: string) {
-  const where = saver.method === 'shelve' ? 'shelf' : 'stash';
+  const shelf = saver.method === 'shelve';
   const view = () => vscode.commands.executeCommand(saver.method === 'shelve' ? 'ideagittool.showShelf' : 'ideagittool.showStashes', { root: repo.root });
   if (restore?.kind === 'conflicts') {
     // IntelliJ names the update "Update" and what it brings "Remote" (GitUpdateProcess).
-    const op = operation === 'update' ? 'Update' : operation;
-    const dest = destination ?? (operation === 'update' ? 'Remote' : currentName(repo));
+    const op = operation === 'update' ? vscode.l10n.t('Update') : operationName(operation);
+    const dest = destination ?? (operation === 'update' ? vscode.l10n.t('Remote') : currentName(repo));
     const { remaining } = await resolveConflicts(repo, restoreConflictContext(saver.method, op, dest));
     if (!remaining) return;
+    const resolve = vscode.l10n.t('Resolve conflicts…');
     const a = await vscode.window.showWarningMessage(
-      `Local changes were restored with conflicts: Your uncommitted changes were saved to ${where}. ${saver.method === 'shelve' ? 'Unshelve' : 'Unstash'} is not complete, you have unresolved merges in your working tree. Resolve conflicts and ${saver.method === 'shelve' ? 'remove the shelved changes' : 'drop the stash'}.`,
-      'Resolve conflicts…',
-      'View saved changes…',
+      shelf
+        ? vscode.l10n.t('Local changes were restored with conflicts: Your uncommitted changes were saved to shelf. Unshelve is not complete, you have unresolved merges in your working tree. Resolve conflicts and remove the shelved changes.')
+        : vscode.l10n.t('Local changes were restored with conflicts: Your uncommitted changes were saved to stash. Unstash is not complete, you have unresolved merges in your working tree. Resolve conflicts and drop the stash.'),
+      resolve,
+      vscode.l10n.t('View saved changes…'),
     );
-    if (a === 'Resolve conflicts…') void vscode.commands.executeCommand('ideagittool.resolveConflicts', { root: repo.root });
+    if (a === resolve) void vscode.commands.executeCommand('ideagittool.resolveConflicts', { root: repo.root });
     else if (a) await view();
   } else if (kept) {
-    const a = await vscode.window.showWarningMessage(`Local changes were not restored: Before ${operation} your uncommitted changes were saved to ${where}.`, 'View saved changes…');
+    const a = await vscode.window.showWarningMessage(
+      shelf
+        ? vscode.l10n.t('Local changes were not restored: Before {0} your uncommitted changes were saved to shelf.', operationName(operation))
+        : vscode.l10n.t('Local changes were not restored: Before {0} your uncommitted changes were saved to stash.', operationName(operation)),
+      vscode.l10n.t('View saved changes…'),
+    );
     if (a) await view();
   }
 }

@@ -33,7 +33,7 @@ export function initPatchDialog(m: vscode.Memento) {
 /** Shows IntelliJ's Create Patch dialog and writes the patch to a file or the clipboard. */
 export async function createPatchDialog(req: PatchRequest): Promise<void> {
   if (!req.files.length) {
-    void vscode.window.showInformationMessage('No changes to create a patch from');
+    void vscode.window.showInformationMessage(vscode.l10n.t('No changes to create a patch from'));
     return;
   }
   const saved = memento?.get<{ dir?: string; reverse?: boolean; encoding?: string; toClipboard?: boolean }>(STATE_KEY, {}) ?? {};
@@ -53,20 +53,20 @@ export async function createPatchDialog(req: PatchRequest): Promise<void> {
       rootLabel: req.rootLabel,
     },
     {
-      title: 'Create Patch',
+      title: vscode.l10n.t('Create Patch'),
       handlers: {
         browseFile: async (current: string) => {
-          const r = await vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(current), title: 'Save Patch to', filters: { Patch: ['patch', 'diff'], All: ['*'] } });
+          const r = await vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(current), title: vscode.l10n.t('Save Patch to'), filters: { [vscode.l10n.t('Patch')]: ['patch', 'diff'], [vscode.l10n.t('All')]: ['*'] } });
           return r?.fsPath ?? null;
         },
         browseDir: async (current: string) => {
-          const r = await vscode.window.showOpenDialog({ defaultUri: vscode.Uri.file(current), canSelectFiles: false, canSelectFolders: true, title: 'Select Base Directory for Patch' });
+          const r = await vscode.window.showOpenDialog({ defaultUri: vscode.Uri.file(current), canSelectFiles: false, canSelectFolders: true, title: vscode.l10n.t('Select Base Directory for Patch') });
           return r?.[0]?.fsPath ?? null;
         },
       },
       validate: async (v: { keys: string[]; toClipboard: boolean; path: string; basePath: string; reverse: boolean; encoding: BufferEncoding }) => {
-        if (!v.toClipboard && !v.path) return 'Specify the patch file';
-        if (!v.basePath || !fs.existsSync(v.basePath)) return 'Base path does not exist';
+        if (!v.toClipboard && !v.path) return vscode.l10n.t('Specify the patch file');
+        if (!v.basePath || !fs.existsSync(v.basePath)) return vscode.l10n.t('Base path does not exist');
         let text: string;
         try {
           text = await req.produce(v.keys, { reverse: v.reverse, basePath: v.basePath });
@@ -76,7 +76,7 @@ export async function createPatchDialog(req: PatchRequest): Promise<void> {
         await memento?.update(STATE_KEY, { dir: v.toClipboard ? saved.dir : path.dirname(v.path), reverse: v.reverse, encoding: v.encoding, toClipboard: v.toClipboard });
         if (v.toClipboard) {
           await vscode.env.clipboard.writeText(text);
-          void notifySuccess('Patch copied to clipboard');
+          void notifySuccess(vscode.l10n.t('Patch copied to clipboard'));
           return;
         }
         try {
@@ -85,7 +85,7 @@ export async function createPatchDialog(req: PatchRequest): Promise<void> {
         } catch (e) {
           return e instanceof Error ? e.message : String(e);
         }
-        void notifySuccess(`Successfully created patch ${path.basename(v.path)}`, undefined, { label: 'Open', run: () => vscode.window.showTextDocument(vscode.Uri.file(v.path)) });
+        void notifySuccess(vscode.l10n.t('Successfully created patch {0}', path.basename(v.path)), undefined, { label: vscode.l10n.t('Open'), run: () => vscode.window.showTextDocument(vscode.Uri.file(v.path)) });
       },
     },
   );

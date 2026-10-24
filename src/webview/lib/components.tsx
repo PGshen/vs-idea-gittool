@@ -1,6 +1,7 @@
 import { ComponentChildren, JSX } from 'preact';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Icon } from './icons';
+import { t } from './l10n';
 import { anchorBelow, MenuEntry, showMenu } from './menu';
 import { persist, persisted } from './rpc';
 
@@ -12,24 +13,24 @@ let tooltipTimer: number | undefined;
 /** Global tooltip for elements with `data-tip` (and optional `data-shortcut`), like IntelliJ's HelpTooltip. */
 function installTooltips() {
   document.addEventListener('mouseover', e => {
-    const t = (e.target as Element).closest?.('[data-tip]') as HTMLElement | null;
+    const target = (e.target as Element).closest?.('[data-tip]') as HTMLElement | null;
     clearTimeout(tooltipTimer);
     tooltipEl?.remove();
     tooltipEl = undefined;
-    if (!t) return;
+    if (!target) return;
     tooltipTimer = window.setTimeout(() => {
-      if (!t.isConnected || !t.matches(':hover')) return;
+      if (!target.isConnected || !target.matches(':hover')) return;
       tooltipEl = document.createElement('div');
       tooltipEl.className = 'tooltip';
-      tooltipEl.textContent = t.dataset.tip!;
-      if (t.dataset.shortcut) {
+      tooltipEl.textContent = target.dataset.tip!;
+      if (target.dataset.shortcut) {
         const s = document.createElement('span');
         s.className = 'shortcut';
-        s.textContent = t.dataset.shortcut;
+        s.textContent = target.dataset.shortcut;
         tooltipEl.appendChild(s);
       }
       document.body.appendChild(tooltipEl);
-      const r = t.getBoundingClientRect();
+      const r = target.getBoundingClientRect();
       let x = r.left;
       let y = r.bottom + 6;
       if (x + tooltipEl.offsetWidth > window.innerWidth - 4) x = window.innerWidth - tooltipEl.offsetWidth - 4;
@@ -420,8 +421,8 @@ export function Tree<T>(props: TreeProps<T>) {
 
   useEffect(() => {
     if (!search) return;
-    const t = setTimeout(() => setSearch(''), 3000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setSearch(''), 3000);
+    return () => clearTimeout(timer);
   }, [search]);
 
   const first = Math.max(0, Math.floor(scrollTop / ROW) - 5);
@@ -571,7 +572,7 @@ export function buildDirectoryTree<F extends FileLike>(
         label: name,
         text: name,
         icon: 'nodes/folder',
-        hint: opts.showCounts === false ? undefined : `${n} ${n === 1 ? 'file' : 'files'}`,
+        hint: opts.showCounts === false ? undefined : n === 1 ? t('1 file') : t('{0} files', n),
         children: toNodes(cur, path),
         checkable: true,
         data: { dir: path },

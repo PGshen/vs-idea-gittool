@@ -1,5 +1,6 @@
 import { graphColor } from '../../git/graph';
 import type { GraphEdge, GraphRow } from '../../shared/types';
+import { t } from '../lib/l10n';
 
 export const LANE = 14;
 export const ROW_H = 26;
@@ -66,7 +67,7 @@ export function GraphCell({ row, width, head, onJump }: { row: GraphRow; width: 
               if (e.jump) onJump?.(e.jump, e.arrow === 'down');
             }}
           >
-            <title>{e.arrow === 'down' ? 'Jump to Parent' : 'Jump to Child'}</title>
+            <title>{e.arrow === 'down' ? t('Jump to Parent') : t('Jump to Child')}</title>
             <rect x={Math.min(x(e.fromLane), x(e.toLane)) - 5} y={0} width={Math.abs(x(e.toLane) - x(e.fromLane)) + 10} height={ROW_H} fill="transparent" />
             {line}
             <path d={arrowPath(e)} stroke={color} stroke-width={1.6} fill="none" stroke-linecap="round" stroke-linejoin="round" />

@@ -3,6 +3,7 @@
 // and MergeRangeUtil.getLineMergeType (platform/util/diff).
 
 import { buildChanges } from './intellijDiff';
+import { english, Translate } from './l10n';
 import { tryResolve } from './mergeResolve';
 
 /** IntelliJ's "Ignore" diff setting. */
@@ -148,21 +149,21 @@ function mergeType(
   const leftEmpty = empty('left');
   const baseEmpty = empty('base');
   const rightEmpty = empty('right');
-  const t = (kind: ChangeKind, leftChange: boolean, rightChange: boolean, canResolve = false) => ({ kind, leftChange, rightChange, canResolve });
+  const result = (kind: ChangeKind, leftChange: boolean, rightChange: boolean, canResolve = false) => ({ kind, leftChange, rightChange, canResolve });
   if (baseEmpty) {
-    if (leftEmpty) return t('inserted', false, true);
-    if (rightEmpty) return t('inserted', true, false);
-    return eq('left', 'right', n) ? t('inserted', true, true) : t('conflict', true, true);
+    if (leftEmpty) return result('inserted', false, true);
+    if (rightEmpty) return result('inserted', true, false);
+    return eq('left', 'right', n) ? result('inserted', true, true) : result('conflict', true, true);
   }
-  if (leftEmpty && rightEmpty) return t('deleted', true, true);
+  if (leftEmpty && rightEmpty) return result('deleted', true, true);
   const unchangedLeft = eq('base', 'left', n);
   const unchangedRight = eq('base', 'right', n);
-  if (unchangedLeft && unchangedRight) return t('modified', !eq('base', 'left', id), !eq('base', 'right', id));
-  if (unchangedLeft) return t(rightEmpty ? 'deleted' : 'modified', false, true);
-  if (unchangedRight) return t(leftEmpty ? 'deleted' : 'modified', true, false);
-  if (eq('left', 'right', n)) return t('modified', true, true);
+  if (unchangedLeft && unchangedRight) return result('modified', !eq('base', 'left', id), !eq('base', 'right', id));
+  if (unchangedLeft) return result(rightEmpty ? 'deleted' : 'modified', false, true);
+  if (unchangedRight) return result(leftEmpty ? 'deleted' : 'modified', true, false);
+  if (eq('left', 'right', n)) return result('modified', true, true);
   const canResolve = !leftEmpty && !rightEmpty && tryResolve(linesContent(texts.left, f.left), linesContent(texts.base, f.base), linesContent(texts.right, f.right)) !== undefined;
-  return t('conflict', true, true, canResolve);
+  return result('conflict', true, true, canResolve);
 }
 
 /** Builds the merge changes (ComparisonManager.mergeLines + getLineMergeType). */
@@ -459,27 +460,29 @@ export class MergeModel {
 // ---------------------------------------------------------------- texts (DiffBundle)
 
 /** merge.differences.status.text: "2 changes, 1 conflict" / "No changes, No conflicts". */
-export function statusText(s: { changes: number; conflicts: number }): string {
-  const ch = s.changes === 0 ? 'No changes' : s.changes === 1 ? '1 change' : `${s.changes} changes`;
-  const co = s.conflicts === 0 ? 'No conflicts' : s.conflicts === 1 ? '1 conflict' : `${s.conflicts} conflicts`;
-  return `${ch}, ${co}`;
+export function statusText(s: { changes: number; conflicts: number }, t: Translate = english): string {
+  const ch = s.changes === 0 ? t('No changes') : s.changes === 1 ? t('1 change') : t('{0} changes', s.changes);
+  const co = s.conflicts === 0 ? t('No conflicts') : s.conflicts === 1 ? t('1 conflict') : t('{0} conflicts', s.conflicts);
+  return t('{0}, {1}', ch, co);
 }
 
 /** merge.dialog.apply.partially.resolved.changes.confirmation.message */
-export function unprocessedMessage(s: { changes: number; conflicts: number }): string {
+export function unprocessedMessage(s: { changes: number; conflicts: number }, t: Translate = english): string {
   const { changes, conflicts } = s;
-  const verb = changes === 0 ? (conflicts === 1 ? 'is' : 'are') : changes === 1 ? 'is' : 'are';
-  const ch = changes === 0 ? '' : changes === 1 ? 'one change' : `${changes} changes`;
-  const and = changes === 0 ? '' : conflicts === 0 ? '' : ' and ';
-  const co = conflicts === 0 ? '' : conflicts === 1 ? 'one conflict' : `${conflicts} conflicts`;
-  return `There ${verb} ${ch}${and}${co} left unprocessed.\nSave changes and mark the conflict resolved anyway?`;
+  const ch = changes === 0 ? '' : changes === 1 ? t('one change') : t('{0} changes', changes);
+  const co = conflicts === 0 ? '' : conflicts === 1 ? t('one conflict') : t('{0} conflicts', conflicts);
+  const what = ch && co ? t('{0} and {1}', ch, co) : ch || co;
+  return (changes || conflicts) === 1
+    ? t('There is {0} left unprocessed.\nSave changes and mark the conflict resolved anyway?', what)
+    : t('There are {0} left unprocessed.\nSave changes and mark the conflict resolved anyway?', what);
 }
 
 /** iterative.merge.dialog.apply.partially.resolved.changes.confirmation.message */
-export function iterativeUnprocessedMessage(conflicts: number, changes: number): string {
-  const co = conflicts === 0 ? '' : conflicts === 1 ? '1 unresolved conflict' : `${conflicts} unresolved conflicts`;
-  const and = conflicts === 0 ? '' : changes === 0 ? '' : ' and ';
-  const ch = changes === 0 ? '' : changes === 1 ? '1 unprocessed change' : `${changes} unprocessed changes`;
-  const verb = conflicts === 0 ? (changes <= 1 ? 'remains' : 'remain') : changes === 0 ? 'remains' : 'remain';
-  return `${co}${and}${ch} still ${verb}. The file will be saved exactly as shown in the Result pane.`;
+export function iterativeUnprocessedMessage(conflicts: number, changes: number, t: Translate = english): string {
+  const co = conflicts === 0 ? '' : conflicts === 1 ? t('1 unresolved conflict') : t('{0} unresolved conflicts', conflicts);
+  const ch = changes === 0 ? '' : changes === 1 ? t('1 unprocessed change') : t('{0} unprocessed changes', changes);
+  const what = co && ch ? t('{0} and {1}', co, ch) : co || ch;
+  return (conflicts === 0 ? changes <= 1 : changes === 0)
+    ? t('{0} still remains. The file will be saved exactly as shown in the Result pane.', what)
+    : t('{0} still remain. The file will be saved exactly as shown in the Result pane.', what);
 }

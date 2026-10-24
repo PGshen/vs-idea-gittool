@@ -92,7 +92,7 @@ export class WebviewConnection implements vscode.Disposable {
   private html(): string {
     const nonce = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
     const asUri = (...p: string[]) => this.webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, ...p)).toString();
-    const boot = { iconsBase: asUri('media', 'icons'), ...themeData(), initial: this.initial() };
+    const boot = { iconsBase: asUri('media', 'icons'), ...themeData(), initial: this.initial(), l10n: vscode.l10n.bundle };
     const csp = [
       `default-src 'none'`,
       `img-src ${this.webview.cspSource} data: https:`,
@@ -135,8 +135,8 @@ export class CancelledError extends Error {
 export function showError(e: unknown, title?: string) {
   if (e instanceof CancelledError) return;
   const msg = e instanceof GitError ? e.message : e instanceof Error ? e.message : String(e);
-  const text = title ? `${title}: ${msg}` : msg;
-  void vscode.window.showErrorMessage(text, 'Show Git Console').then(a => {
+  const text = title ? vscode.l10n.t('{0}: {1}', title, msg) : msg;
+  void vscode.window.showErrorMessage(text, vscode.l10n.t('Show Git Console')).then(a => {
     if (a) void vscode.commands.executeCommand('ideagittool.showConsole');
   });
 }

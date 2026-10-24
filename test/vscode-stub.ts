@@ -21,6 +21,10 @@ export class RelativePattern {
 }
 export const Uri = { file: (p: string) => ({ fsPath: p, path: p, scheme: 'file' }), joinPath: (u: { fsPath: string }, ...p: string[]) => ({ fsPath: [u.fsPath, ...p].join('/') }) };
 export const window = { createOutputChannel: () => ({ appendLine() {}, show() {} }) };
+export const l10n = {
+  bundle: undefined,
+  t: (message: string, ...args: unknown[]) => message.replace(/\{(\d+)\}/g, (m, i) => (i < args.length ? String(args[i]) : m)),
+};
 export class Disposable {
   constructor(private fn: () => void) {}
   dispose() {

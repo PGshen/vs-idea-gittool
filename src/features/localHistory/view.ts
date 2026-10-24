@@ -81,14 +81,14 @@ export class LocalHistoryView {
   }
 
   private displayName(): string {
-    if (this.target.mode === 'project') return (vscode.workspace.workspaceFolders ?? []).map(f => f.name).join(', ') || 'Project';
+    if (this.target.mode === 'project') return (vscode.workspace.workspaceFolders ?? []).map(f => f.name).join(', ') || vscode.l10n.t('Project');
     return path.posix.basename(this.target.path ?? '');
   }
 
   private title(): string {
     const name = this.displayName();
-    if (this.target.selection) return `Local History: ${name} (${this.target.selection[0] + 1}-${this.target.selection[1]})`;
-    return `Local History: ${name}`;
+    if (this.target.selection) return vscode.l10n.t('Local History: {0} ({1}-{2})', name, this.target.selection[0] + 1, this.target.selection[1]);
+    return vscode.l10n.t('Local History: {0}', name);
   }
 
   private scope() {
@@ -135,13 +135,21 @@ export class LocalHistoryView {
     let title: string;
     if (list.length === 1) {
       const e = first;
-      if (e.kind === 'create') title = `Create ${name(e.path)}`;
-      else if (e.kind === 'delete') title = `Delete ${name(e.path)}`;
-      else if (e.kind === 'rename') title = path.posix.dirname(e.oldPath!) === path.posix.dirname(e.path!) ? `Rename ${name(e.oldPath)} to ${name(e.path)}` : `Move ${name(e.oldPath)} to ${this.rel(path.posix.dirname(e.path!))}`;
-      else title = e.external ? 'External change' : this.target.mode === 'file' || this.target.mode === 'selection' ? 'Change' : `Change ${name(e.path)}`;
+      if (e.kind === 'create') title = vscode.l10n.t('Create {0}', name(e.path));
+      else if (e.kind === 'delete') title = vscode.l10n.t('Delete {0}', name(e.path));
+      else if (e.kind === 'rename')
+        title =
+          path.posix.dirname(e.oldPath!) === path.posix.dirname(e.path!)
+            ? vscode.l10n.t('Rename {0} to {1}', name(e.oldPath), name(e.path))
+            : vscode.l10n.t('Move {0} to {1}', name(e.oldPath), this.rel(path.posix.dirname(e.path!)));
+      else title = e.external ? vscode.l10n.t('External change') : this.target.mode === 'file' || this.target.mode === 'selection' ? vscode.l10n.t('Change') : vscode.l10n.t('Change {0}', name(e.path));
     } else {
       const files = list.filter(e => e.path).map(e => name(e.path));
-      title = list.every(e => e.external) ? 'External change' : files.length > 1 ? `Change ${files[0]} + ${files.length - 1} more` : `Change ${files[0] ?? ''}`;
+      title = list.every(e => e.external)
+        ? vscode.l10n.t('External change')
+        : files.length > 1
+          ? vscode.l10n.t('Change {0} + {1} more', files[0], files.length - 1)
+          : vscode.l10n.t('Change {0}', files[0] ?? '');
     }
     return { ...base, kind: list.every(e => e.external) ? 'external' : 'change', title, files: list.filter(e => e.path).length, paths: paths.map(p => this.rel(p)) };
   }
@@ -177,7 +185,7 @@ export class LocalHistoryView {
 
   private item(id: number): LhItem {
     const it = this.items.find(i => i.id === id);
-    if (!it) throw new Error('The revision is not available');
+    if (!it) throw new Error(vscode.l10n.t('The revision is not available'));
     return it;
   }
 
@@ -188,8 +196,8 @@ export class LocalHistoryView {
       const p = this.target.path!;
       const left = this.read(this.store.stateBefore(p, item.id), p);
       const right = this.read(this.rightState(p, item, mode), p);
-      const leftTitle = `Before ${item.kind === 'label' || item.kind === 'system' ? `'${item.title}'` : date}`;
-      const rightTitle = mode === 'local' ? 'Current' : `After ${date}`;
+      const leftTitle = item.kind === 'label' || item.kind === 'system' ? vscode.l10n.t("Before '{0}'", item.title) : vscode.l10n.t('Before {0}', date);
+      const rightTitle = mode === 'local' ? vscode.l10n.t('Current') : vscode.l10n.t('After {0}', date);
       if (this.target.mode === 'selection') {
         const cur = splitLines(this.current(p).text ?? '');
         const [s, e] = this.target.selection!;
@@ -206,7 +214,7 @@ export class LocalHistoryView {
       return { kind: 'text', left: { title: leftTitle, ...left }, right: { title: rightTitle, ...right } };
     }
     const files = this.changedFiles(item, mode);
-    if (!files.length) return { kind: 'empty', text: 'No changes detected' };
+    if (!files.length) return { kind: 'empty', text: vscode.l10n.t('No changes detected') };
     return { kind: 'files', files };
   }
 
@@ -245,7 +253,8 @@ export class LocalHistoryView {
     const rightState = this.rightState(p, item, mode);
     const right = rightState === undefined ? vscode.Uri.file(p) : lhUri(p, rightState);
     const date = dayFmt.format(new Date(item.ts));
-    await vscode.commands.executeCommand('vscode.diff', left, right, `${path.posix.basename(p)} (Before ${date} ↔ ${mode === 'local' ? 'Current' : 'After'})`);
+    const title = mode === 'local' ? vscode.l10n.t('{0} (Before {1} ↔ Current)', path.posix.basename(p), date) : vscode.l10n.t('{0} (Before {1} ↔ After)', path.posix.basename(p), date);
+    await vscode.commands.executeCommand('vscode.diff', left, right, title);
   }
 
   // ------------------------------------------------------------------ actions
@@ -259,23 +268,28 @@ export class LocalHistoryView {
       .map(p => ({ path: p, state: this.store.stateBefore(p, item.id) }))
       .filter(s => s.state !== undefined && s.state !== this.currentState(s.path));
     if (!states.length) {
-      void vscode.window.showInformationMessage('Nothing to revert');
+      void vscode.window.showInformationMessage(vscode.l10n.t('Nothing to revert'));
       return;
     }
     const dirty = vscode.workspace.textDocuments.filter(d => d.isDirty && states.some(s => s.path === normPath(d.uri.fsPath)));
     if (dirty.length) {
       const a = await vscode.window.showWarningMessage(
-        `Cannot revert because ${dirty.length === 1 ? `${path.basename(dirty[0].uri.fsPath)} has` : `${dirty.length} files have`} unsaved changes.`,
-        { modal: true, detail: 'Save or discard the changes first.' },
-        'Save and Revert',
+        dirty.length === 1
+          ? vscode.l10n.t('Cannot revert because {0} has unsaved changes.', path.basename(dirty[0].uri.fsPath))
+          : vscode.l10n.t('Cannot revert because {0} files have unsaved changes.', dirty.length),
+        { modal: true, detail: vscode.l10n.t('Save or discard the changes first.') },
+        vscode.l10n.t('Save and Revert'),
       );
       if (!a) return;
       await Promise.all(dirty.map(d => d.save()));
     }
     const date = dayFmt.format(new Date(item.ts));
-    const label = item.kind === 'label' || item.kind === 'system' ? `Revert to '${item.title}' at ${date}` : `Revert to ${date}`;
+    const label = item.kind === 'label' || item.kind === 'system' ? vscode.l10n.t("Revert to '{0}' at {1}", item.title, date) : vscode.l10n.t('Revert to {0}', date);
     await this.recorder.apply(states, label);
-    void vscode.window.setStatusBarMessage(`${label}: ${states.length} ${states.length === 1 ? 'file' : 'files'} reverted`, 5000);
+    void vscode.window.setStatusBarMessage(
+      states.length === 1 ? vscode.l10n.t('{0}: {1} file reverted', label, states.length) : vscode.l10n.t('{0}: {1} files reverted', label, states.length),
+      5000,
+    );
   }
 
   /** Revert Selection (selection history): puts the selected block of the revision into the document. */
@@ -311,13 +325,13 @@ export class LocalHistoryView {
       files: entries,
       name: `Local_History_${new Date(item.ts).toISOString().slice(0, 16).replace(/[-:T]/g, '')}`,
       basePath,
-      rootLabel: 'Changes',
+      rootLabel: vscode.l10n.t('Changes'),
       produce: async (keys, opts) => {
         let out = '';
         for (const p of keys) {
           const before = this.read(this.store.stateBefore(p, item.id), p);
           const after = this.read(this.rightState(p, item, mode), p);
-          if (before.unavailable || after.unavailable) throw new Error('Cannot create patch because content of some\nof the selected files was not stored due to its big size.');
+          if (before.unavailable || after.unavailable) throw new Error(vscode.l10n.t('Cannot create patch because content of some\nof the selected files was not stored due to its big size.'));
           const rel = path.relative(opts.basePath, p).replace(/\\/g, '/');
           let [a, b] = [before, after];
           if (opts.reverse) [a, b] = [b, a];

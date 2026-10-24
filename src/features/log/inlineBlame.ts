@@ -144,15 +144,15 @@ function hover(c: BlameCommit, repo: Repository): vscode.MarkdownString {
   md.appendText(c.summary);
   md.appendMarkdown('\n\n');
   md.appendMarkdown(`$(git-commit) \`${c.hash.slice(0, 8)}\` `);
-  md.appendText(`${c.author} <${c.authorMail}> on ${new Date(c.authorTime * 1000).toLocaleString((vscode.env?.language ?? 'en'))}`);
+  md.appendText(vscode.l10n.t('{0} <{1}> on {2}', c.author, c.authorMail, new Date(c.authorTime * 1000).toLocaleString((vscode.env?.language ?? 'en'))));
   md.appendMarkdown('\n\n');
   md.appendMarkdown(
     [
-      `[Show in Git Log](${cmd('ideagittool.log.selectCommit', { root: repo.root, hash: c.hash })})`,
-      `[Show Diff](${cmd('ideagittool.showCommitDiff', { root: repo.root, hash: c.hash, path: c.filename })})`,
-      `[Show All Affected Files](${cmd('ideagittool.showCommitDiff', { root: repo.root, hash: c.hash })})`,
-      `[Copy Revision Number](${cmd('ideagittool.copyText', c.hash)})`,
-      `[Annotate with Git Blame](${cmd('ideagittool.annotate', {})})`,
+      `[${vscode.l10n.t('Show in Git Log')}](${cmd('ideagittool.log.selectCommit', { root: repo.root, hash: c.hash })})`,
+      `[${vscode.l10n.t('Show Diff')}](${cmd('ideagittool.showCommitDiff', { root: repo.root, hash: c.hash, path: c.filename })})`,
+      `[${vscode.l10n.t('Show All Affected Files')}](${cmd('ideagittool.showCommitDiff', { root: repo.root, hash: c.hash })})`,
+      `[${vscode.l10n.t('Copy Revision Number')}](${cmd('ideagittool.copyText', c.hash)})`,
+      `[${vscode.l10n.t('Annotate with Git Blame')}](${cmd('ideagittool.annotate', {})})`,
     ].join(' &nbsp;·&nbsp; '),
   );
   return md;

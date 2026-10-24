@@ -4,6 +4,7 @@ import { ActionItem, BranchesState, BranchRef, RefAddress } from '../../shared/b
 import { BranchRow, buildBranchRows } from '../../shared/branchesTree';
 import { ActionButton } from '../lib/components';
 import { Icon } from '../lib/icons';
+import { t } from '../lib/l10n';
 import { Anchor, MenuEntry, showMenu } from '../lib/menu';
 import { call, on, persist, persisted, send } from '../lib/rpc';
 
@@ -37,6 +38,16 @@ function Highlighted({ text, match }: { text: string; match?: number[] }) {
   flush();
   return <>{out}</>;
 }
+
+/** Section titles and empty-list texts of buildBranchRows (shared with the host), translated for display. */
+const ROW_LABELS: Record<string, string> = {
+  Recent: t('Recent'),
+  Local: t('Local'),
+  Remote: t('Remote'),
+  Tags: t('Tags'),
+  'Nothing found': t('Nothing found'),
+  'Branch not found': t('Branch not found'),
+};
 
 function refIcon(ref: BranchRef) {
   if (ref.type === 'tag') return 'nodes/tag';
@@ -75,11 +86,11 @@ export function BranchesTab({ visible, focusToken }: { visible: boolean; focusTo
     if (!visible || !focusToken) return;
     const focus = () => searchRef.current?.focus();
     focus();
-    const t = window.setTimeout(focus, 150);
+    const timer = window.setTimeout(focus, 150);
     window.addEventListener('focus', focus);
     const stop = window.setTimeout(() => window.removeEventListener('focus', focus), 1500);
     return () => {
-      window.clearTimeout(t);
+      window.clearTimeout(timer);
       window.clearTimeout(stop);
       window.removeEventListener('focus', focus);
     };
@@ -261,13 +272,19 @@ export function BranchesTab({ visible, focusToken }: { visible: boolean; focusTo
   if (!state) {
     return (
       <div class="branches-tab">
-        <div class="empty-text">Loading…</div>
+        <div class="empty-text">{t('Loading…')}</div>
       </div>
     );
   }
   const s = state.settings;
   const multi = state.repos.length > 1;
-  const placeholder = `Search for branches${s.searchActions ? ', actions' : ''}${multi ? ' and repositories' : ''}`.replace(/, actions$/, ' and actions');
+  const placeholder = s.searchActions
+    ? multi
+      ? t('Search for branches, actions and repositories')
+      : t('Search for branches and actions')
+    : multi
+      ? t('Search for branches and repositories')
+      : t('Search for branches');
 
   return (
     <div class="branches-tab" onKeyDown={onKeyDown}>
@@ -282,28 +299,28 @@ export function BranchesTab({ visible, focusToken }: { visible: boolean; focusTo
           onInput={e => setQuery((e.currentTarget as HTMLInputElement).value)}
         />
         {state.fetching ? (
-          <span class="branches-fetching" data-tip="Fetching…">
+          <span class="branches-fetching" data-tip={t('Fetching…')}>
             <span class="spinner" />
           </span>
         ) : (
-          <ActionButton icon="vcs/fetch" tip="Fetch" onClick={() => send('branches.fetch')} />
+          <ActionButton icon="vcs/fetch" tip={t('Fetch')} onClick={() => send('branches.fetch')} />
         )}
         <ActionButton
           icon="general/settings"
-          tip="Settings"
+          tip={t('Settings')}
           menu={() => [
-            { separator: true, label: 'Add in Search Results' },
-            { label: 'Actions', checked: s.searchActions, action: () => send('branches.setSetting', { key: 'searchActions', value: !s.searchActions }) },
+            { separator: true, label: t('Add in Search Results') },
+            { label: t('Actions'), checked: s.searchActions, action: () => send('branches.setSetting', { key: 'searchActions', value: !s.searchActions }) },
             { separator: true },
-            { label: 'Group by Directory', icon: 'actions/groupByPackage', checked: s.groupByDirectory, action: () => send('branches.setSetting', { key: 'groupByDirectory', value: !s.groupByDirectory }) },
+            { label: t('Group by Directory'), icon: 'actions/groupByPackage', checked: s.groupByDirectory, action: () => send('branches.setSetting', { key: 'groupByDirectory', value: !s.groupByDirectory }) },
             ...(multi
               ? [
-                  { label: 'Group by Repository', checked: s.groupByRepository, action: () => send('branches.setSetting', { key: 'groupByRepository', value: !s.groupByRepository }) },
-                  { label: 'Execute Branch Operations on All Roots', checked: s.syncControl, action: () => send('branches.setSetting', { key: 'syncControl', value: !s.syncControl }) },
+                  { label: t('Group by Repository'), checked: s.groupByRepository, action: () => send('branches.setSetting', { key: 'groupByRepository', value: !s.groupByRepository }) },
+                  { label: t('Execute Branch Operations on All Roots'), checked: s.syncControl, action: () => send('branches.setSetting', { key: 'syncControl', value: !s.syncControl }) },
                 ]
               : []),
-            { label: 'Show Recent Branches', checked: s.showRecent, action: () => send('branches.setSetting', { key: 'showRecent', value: !s.showRecent }) },
-            { label: 'Show Tags', checked: s.showTags, action: () => send('branches.setSetting', { key: 'showTags', value: !s.showTags }) },
+            { label: t('Show Recent Branches'), checked: s.showRecent, action: () => send('branches.setSetting', { key: 'showRecent', value: !s.showRecent }) },
+            { label: t('Show Tags'), checked: s.showTags, action: () => send('branches.setSetting', { key: 'showTags', value: !s.showTags }) },
           ]}
         />
       </div>
@@ -317,7 +334,7 @@ export function BranchesTab({ visible, focusToken }: { visible: boolean; focusTo
             if (r.kind === 'empty')
               return (
                 <div key={r.id} class="branches-row empty" style={style}>
-                  {r.label}
+                  {ROW_LABELS[r.label] ?? r.label}
                 </div>
               );
             const sel = r.id === selected;
@@ -349,7 +366,7 @@ export function BranchesTab({ visible, focusToken }: { visible: boolean; focusTo
                     <Icon name={r.expanded ? 'general/chevronDown' : 'general/chevronRight'} />
                   </span>
                   {r.kind !== 'section' && <Icon name="nodes/folder" />}
-                  <span class="branches-label">{r.label}</span>
+                  <span class="branches-label">{r.kind === 'section' ? (ROW_LABELS[r.label] ?? r.label) : r.label}</span>
                   {r.kind === 'repo' && r.hint && <span class="branches-hint">{r.hint}</span>}
                 </div>
               );
@@ -381,7 +398,7 @@ export function BranchesTab({ visible, focusToken }: { visible: boolean; focusTo
                 <span class="branches-chevron" />
                 <span
                   class={`branches-icon ${canStar ? 'star-toggle' : ''}`}
-                  data-tip={canStar ? (ref.favorite ? 'Remove from Favorites' : 'Add to Favorites') : undefined}
+                  data-tip={canStar ? (ref.favorite ? t('Remove from Favorites') : t('Add to Favorites')) : undefined}
                   onClick={e => {
                     if (!canStar) return;
                     e.stopPropagation();
@@ -395,7 +412,7 @@ export function BranchesTab({ visible, focusToken }: { visible: boolean; focusTo
                   <Highlighted text={r.label} match={r.match} />
                 </span>
                 {ref.behind || ref.ahead ? (
-                  <span class="branches-inout" data-tip={[ref.behind ? `${ref.behind} incoming` : '', ref.ahead ? `${ref.ahead} outgoing` : ''].filter(Boolean).join(', ')}>
+                  <span class="branches-inout" data-tip={[ref.behind ? t('{0} incoming', ref.behind) : '', ref.ahead ? t('{0} outgoing', ref.ahead) : ''].filter(Boolean).join(', ')}>
                     {ref.behind ? (
                       <>
                         <Icon name="dvcs/changesUpdate@12x12" size={12} />

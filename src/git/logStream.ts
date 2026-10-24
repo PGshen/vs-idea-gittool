@@ -1,4 +1,5 @@
 import { ChildProcess, spawn } from 'node:child_process';
+import * as vscode from 'vscode';
 import { Commit } from '../shared/types';
 import { getGitPath } from './exec';
 import { log } from '../host/output';
@@ -76,7 +77,7 @@ export class LogStream {
     this.child.stderr!.on('data', (d: Buffer) => (stderr += d.toString()));
     this.child.on('close', code => {
       this.ended = true;
-      if (code && code !== 0 && !this.cancelled) this.error = stderr.trim() || `git log exited with ${code}`;
+      if (code && code !== 0 && !this.cancelled) this.error = stderr.trim() || vscode.l10n.t('git log exited with {0}', String(code));
       this.wake();
     });
     this.child.on('error', e => {

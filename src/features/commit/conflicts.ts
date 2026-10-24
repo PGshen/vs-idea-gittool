@@ -21,8 +21,9 @@ export interface ConflictRow {
   repoName: string;
   path: string;
   kind: string;
-  yours: 'Modified' | 'Deleted';
-  theirs: 'Modified' | 'Deleted';
+  /** Displayed "Modified" / "Deleted". */
+  yours: string;
+  theirs: string;
   /** "resolved/total" badge, shown once the file has a merge model. */
   badge?: { resolved: number; total: number };
   /** All changes resolved: shown in the "Resolved" group, staged by "Accept and Finish". */
@@ -163,8 +164,8 @@ export class ConflictsController {
       repoName: repo?.name ?? path.basename(c.root),
       path: c.path,
       kind: conflictKind(`${c.index}${c.workTree}`),
-      yours: s.yoursDeleted ? 'Deleted' : 'Modified',
-      theirs: s.theirsDeleted ? 'Deleted' : 'Modified',
+      yours: s.yoursDeleted ? vscode.l10n.t('Deleted') : vscode.l10n.t('Modified'),
+      theirs: s.theirsDeleted ? vscode.l10n.t('Deleted') : vscode.l10n.t('Modified'),
       badge: m ? { resolved: m.model.resolvedCount(), total: m.model.changes.length } : undefined,
       resolved: !!m && m.model.unresolved.length === 0,
       mergeable: !s.yoursDeleted && !s.theirsDeleted,
@@ -175,7 +176,7 @@ export class ConflictsController {
   /** "Merging branch feature into branch master" and the like. */
   description(): { text: string; yours: string; theirs: string } {
     const repo = this.ctx.repos.repositories.find(r => r.status.conflicts.length) ?? this.ctx.repos.repositories[0];
-    if (!repo) return { text: '', yours: 'Yours', theirs: 'Theirs' };
+    if (!repo) return { text: '', yours: vscode.l10n.t('Yours'), theirs: vscode.l10n.t('Theirs') };
     const read = (f: string) => {
       try {
         return fs.readFileSync(path.join(repo.gitDir, f), 'utf8').trim();
@@ -184,29 +185,33 @@ export class ConflictsController {
       }
     };
     const context = this.context(repo);
-    if (context) return { text: context.description, yours: 'Yours', theirs: 'Theirs' };
+    if (context) return { text: context.description, yours: vscode.l10n.t('Yours'), theirs: vscode.l10n.t('Theirs') };
     const branch = repo.info.branch ?? repo.info.rebaseHeadName ?? shortHash(repo.info.headHash ?? '');
     switch (repo.info.operation) {
       case 'merge': {
         const other = /Merge (?:remote-tracking )?branch '([^']+)'/.exec(read('MERGE_MSG') ?? '')?.[1] ?? shortHash(read('MERGE_HEAD') ?? '');
-        return { text: `Merging branch ${other} into branch ${branch}`, yours: `Yours (${branch})`, theirs: `Theirs (${other})` };
+        return { text: vscode.l10n.t('Merging branch {0} into branch {1}', other, branch), yours: vscode.l10n.t('Yours ({0})', branch), theirs: vscode.l10n.t('Theirs ({0})', other) };
       }
       case 'rebase': {
         const onto = shortHash(read('rebase-merge/onto') ?? read('rebase-apply/onto') ?? '');
         const head = repo.info.rebaseHeadName;
-        return { text: `Rebasing${head ? ` branch ${head}` : ''} onto ${onto}`, yours: `Yours${head ? ` (${head})` : ''}`, theirs: `Theirs (${onto})` };
+        return {
+          text: head ? vscode.l10n.t('Rebasing branch {0} onto {1}', head, onto) : vscode.l10n.t('Rebasing onto {0}', onto),
+          yours: head ? vscode.l10n.t('Yours ({0})', head) : vscode.l10n.t('Yours'),
+          theirs: vscode.l10n.t('Theirs ({0})', onto),
+        };
       }
       case 'cherry-pick': {
         const h = read('CHERRY_PICK_HEAD') ?? '';
-        return { text: `Conflicts during cherry-picking commit ${shortHash(h)}`, yours: 'Yours', theirs: `Theirs (${shortHash(h)})` };
+        return { text: vscode.l10n.t('Conflicts during cherry-picking commit {0}', shortHash(h)), yours: vscode.l10n.t('Yours'), theirs: vscode.l10n.t('Theirs ({0})', shortHash(h)) };
       }
       case 'revert': {
         const h = read('REVERT_HEAD') ?? '';
-        return { text: `Conflicts during reverting commit ${shortHash(h)}`, yours: 'Yours', theirs: 'Theirs' };
+        return { text: vscode.l10n.t('Conflicts during reverting commit {0}', shortHash(h)), yours: vscode.l10n.t('Yours'), theirs: vscode.l10n.t('Theirs') };
       }
       default: {
         const n = this.current().length;
-        return { text: `The following ${n === 1 ? 'file has' : 'files have'} conflicts:`, yours: 'Yours', theirs: 'Theirs' };
+        return { text: n === 1 ? vscode.l10n.t('The following file has conflicts:') : vscode.l10n.t('The following files have conflicts:'), yours: vscode.l10n.t('Yours'), theirs: vscode.l10n.t('Theirs') };
       }
     }
   }
@@ -285,7 +290,7 @@ export class ConflictsController {
     if (context && root) this.contexts.set(root, context);
     const conflicts = this.conflicts(root);
     if (!conflicts.length) {
-      void vscode.window.showInformationMessage('No conflicts to resolve');
+      void vscode.window.showInformationMessage(vscode.l10n.t('No conflicts to resolve'));
       return { remaining: 0 };
     }
     if (this.dialog) {
@@ -300,7 +305,7 @@ export class ConflictsController {
     this.status = '';
     let closing = false;
     await showDialog('commit.conflicts', this.payload(), {
-      title: 'Conflicts',
+      title: vscode.l10n.t('Conflicts'),
       onOpen: conn => {
         this.dialog = conn;
         // Resolve Conflicts… in the editor: the merge window of the file opens over the dialog.
@@ -320,13 +325,14 @@ export class ConflictsController {
         close: async () => {
           const partial = [...this.models.values()].some(m => m.model.resolvedCount() > 0 && m.model.unresolved.length > 0);
           if (partial) {
+            const discard = vscode.l10n.t('Discard Changes');
             const a = await vscode.window.showWarningMessage(
-              'Discard Changes?',
-              { modal: true, detail: 'Closing the dialog will discard your changes in partially resolved files' },
-              'Discard Changes',
-              'Continue Merge',
+              vscode.l10n.t('Discard Changes?'),
+              { modal: true, detail: vscode.l10n.t('Closing the dialog will discard your changes in partially resolved files') },
+              discard,
+              vscode.l10n.t('Continue Merge'),
             );
-            if (a !== 'Discard Changes') return false;
+            if (a !== discard) return false;
           }
           closing = true;
           await this.finishResolution();
@@ -434,16 +440,21 @@ export class ConflictsController {
     const d = this.description();
     const message =
       s.yoursDeleted || s.theirsDeleted
-        ? `${c.path}\n\n${d.yours}: ${s.yoursDeleted ? 'deleted' : 'modified'}\n${d.theirs}: ${s.theirsDeleted ? 'deleted' : 'modified'}`
-        : `${c.path} is a binary file. Choose the version to keep.`;
+        ? [
+            c.path,
+            '',
+            s.yoursDeleted ? vscode.l10n.t('{0}: deleted', d.yours) : vscode.l10n.t('{0}: modified', d.yours),
+            s.theirsDeleted ? vscode.l10n.t('{0}: deleted', d.theirs) : vscode.l10n.t('{0}: modified', d.theirs),
+          ].join('\n')
+        : vscode.l10n.t('{0} is a binary file. Choose the version to keep.', c.path);
     const r = await confirmDialog({
-      title: `Merge Revisions for ${c.path}`,
+      title: vscode.l10n.t('Merge Revisions for {0}', c.path),
       message,
       icon: 'question',
       buttons: [
-        { id: 'left', label: 'Accept Left' },
-        { id: 'right', label: 'Accept Right' },
-        { id: 'cancel', label: 'Cancel', primary: true },
+        { id: 'left', label: vscode.l10n.t('Accept Left') },
+        { id: 'right', label: vscode.l10n.t('Accept Right') },
+        { id: 'cancel', label: vscode.l10n.t('Cancel'), primary: true },
       ],
     });
     if (!r || r.button === 'cancel') return 'CANCEL';
@@ -478,15 +489,19 @@ export class ConflictsController {
       if (iterative.length && iterative.some(x => x.fm.model.resolvedCount() > 0)) {
         const d = this.description();
         const label = yours ? d.yours : d.theirs;
+        const discardAndAccept = vscode.l10n.t('Discard and Accept');
         const a = await vscode.window.showInformationMessage(
-          'Overwrite Changes',
+          vscode.l10n.t('Overwrite Changes'),
           {
             modal: true,
-            detail: `${iterative.length === 1 ? 'This file already contains merged changes' : 'These files already contain merged changes'}. Accepting changes from ‘${label}’ will discard and overwrite them.`,
+            detail:
+              iterative.length === 1
+                ? vscode.l10n.t('This file already contains merged changes. Accepting changes from ‘{0}’ will discard and overwrite them.', label)
+                : vscode.l10n.t('These files already contain merged changes. Accepting changes from ‘{0}’ will discard and overwrite them.', label),
           },
-          'Discard and Accept',
+          discardAndAccept,
         );
-        if (a !== 'Discard and Accept') return;
+        if (a !== discardAndAccept) return;
       }
       for (const { c, fm } of iterative) {
         fm.model.acceptRevisionForSide(yours ? 'left' : 'right');
@@ -503,12 +518,19 @@ export class ConflictsController {
   /** Revert Conflict Resolution (context menu): the files return to their original conflicted state. */
   async revertResolution(keys: string[]) {
     const n = keys.length;
+    const revert = vscode.l10n.t('Revert');
     const a = await vscode.window.showInformationMessage(
-      'Confirm Revert',
-      { modal: true, detail: `All changes will be reverted. The ${n === 1 ? 'file will return to its' : 'selected files will return to their'} original conflicted state.` },
-      'Revert',
+      vscode.l10n.t('Confirm Revert'),
+      {
+        modal: true,
+        detail:
+          n === 1
+            ? vscode.l10n.t('All changes will be reverted. The file will return to its original conflicted state.')
+            : vscode.l10n.t('All changes will be reverted. The selected files will return to their original conflicted state.'),
+      },
+      revert,
     );
-    if (a !== 'Revert') return;
+    if (a !== revert) return;
     for (const c of this.current().filter(x => keys.includes(changeKey(x)))) {
       const fm = this.models.get(changeKey(c));
       if (!fm) continue;
@@ -549,13 +571,19 @@ export class ConflictsController {
         if (fm.model.unresolved.length) filesWithUnresolved++;
       }
       const byAuto = resolved - resolvedBefore;
-      const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+      const resolvedText = () => (byAuto === 1 ? vscode.l10n.t('1 conflict resolved.') : vscode.l10n.t('{0} conflicts resolved.', byAuto));
+      const remainingText = () =>
+        unresolved === 1
+          ? vscode.l10n.t('1 conflict in 1 file still requires attention')
+          : filesWithUnresolved === 1
+            ? vscode.l10n.t('{0} conflicts in 1 file still require attention', unresolved)
+            : vscode.l10n.t('{0} conflicts in {1} files still require attention', unresolved, filesWithUnresolved);
       this.status =
         byAuto === 0
-          ? 'No conflicts were resolved automatically'
+          ? vscode.l10n.t('No conflicts were resolved automatically')
           : unresolved === 0
-            ? 'All conflicts were resolved automatically'
-            : `${plural(byAuto, '1 conflict', `${byAuto} conflicts`)} resolved. ${plural(unresolved, '1 conflict', `${unresolved} conflicts`)} in ${plural(filesWithUnresolved, '1 file', `${filesWithUnresolved} files`)} still ${plural(unresolved, 'requires', 'require')} attention`;
+            ? vscode.l10n.t('All conflicts were resolved automatically')
+            : `${resolvedText()} ${remainingText()}`;
     } finally {
       this.setBusy(false);
     }
@@ -585,8 +613,8 @@ export class ConflictsController {
     try {
       await vscode.commands.executeCommand('_open.mergeEditor', {
         base: toGitUri(c.root, c.path, ':1'),
-        input1: { uri: toGitUri(c.root, c.path, rev ? ':3' : ':2'), title: d.yours, description: plain(context?.left) ?? 'Your version', detail: c.path },
-        input2: { uri: toGitUri(c.root, c.path, rev ? ':2' : ':3'), title: d.theirs, description: plain(context?.right) ?? 'Changes from the other side', detail: c.path },
+        input1: { uri: toGitUri(c.root, c.path, rev ? ':3' : ':2'), title: d.yours, description: plain(context?.left) ?? vscode.l10n.t('Your version'), detail: c.path },
+        input2: { uri: toGitUri(c.root, c.path, rev ? ':2' : ':3'), title: d.theirs, description: plain(context?.right) ?? vscode.l10n.t('Changes from the other side'), detail: c.path },
         output: file,
       });
     } catch {
@@ -612,8 +640,8 @@ export class ConflictsController {
     const repo = this.ctx.repos.get(p.root);
     if (!repo || !repo.status.conflicts.some(c => c.path === p.path)) return;
     await repo.batch(() => addFiles(repo, [p.path], true));
-    void notifySuccess('Conflict resolved', p.path, {
-      label: 'Undo',
+    void notifySuccess(vscode.l10n.t('Conflict resolved'), p.path, {
+      label: vscode.l10n.t('Undo'),
       run: () => repo.batch(() => repo.exec(['checkout', '-m', '--', p.path])),
     });
   }

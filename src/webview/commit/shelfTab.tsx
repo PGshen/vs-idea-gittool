@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { ActionButton, Toolbar, Tree, TreeNode } from '../lib/components';
 import { anchorAt, MenuEntry, showMenu } from '../lib/menu';
+import { t } from '../lib/l10n';
 import { persist, persisted, send } from '../lib/rpc';
 import { CommitViewState, ShelfInfo } from '../../shared/commitProtocol';
 import { allGroupKeys, countText, groupFiles, NodeData } from './changesTree';
@@ -39,9 +40,9 @@ export function ShelfTab({ state }: { state: CommitViewState }) {
     if (deleted.length && settings.showRecycledShelves) {
       active.push({
         key: 'recycled',
-        label: 'Recently Deleted',
-        text: 'Recently Deleted',
-        hint: countText(deleted.length).replace('file', 'changelist'),
+        label: t('Recently Deleted'),
+        text: t('Recently Deleted'),
+        hint: deleted.length === 1 ? t('1 changelist') : t('{0} changelists', deleted.length),
         data: { kind: 'recycled' },
         children: deleted.map(make),
       });
@@ -110,19 +111,19 @@ export function ShelfTab({ state }: { state: CommitViewState }) {
     const paths = one && !shelves.length ? files.get(one) : undefined;
     const f = firstFile(sel);
     const entries: MenuEntry[] = [
-      { label: 'Unshelve…', icon: 'vcs/unshelve', shortcut: 'Ctrl+Shift+U', disabled: !one, action: () => send('unshelve', { id: one, paths }) },
-      { label: 'Unshelve Silently', icon: 'vcs/unshelve', shortcut: 'Ctrl+Alt+U', disabled: !ids.length, action: () => unshelveSilently(sel) },
-      ...(isDeleted ? [{ label: 'Restore', action: () => send('restoreShelves', { ids }) }] : []),
-      { label: 'Show Diff', icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: !f, action: () => showDiff(sel) },
-      { label: 'Compare with Local', disabled: !f, action: () => f && send('shelfCompareWithLocal', f) },
-      { label: 'Create Patch…', icon: 'vcs/patch', disabled: !one, action: () => send('shelfCreatePatch', { id: one, paths }) },
-      { label: 'Copy as Patch to Clipboard', disabled: !one, action: () => send('shelfCopyPatch', { id: one, paths }) },
-      { label: 'Import Patches…', action: () => send('importPatches') },
+      { label: t('Unshelve…'), icon: 'vcs/unshelve', shortcut: 'Ctrl+Shift+U', disabled: !one, action: () => send('unshelve', { id: one, paths }) },
+      { label: t('Unshelve Silently'), icon: 'vcs/unshelve', shortcut: 'Ctrl+Alt+U', disabled: !ids.length, action: () => unshelveSilently(sel) },
+      ...(isDeleted ? [{ label: t('Restore'), action: () => send('restoreShelves', { ids }) }] : []),
+      { label: t('Show Diff'), icon: 'vcs/diff', shortcut: 'Ctrl+D', disabled: !f, action: () => showDiff(sel) },
+      { label: t('Compare with Local'), disabled: !f, action: () => f && send('shelfCompareWithLocal', f) },
+      { label: t('Create Patch…'), icon: 'vcs/patch', disabled: !one, action: () => send('shelfCreatePatch', { id: one, paths }) },
+      { label: t('Copy as Patch to Clipboard'), disabled: !one, action: () => send('shelfCopyPatch', { id: one, paths }) },
+      { label: t('Import Patches…'), action: () => send('importPatches') },
       { separator: true },
-      { label: 'Rename…', shortcut: 'F2', disabled: !one || !!paths, action: () => send('renameShelf', { id: one }) },
-      { label: 'Delete', shortcut: 'Delete', disabled: !ids.length, action: () => del(sel) },
+      { label: t('Rename…'), shortcut: 'F2', disabled: !one || !!paths, action: () => send('renameShelf', { id: one }) },
+      { label: t('Delete'), shortcut: 'Delete', disabled: !ids.length, action: () => del(sel) },
       { separator: true },
-      { label: 'Clean Already Unshelved…', disabled: !state.shelves.some(s => s.deleted), action: () => send('cleanShelves') },
+      { label: t('Clean Already Unshelved…'), disabled: !state.shelves.some(s => s.deleted), action: () => send('cleanShelves') },
     ];
     showMenu(entries, anchorAt(e));
   };
@@ -147,21 +148,21 @@ export function ShelfTab({ state }: { state: CommitViewState }) {
   };
 
   const viewOptions = (): MenuEntry[] => [
-    { separator: true, label: 'Group By' },
-    { label: 'Directory', shortcut: 'Ctrl+Alt+P', checked: settings.groupByDirectory, action: () => send('setSettings', { groupByDirectory: !settings.groupByDirectory }) },
-    { separator: true, label: 'Show' },
-    { label: 'Already Unshelved', checked: settings.showRecycledShelves, action: () => send('setSettings', { showRecycledShelves: !settings.showRecycledShelves }) },
+    { separator: true, label: t('Group By') },
+    { label: t('Directory'), shortcut: 'Ctrl+Alt+P', checked: settings.groupByDirectory, action: () => send('setSettings', { groupByDirectory: !settings.groupByDirectory }) },
+    { separator: true, label: t('Show') },
+    { label: t('Already Unshelved'), checked: settings.showRecycledShelves, action: () => send('setSettings', { showRecycledShelves: !settings.showRecycledShelves }) },
   ];
 
   return (
     <>
       <Toolbar class="changes-toolbar">
-        <ActionButton icon="vcs/unshelve" tip="Unshelve Silently" shortcut="Ctrl+Alt+U" disabled={!selection.size} onClick={() => unshelveSilently()} />
-        <ActionButton icon="vcs/diff" tip="Show Diff" shortcut="Ctrl+D" disabled={!selection.size} onClick={() => showDiff()} />
-        <ActionButton icon="general/show" tip="View Options" menu={viewOptions} />
+        <ActionButton icon="vcs/unshelve" tip={t('Unshelve Silently')} shortcut="Ctrl+Alt+U" disabled={!selection.size} onClick={() => unshelveSilently()} />
+        <ActionButton icon="vcs/diff" tip={t('Show Diff')} shortcut="Ctrl+D" disabled={!selection.size} onClick={() => showDiff()} />
+        <ActionButton icon="general/show" tip={t('View Options')} menu={viewOptions} />
         <ActionButton
           icon="general/expandAll"
-          tip="Expand All"
+          tip={t('Expand All')}
           onClick={() => {
             const next = new Set([...expanded, ...allGroupKeys(nodes)]);
             setExpanded(next);
@@ -170,7 +171,7 @@ export function ShelfTab({ state }: { state: CommitViewState }) {
         />
         <ActionButton
           icon="general/collapseAll"
-          tip="Collapse All"
+          tip={t('Collapse All')}
           onClick={() => {
             setExpanded(new Set());
             persist('shelfExpanded', []);
@@ -192,9 +193,9 @@ export function ShelfTab({ state }: { state: CommitViewState }) {
         onKeyDown={onKeyDown}
         emptyText={
           <>
-            <div>No shelved changes</div>
+            <div>{t('No shelved changes')}</div>
             <div class="secondary" style={{ marginTop: '4px' }}>
-              Use Shelve Changes in the Commit tab to put changes aside
+              {t('Use Shelve Changes in the Commit tab to put changes aside')}
             </div>
           </>
         }

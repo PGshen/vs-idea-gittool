@@ -55,7 +55,7 @@ export async function runRefAction(ctx: Ctx, repo: Repository, ref: Ref, action:
   const arg = { root: repo.root, name: ref.name, type: ref.type as RefKind };
   if (action === OPEN_WORKTREE) return vscode.commands.executeCommand('ideagittool.worktrees.open', { root: repo.root, branch: ref.name });
   if (action === NEW_WORKTREE) return vscode.commands.executeCommand('ideagittool.worktrees.create', { root: repo.root, ref: ref.name });
-  if (action === 'ideagittool.branch.newBranchFrom' && roots) return newBranchCommand(ctx, { roots, startPoint: ref.name, title: `Create Branch from ${ref.name}` });
+  if (action === 'ideagittool.branch.newBranchFrom' && roots) return newBranchCommand(ctx, { roots, startPoint: ref.name, title: vscode.l10n.t('Create Branch from {0}', ref.name) });
   for (const root of roots ?? [repo.root]) await vscode.commands.executeCommand(action, { ...arg, root });
 }
 
@@ -66,12 +66,12 @@ export async function refActionsFor(repo: Repository, ref: Ref, opts: { sync?: b
 }
 
 export async function checkoutTagOrRevision(ctx: Ctx, repo: Repository) {
-  const refs = repo.refs.map(r => ({ value: r.name, icon: r.type === 'tag' ? 'nodes/tag' : 'general/vcs', group: r.type === 'local' ? 'Local' : r.type === 'remote' ? 'Remote' : 'Tags' }));
+  const refs = repo.refs.map(r => ({ value: r.name, icon: r.type === 'tag' ? 'nodes/tag' : 'general/vcs', group: r.type === 'local' ? vscode.l10n.t('Local') : r.type === 'remote' ? vscode.l10n.t('Remote') : vscode.l10n.t('Tags') }));
   await showDialog('ops.checkoutRevision', { refs }, {
-    title: 'Checkout Tag or Revision',
+    title: vscode.l10n.t('Checkout Tag or Revision'),
     validate: async (v: { ref: string }) => {
       const ok = await repo.exec(['rev-parse', '-q', '--verify', `${v.ref}^{commit}`], { allowFailure: true, quiet: true });
-      if (ok.exitCode !== 0) return `Revision not found: ${v.ref}`;
+      if (ok.exitCode !== 0) return vscode.l10n.t('Revision not found: {0}', v.ref);
       setTimeout(() => void vscode.commands.executeCommand('ideagittool.checkoutRevision', { root: repo.root, hash: v.ref }), 0);
       return true;
     },
@@ -90,12 +90,12 @@ export async function newBranchCommand(ctx: Ctx, arg?: RootArg & { startPoint?: 
   const start = arg?.startPoint;
   const startRef = start ? repo.refs.find(r => r.name === start) : undefined;
   const initial = startRef?.type === 'remote' ? start!.slice((startRef.remote?.length ?? 0) + 1) : '';
-  const title = arg?.title ?? (start ? `Create Branch from ${startRef ? start : start.slice(0, 8)}` : 'Create New Branch');
+  const title = arg?.title ?? (start ? vscode.l10n.t('Create Branch from {0}', startRef ? start : start.slice(0, 8)) : vscode.l10n.t('Create New Branch'));
   const res = await showDialog<{ name: string; checkout: boolean; overwrite: boolean }>(
     'ops.newBranch',
     {
       title,
-      okLabel: 'Create',
+      okLabel: vscode.l10n.t('Create'),
       initial,
       mode: 'create',
       checkout: true,
@@ -109,28 +109,28 @@ export async function newBranchCommand(ctx: Ctx, arg?: RootArg & { startPoint?: 
   if (!res) return;
   const from = start ?? 'HEAD';
   if (res.checkout) {
-    if (res.overwrite && repo.info.branch === res.name) throw new Error(`Cannot overwrite current branch ${res.name}`);
+    if (res.overwrite && repo.info.branch === res.name) throw new Error(vscode.l10n.t('Cannot overwrite current branch {0}', res.name));
     const outcome = await withSmartOperation(repo, 'checkout', force =>
       repo.batch(() => checkout(repo, from, { newBranch: res.name, overwrite: res.overwrite, force, track: startRef?.type === 'remote' ? undefined : false })),
       { destination: start ?? res.name },
     );
     if (!outcome) return;
-    if (outcome.kind === 'success') void vscode.window.showInformationMessage(start ? `Checked out new branch ${res.name} from ${start}` : `Checked out new branch ${res.name}`);
-    else await reportOutcome(repo, outcome, { operation: 'checkout', failedTitle: `Could not create new branch ${res.name}` });
+    if (outcome.kind === 'success') void vscode.window.showInformationMessage(start ? vscode.l10n.t('Checked out new branch {0} from {1}', res.name, start) : vscode.l10n.t('Checked out new branch {0}', res.name));
+    else await reportOutcome(repo, outcome, { operation: 'checkout', failedTitle: vscode.l10n.t('Could not create new branch {0}', res.name) });
   } else {
     await repo.batch(() => repo.exec(['branch', ...(res.overwrite ? ['-f'] : []), res.name, from]));
-    void vscode.window.showInformationMessage(`Branch ${res.name} was created`);
+    void vscode.window.showInformationMessage(vscode.l10n.t('Branch {0} was created', res.name));
   }
 }
 
 /** New Branch… with synchronous branch control: one dialog, the branch is created in every repository. */
-async function newBranchInRoots(ctx: Ctx, roots: string[], start?: string, title = start ? `Create Branch from ${start}` : 'Create New Branch') {
+async function newBranchInRoots(ctx: Ctx, roots: string[], start?: string, title = start ? vscode.l10n.t('Create Branch from {0}', start) : vscode.l10n.t('Create New Branch')) {
   const repos = roots.map(r => ctx.repos.get(r)).filter((r): r is Repository => !!r);
   const res = await showDialog<{ name: string; checkout: boolean; overwrite: boolean }>(
     'ops.newBranch',
     {
       title,
-      okLabel: 'Create',
+      okLabel: vscode.l10n.t('Create'),
       initial: '',
       mode: 'create',
       checkout: true,
@@ -144,7 +144,7 @@ async function newBranchInRoots(ctx: Ctx, roots: string[], start?: string, title
       validate: (v: { name: string; overwrite: boolean }) => {
         for (const r of repos) {
           const err = validateNewBranch(r, v.name, v.overwrite);
-          if (err) return repos.length > 1 ? `${err} in ${r.name}` : err;
+          if (err) return repos.length > 1 ? vscode.l10n.t('{0} in {1}', err, r.name) : err;
         }
         return true;
       },
@@ -160,14 +160,14 @@ async function newBranchInRoots(ctx: Ctx, roots: string[], start?: string, title
       });
       if (outcome && outcome.kind !== 'success' && !(outcome.kind === 'conflicts' && outcome.handled)) {
         failed.push(repo.name);
-        await reportOutcome(repo, outcome, { operation: 'checkout', failedTitle: `Could not create new branch ${res.name}` });
+        await reportOutcome(repo, outcome, { operation: 'checkout', failedTitle: vscode.l10n.t('Could not create new branch {0}', res.name) });
       }
     } else {
       const r = await repo.batch(() => repo.exec(['branch', ...(res.overwrite ? ['-f'] : []), res.name, from], { allowFailure: true }));
       if (r.exitCode !== 0) failed.push(repo.name);
     }
   }
-  if (!failed.length) void vscode.window.showInformationMessage(res.checkout ? `Checked out new branch ${res.name}` : `Branch ${res.name} was created`);
+  if (!failed.length) void vscode.window.showInformationMessage(res.checkout ? vscode.l10n.t('Checked out new branch {0}', res.name) : vscode.l10n.t('Branch {0} was created', res.name));
 }
 
 export async function checkoutRef(ctx: Ctx, arg: BranchArg) {
@@ -184,14 +184,15 @@ export async function checkoutRef(ctx: Ctx, arg: BranchArg) {
       opts = { newBranch: localName, track: true };
       label = localName;
     } else if (local.hash !== ref.hash && !(await isAncestor(repo, local.hash, ref.hash))) {
+      const rebaseLabel = vscode.l10n.t('Rebase');
       const a = await vscode.window.showWarningMessage(
-        `Local branch '${localName}' has commits that do not exist in '${arg.name}'. Rebase '${localName}' onto '${arg.name}', or drop local commits?`,
+        vscode.l10n.t("Local branch '{0}' has commits that do not exist in '{1}'. Rebase '{0}' onto '{1}', or drop local commits?", localName, arg.name),
         { modal: true },
-        'Rebase',
-        'Drop Local Commits',
+        rebaseLabel,
+        vscode.l10n.t('Drop Local Commits'),
       );
       if (!a) return;
-      if (a === 'Rebase') {
+      if (a === rebaseLabel) {
         await checkoutRef(ctx, { root: repo.root, name: localName, type: 'local' });
         await rebase(repo, [arg.name], localName, arg.name);
         return;
@@ -214,25 +215,25 @@ export async function checkoutRef(ctx: Ctx, arg: BranchArg) {
     if (conflict === 'cancel' || conflict === 'opened') return;
     ignoreOtherWorktrees = conflict === 'proceed';
   }
-  await putLocalHistoryLabel(repo, 'Before Checkout');
+  await putLocalHistoryLabel(repo, vscode.l10n.t('Before Checkout'));
   const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => checkout(repo, target, { ...opts, force, ignoreOtherWorktrees })), { destination: arg.name });
   if (!outcome) return;
   await reportCheckout(repo, outcome, label, ref?.type === 'remote' && opts.newBranch ? arg.name : undefined);
 }
 
 async function reportCheckout(repo: Repository, outcome: Awaited<ReturnType<typeof checkout>>, name: string, from?: string) {
-  if (outcome.kind === 'success') void vscode.window.showInformationMessage(from ? `Checked out new branch ${name} from ${from}` : `Checked out ${name}`);
-  else await reportOutcome(repo, outcome, { operation: 'checkout', failedTitle: `Could not checkout ${name}` });
+  if (outcome.kind === 'success') void vscode.window.showInformationMessage(from ? vscode.l10n.t('Checked out new branch {0} from {1}', name, from) : vscode.l10n.t('Checked out {0}', name));
+  else await reportOutcome(repo, outcome, { operation: 'checkout', failedTitle: vscode.l10n.t('Could not checkout {0}', name) });
 }
 
 export async function newBranchFrom(ctx: Ctx, arg: BranchArg) {
-  await newBranchCommand(ctx, { root: arg.root, startPoint: arg.name, title: `Create Branch from ${arg.name}` });
+  await newBranchCommand(ctx, { root: arg.root, startPoint: arg.name, title: vscode.l10n.t('Create Branch from {0}', arg.name) });
 }
 
 export async function checkoutAndRebase(ctx: Ctx, arg: BranchArg) {
   const repo = await repoFor(ctx, arg);
   const cur = repo.info.branch;
-  if (!cur) throw new Error('Rebase is not possible in the detached HEAD state');
+  if (!cur) throw new Error(vscode.l10n.t('Rebase is not possible in the detached HEAD state'));
   let branch = arg.name;
   const ref = findRef(repo, arg);
   if (ref?.type === 'remote') {
@@ -241,7 +242,7 @@ export async function checkoutAndRebase(ctx: Ctx, arg: BranchArg) {
     if (!repo.refs.some(r => r.type === 'local' && r.name === branch)) await repo.exec(['branch', '--track', branch, arg.name]);
   }
   const ok = await rebase(repo, [cur, branch], branch, cur);
-  if (ok) void vscode.window.showInformationMessage(`Checked out ${branch} and rebased it on ${cur}`);
+  if (ok) void vscode.window.showInformationMessage(vscode.l10n.t('Checked out {0} and rebased it on {1}', branch, cur));
 }
 
 export async function checkoutAndUpdate(ctx: Ctx, arg: BranchArg) {
@@ -259,16 +260,16 @@ export async function showDiffWithWorkingTree(ctx: Ctx, arg: BranchArg) {
   const repo = await repoFor(ctx, arg);
   const changes = await diffChanges(repo, arg.name);
   if (changes.length === 0) {
-    void vscode.window.showInformationMessage(`There are no changes between ${arg.name} and the working tree`);
+    void vscode.window.showInformationMessage(vscode.l10n.t('There are no changes between {0} and the working tree', arg.name));
     return;
   }
   // Left = ref, right = local file.
-  await openMultiDiff(`${arg.name} ↔ Working Tree`, changes, () => arg.name, () => 'WORKTREE');
+  await openMultiDiff(vscode.l10n.t('{0} ↔ Working Tree', arg.name), changes, () => arg.name, () => 'WORKTREE');
 }
 
 export async function rebaseCurrentOnto(ctx: Ctx, arg: BranchArg) {
   const repo = await repoFor(ctx, arg);
-  if (!repo.info.branch) throw new Error('Rebase is not possible in the detached HEAD state');
+  if (!repo.info.branch) throw new Error(vscode.l10n.t('Rebase is not possible in the detached HEAD state'));
   await rebase(repo, [arg.name], repo.info.branch, arg.name);
 }
 
@@ -280,7 +281,7 @@ export async function mergeIntoCurrent(ctx: Ctx, arg: BranchArg) {
 export async function pullInto(ctx: Ctx, arg: BranchArg, useRebase: boolean) {
   const repo = await repoFor(ctx, arg);
   const remote = remoteOf(repo, arg.name);
-  if (!remote) throw new Error(`${arg.name} is not a remote branch`);
+  if (!remote) throw new Error(vscode.l10n.t('{0} is not a remote branch', arg.name));
   await pull(repo, remote, arg.name.slice(remote.length + 1), useRebase ? ['rebase'] : []);
 }
 
@@ -293,25 +294,25 @@ export async function updateBranch(ctx: Ctx, arg: BranchArg) {
   const repo = await repoFor(ctx, arg);
   if (arg.name === repo.info.branch) return updateProjectCommand(ctx, { root: repo.root, method: settings().get('updateMethod') === 'rebase' ? 'rebase' : 'merge' });
   const ref = findRef(repo, { ...arg, type: 'local' });
-  if (!ref?.upstream) throw new Error(`Tracked branch is not configured for ${arg.name}`);
+  if (!ref?.upstream) throw new Error(vscode.l10n.t('Tracked branch is not configured for {0}', arg.name));
   const remote = remoteOf(repo, ref.upstream)!;
   const remoteBranch = ref.upstream.slice(remote.length + 1);
-  const r = await withProgress('Updating branches…', (progress, token) =>
+  const r = await withProgress(vscode.l10n.t('Updating branches…'), (progress, token) =>
     repo.exec(['fetch', '--progress', remote, `refs/heads/${remoteBranch}:refs/heads/${arg.name}`], { allowFailure: true, token, onStderrLine: progress }),
   );
   await repo.refresh();
-  if (r.exitCode === 0) void vscode.window.showInformationMessage(`Updated ${arg.name}`);
-  else if (/non-fast-forward|rejected/.test(r.stderr)) void vscode.window.showWarningMessage(`Update failed: ${arg.name} has diverged from ${ref.upstream} and cannot be fast-forwarded. Check it out and update it.`);
-  else showError(r.stderr, 'Update failed');
+  if (r.exitCode === 0) void vscode.window.showInformationMessage(vscode.l10n.t('Updated {0}', arg.name));
+  else if (/non-fast-forward|rejected/.test(r.stderr)) void vscode.window.showWarningMessage(vscode.l10n.t('Update failed: {0} has diverged from {1} and cannot be fast-forwarded. Check it out and update it.', arg.name, ref.upstream));
+  else showError(r.stderr, vscode.l10n.t('Update failed'));
 }
 
 export async function renameBranch(ctx: Ctx, arg: BranchArg) {
   const repo = await repoFor(ctx, arg);
   const locals = repo.refs.filter(r => r.type === 'local').map(r => r.name);
-  const title = `Rename Branch ${arg.name}`;
+  const title = vscode.l10n.t('Rename Branch {0}', arg.name);
   const res = await showDialog<{ name: string }>(
     'ops.newBranch',
-    { title, okLabel: 'Rename', initial: arg.name, mode: 'rename', renaming: arg.name, locals, remotes: repo.refs.filter(r => r.type === 'remote').map(r => r.name) },
+    { title, okLabel: vscode.l10n.t('Rename'), initial: arg.name, mode: 'rename', renaming: arg.name, locals, remotes: repo.refs.filter(r => r.type === 'remote').map(r => r.name) },
     { title, validate: (v: { name: string }) => (v.name === arg.name ? true : (validateNewBranch(repo, v.name, false) ?? true)) },
   );
   if (!res || res.name === arg.name) return;
@@ -321,12 +322,12 @@ export async function renameBranch(ctx: Ctx, arg: BranchArg) {
 export async function deleteBranch(ctx: Ctx, arg: BranchArg) {
   const repo = await repoFor(ctx, arg);
   const ref = findRef(repo, arg);
-  if (!ref) throw new Error(`Branch ${arg.name} not found`);
+  if (!ref) throw new Error(vscode.l10n.t('Branch {0} not found', arg.name));
   if (ref.type === 'remote') return deleteRemoteBranch(ctx, repo, ref);
-  if (ref.current) throw new Error(`Cannot delete the current branch ${ref.name}`);
+  if (ref.current) throw new Error(vscode.l10n.t('Cannot delete the current branch {0}', ref.name));
   const r = await repo.exec(['branch', '-d', ref.name], { allowFailure: true });
   if (r.exitCode !== 0) {
-    if (!/not fully merged/.test(r.stderr)) return showError(r.stderr, `Could not delete ${ref.name}`);
+    if (!/not fully merged/.test(r.stderr)) return showError(r.stderr, vscode.l10n.t('Could not delete {0}', ref.name));
     const base = repo.info.branch ?? 'HEAD';
     const commits = (await repo.execText(['log', '--format=%H%x00%s%x00%an%x00%at', `${base}..${ref.name}`, '-n', '200'], { quiet: true }))
       .split('\n')
@@ -335,18 +336,20 @@ export async function deleteBranch(ctx: Ctx, arg: BranchArg) {
         const [hash, subject, author, at] = l.split('\0');
         return { hash, subject, author, date: +at };
       });
-    const a = await showDialog<{ button: string }>('ops.notFullyMerged', { branch: ref.name, base, commits }, { title: 'Branch Was Not Fully Merged' });
+    const a = await showDialog<{ button: string }>('ops.notFullyMerged', { branch: ref.name, base, commits }, { title: vscode.l10n.t('Branch Was Not Fully Merged') });
     if (a?.button !== 'delete') return;
     await repo.exec(['branch', '-D', ref.name]);
   }
   await repo.refresh();
-  const actions = ['Restore', ...(ref.upstream && !ref.upstreamGone ? ['Delete Tracked Branch'] : [])];
-  const choice = await vscode.window.showInformationMessage(`Deleted branch ${ref.name}`, ...actions);
-  if (choice === 'Restore') {
+  const restore = vscode.l10n.t('Restore');
+  const deleteTracked = vscode.l10n.t('Delete Tracked Branch');
+  const actions = [restore, ...(ref.upstream && !ref.upstreamGone ? [deleteTracked] : [])];
+  const choice = await vscode.window.showInformationMessage(vscode.l10n.t('Deleted branch {0}', ref.name), ...actions);
+  if (choice === restore) {
     await repo.exec(['branch', ref.name, ref.hash]);
     if (ref.upstream) await repo.exec(['branch', '-u', ref.upstream, ref.name], { allowFailure: true });
     await repo.refresh();
-  } else if (choice === 'Delete Tracked Branch') {
+  } else if (choice === deleteTracked) {
     const remoteRef = repo.refs.find(r => r.type === 'remote' && r.name === ref.upstream);
     if (remoteRef) await deleteRemoteBranch(ctx, repo, remoteRef, true);
   }
@@ -361,28 +364,28 @@ async function deleteRemoteBranch(ctx: Ctx, repo: Repository, ref: Ref, confirme
     const res = await showDialog<{ button: string; checked: boolean }>(
       'confirm',
       {
-        title: 'Delete Remote Branch',
-        message: `Delete remote branch ${ref.name}?`,
+        title: vscode.l10n.t('Delete Remote Branch'),
+        message: vscode.l10n.t('Delete remote branch {0}?', ref.name),
         icon: 'question',
         buttons: [
-          { id: 'cancel', label: 'Cancel' },
-          { id: 'delete', label: 'Delete', primary: true },
+          { id: 'cancel', label: vscode.l10n.t('Cancel') },
+          { id: 'delete', label: vscode.l10n.t('Delete'), primary: true },
         ],
-        checkbox: trackingLocals.length ? `Delete tracking local branch ${trackingLocals.map(l => l.name).join(', ')} as well` : undefined,
+        checkbox: trackingLocals.length ? vscode.l10n.t('Delete tracking local branch {0} as well', trackingLocals.map(l => l.name).join(', ')) : undefined,
       },
-      { title: 'Delete Remote Branch' },
+      { title: vscode.l10n.t('Delete Remote Branch') },
     );
     if (res?.button !== 'delete') return;
     deleteLocal = res.checked;
   }
-  const r = await withProgress(`Deleting ${ref.name}…`, (progress, token) => repo.exec(['push', '--progress', remote, '--delete', branch], { allowFailure: true, token }));
+  const r = await withProgress(vscode.l10n.t('Deleting {0}…', ref.name), (progress, token) => repo.exec(['push', '--progress', remote, '--delete', branch], { allowFailure: true, token }));
   if (r.exitCode !== 0) {
     await repo.refresh();
-    return showError(r.stderr, `Failed to delete remote branch ${ref.name}`);
+    return showError(r.stderr, vscode.l10n.t('Failed to delete remote branch {0}', ref.name));
   }
   if (deleteLocal) for (const l of trackingLocals) await repo.exec(['branch', '-D', l.name], { allowFailure: true });
   await repo.refresh();
-  void vscode.window.showInformationMessage(`Deleted remote branch ${ref.name}`);
+  void vscode.window.showInformationMessage(vscode.l10n.t('Deleted remote branch {0}', ref.name));
 }
 
 export async function trackRemote(ctx: Ctx, arg: BranchArg) {
@@ -390,9 +393,9 @@ export async function trackRemote(ctx: Ctx, arg: BranchArg) {
   const ref = findRef(repo, { ...arg, type: 'local' });
   const items: (vscode.QuickPickItem & { remote?: string })[] = repo.refs
     .filter(r => r.type === 'remote')
-    .map(r => ({ label: r.name, iconPath: ijIcon('general/vcs'), picked: r.name === ref?.upstream, remote: r.name, description: r.name === ref?.upstream ? 'tracked' : undefined }));
-  if (ref?.upstream) items.unshift({ label: 'Unset Tracked Branch', description: ref.upstream });
-  const pick = await vscode.window.showQuickPick(items, { title: `Tracked Branch for '${arg.name}'`, placeHolder: 'Select a remote branch to track' });
+    .map(r => ({ label: r.name, iconPath: ijIcon('general/vcs'), picked: r.name === ref?.upstream, remote: r.name, description: r.name === ref?.upstream ? vscode.l10n.t('tracked') : undefined }));
+  if (ref?.upstream) items.unshift({ label: vscode.l10n.t('Unset Tracked Branch'), description: ref.upstream });
+  const pick = await vscode.window.showQuickPick(items, { title: vscode.l10n.t("Tracked Branch for '{0}'", arg.name), placeHolder: vscode.l10n.t('Select a remote branch to track') });
   if (!pick) return;
   if (!pick.remote) await repo.exec(['branch', '--unset-upstream', arg.name]);
   else await repo.exec(['branch', '-u', pick.remote, arg.name]);
@@ -420,30 +423,32 @@ export async function pushTag(ctx: Ctx, arg: BranchArg & { remote?: string }) {
   const repo = await repoFor(ctx, arg);
   let remote = arg.remote;
   if (!remote) {
-    if (repo.remotes.length === 0) throw new Error('No remotes defined');
-    remote = repo.remotes.length === 1 ? repo.remotes[0].name : (await vscode.window.showQuickPick(repo.remotes.map(r => r.name), { title: `Push Tag ${arg.name} to` }));
+    if (repo.remotes.length === 0) throw new Error(vscode.l10n.t('No remotes defined'));
+    remote = repo.remotes.length === 1 ? repo.remotes[0].name : (await vscode.window.showQuickPick(repo.remotes.map(r => r.name), { title: vscode.l10n.t('Push Tag {0} to', arg.name) }));
   }
   if (!remote) return;
-  const r = await withProgress(`Pushing tag ${arg.name}…`, (progress, token) => repo.exec(['push', '--progress', remote!, `refs/tags/${arg.name}`], { allowFailure: true, token }));
-  if (r.exitCode === 0) void vscode.window.showInformationMessage(`Push successful: Pushed tag ${arg.name} to ${remote}`);
-  else showError(r.stderr, 'Push failed');
+  const r = await withProgress(vscode.l10n.t('Pushing tag {0}…', arg.name), (progress, token) => repo.exec(['push', '--progress', remote!, `refs/tags/${arg.name}`], { allowFailure: true, token }));
+  if (r.exitCode === 0) void vscode.window.showInformationMessage(vscode.l10n.t('Push successful: Pushed tag {0} to {1}', arg.name, remote));
+  else showError(r.stderr, vscode.l10n.t('Push failed'));
 }
 
 export async function deleteTag(ctx: Ctx, arg: BranchArg) {
   const repo = await repoFor(ctx, arg);
   const ref = findRef(repo, { ...arg, type: 'tag' });
-  if (!ref) throw new Error(`Tag ${arg.name} not found`);
+  if (!ref) throw new Error(vscode.l10n.t('Tag {0} not found', arg.name));
   const target = (await repo.execText(['rev-parse', `refs/tags/${arg.name}`], { quiet: true })).trim();
   await repo.batch(() => repo.exec(['tag', '-d', arg.name]));
   const remotes = repo.remotes.map(r => r.name);
-  const a = await vscode.window.showInformationMessage(`Deleted Tag: ${arg.name}`, 'Restore', ...(remotes.length ? [remotes.length === 1 ? `Delete on Remote` : 'Delete on Remotes'] : []));
-  if (a === 'Restore') {
+  const restore = vscode.l10n.t('Restore');
+  const deleteOnRemote = remotes.length === 1 ? vscode.l10n.t('Delete on Remote') : vscode.l10n.t('Delete on Remotes');
+  const a = await vscode.window.showInformationMessage(vscode.l10n.t('Deleted Tag: {0}', arg.name), restore, ...(remotes.length ? [deleteOnRemote] : []));
+  if (a === restore) {
     await repo.exec(['update-ref', `refs/tags/${arg.name}`, target]);
     await repo.refresh();
-  } else if (a?.startsWith('Delete on')) {
+  } else if (a === deleteOnRemote) {
     for (const remote of remotes) {
-      const r = await withProgress(`Deleting tag ${arg.name} on remote…`, () => repo.exec(['push', remote, '--delete', `refs/tags/${arg.name}`], { allowFailure: true }));
-      if (r.exitCode !== 0 && !/remote ref does not exist/.test(r.stderr)) showError(r.stderr, `Failed to delete tag ${arg.name} on ${remote}`);
+      const r = await withProgress(vscode.l10n.t('Deleting tag {0} on remote…', arg.name), () => repo.exec(['push', remote, '--delete', `refs/tags/${arg.name}`], { allowFailure: true }));
+      if (r.exitCode !== 0 && !/remote ref does not exist/.test(r.stderr)) showError(r.stderr, vscode.l10n.t('Failed to delete tag {0} on {1}', arg.name, remote));
     }
   }
 }

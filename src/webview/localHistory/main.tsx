@@ -4,6 +4,7 @@ import '../lib/base.css';
 import './localHistory.css';
 import { ActionButton, buildDirectoryTree, Separator, Split, Toolbar, Tree, TreeNode } from '../lib/components';
 import { FileIcon, Icon } from '../lib/icons';
+import { t } from '../lib/l10n';
 import { boot, call, on, send } from '../lib/rpc';
 import { LhDiff, LhDiffMode, LhFile, LhInit, LhItem } from '../../shared/localHistoryProtocol';
 import { DiffView } from './diffView';
@@ -18,8 +19,8 @@ function dayLabel(ts: number): string {
   const today = new Date();
   const yesterday = new Date(Date.now() - 86400_000);
   const same = (a: Date, b: Date) => a.toDateString() === b.toDateString();
-  if (same(d, today)) return 'Today';
-  if (same(d, yesterday)) return 'Yesterday';
+  if (same(d, today)) return t('Today');
+  if (same(d, yesterday)) return t('Yesterday');
   return dateFmt.format(d);
 }
 
@@ -40,7 +41,7 @@ function App() {
   const [tick, setTick] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => on('changed', () => setTick(t => t + 1)), []);
+  useEffect(() => on('changed', () => setTick(n => n + 1)), []);
   useEffect(() => {
     call<LhItem[]>('items', { showSystem }).then(list => {
       setItems(list);
@@ -74,14 +75,14 @@ function App() {
   const fileMode = init.mode === 'file' || init.mode === 'selection';
   const sel = items.find(i => i.id === selected);
   const emptyText = !loaded
-    ? 'Loading…'
+    ? t('Loading…')
     : filter
       ? init.mode === 'project'
-        ? 'No matching recent activity detected'
-        : `No matching activity in ${init.displayName} detected`
+        ? t('No matching recent activity detected')
+        : t('No matching activity in {0} detected', init.displayName)
       : init.mode === 'project'
-        ? 'No recent activity detected'
-        : `No activity in ${init.displayName} detected`;
+        ? t('No recent activity detected')
+        : t('No activity in {0} detected', init.displayName);
 
   let lastDay = '';
   return (
@@ -92,7 +93,7 @@ function App() {
             <Icon name="general/search" />
             <input
               class="lh-search-input"
-              placeholder={fileMode ? 'Search by content' : 'Search by file name'}
+              placeholder={fileMode ? t('Search by content') : t('Search by file name')}
               value={filter}
               onInput={e => setFilter((e.currentTarget as HTMLInputElement).value)}
               onKeyDown={e => {
@@ -103,8 +104,8 @@ function App() {
           </div>
           <ActionButton
             icon="general/show"
-            tip="View Options"
-            menu={() => [{ label: 'Show System Events', checked: showSystem, action: () => (setShowSystem(!showSystem), send('setShowSystem', !showSystem)) }]}
+            tip={t('View Options')}
+            menu={() => [{ label: t('Show System Events'), checked: showSystem, action: () => (setShowSystem(!showSystem), send('setShowSystem', !showSystem)) }]}
           />
         </Toolbar>
         <div
@@ -127,7 +128,7 @@ function App() {
                 <div data-id={it.id} key={it.id} class={`lh-item ${it.id === selected ? 'selected' : ''} ${it.kind}`} onMouseDown={() => setSelected(it.id)} title={it.paths.join('\n')}>
                   <Icon name={itemIcon(it)} />
                   <span class="lh-title">{it.title}</span>
-                  {!fileMode && it.files > 1 && <span class="secondary">{it.files} files</span>}
+                  {!fileMode && it.files > 1 && <span class="secondary">{t('{0} files', it.files)}</span>}
                   <span class="lh-time secondary">{timeFmt.format(new Date(it.ts))}</span>
                 </div>
               </>
@@ -137,23 +138,23 @@ function App() {
       </div>
       <div class="lh-right">
         <Toolbar class="lh-toolbar">
-          <ActionButton icon="vcs/revert" tip="Revert Selected and Later Changes" disabled={!sel} onClick={() => sel && send('revert', { id: sel.id })} />
-          {init.mode === 'selection' && <ActionButton icon="diff/revert@14x14" tip="Revert Selection" disabled={!sel} onClick={() => sel && send('revertSelection', { id: sel.id })} />}
-          <ActionButton icon="vcs/patch" tip="Create Patch…" disabled={!sel} onClick={() => sel && send('createPatch', { id: sel.id, mode })} />
+          <ActionButton icon="vcs/revert" tip={t('Revert Selected and Later Changes')} disabled={!sel} onClick={() => sel && send('revert', { id: sel.id })} />
+          {init.mode === 'selection' && <ActionButton icon="diff/revert@14x14" tip={t('Revert Selection')} disabled={!sel} onClick={() => sel && send('revertSelection', { id: sel.id })} />}
+          <ActionButton icon="vcs/patch" tip={t('Create Patch…')} disabled={!sel} onClick={() => sel && send('createPatch', { id: sel.id, mode })} />
           <Separator />
-          <ActionButton icon="vcs/diff" tip="Show Diff" shortcut="Ctrl+D" disabled={!sel || !fileMode} onClick={() => sel && send('openDiff', { id: sel.id, mode })} />
+          <ActionButton icon="vcs/diff" tip={t('Show Diff')} shortcut="Ctrl+D" disabled={!sel || !fileMode} onClick={() => sel && send('openDiff', { id: sel.id, mode })} />
           <span class="spacer" />
           {sel && (
             <span class="lh-mode secondary">
-              Diff with the {mode === 'local' ? 'local directory' : 'next revision'}.{' '}
+              {mode === 'local' ? t('Diff with the local directory.') : t('Diff with the next revision.')}{' '}
               <a class="link" onClick={() => setMode(mode === 'local' ? 'next' : 'local')}>
-                Switch to diff with the {mode === 'local' ? 'next revision' : 'local directory'}
+                {mode === 'local' ? t('Switch to diff with the next revision') : t('Switch to diff with the local directory')}
               </a>
             </span>
           )}
         </Toolbar>
         <div class="lh-diff">
-          {!sel && <div class="empty-text">{items.length ? 'Select activity to view changes' : 'No changes detected'}</div>}
+          {!sel && <div class="empty-text">{items.length ? t('Select activity to view changes') : t('No changes detected')}</div>}
           {sel && diff?.kind === 'text' && <DiffView left={diff.left} right={diff.right} />}
           {sel && diff?.kind === 'empty' && <div class="empty-text">{diff.text}</div>}
           {sel && diff?.kind === 'files' && <FilesView files={diff.files} onOpen={f => send('openDiff', { id: sel.id, mode, path: f.path })} />}
@@ -193,7 +194,7 @@ function FilesView({ files, onOpen }: { files: LhFile[]; onOpen: (f: LhFile) => 
   return (
     <div class="lh-files">
       <div class="secondary lh-files-head">
-        {files.length} {files.length === 1 ? 'file' : 'files'}
+        {files.length === 1 ? t('{0} file', 1) : t('{0} files', files.length)}
       </div>
       <Tree
         nodes={nodes}
