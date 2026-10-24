@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.2
+
+- Simplified Chinese UI: commands, settings, notifications, dialogs and all tool windows follow the VS Code display language (*Configure Display Language*), with IntelliJ's Chinese wording. English stays the default.
+- Commit tool window: *Show Git Log* and *Show Git Console* buttons in the title bar.
+- Git log: once a file's diff is open from the changes tree, a single click (or the arrow keys) on another file shows it in the same diff editor, like IntelliJ's diff preview tab.
+- Git log: the "doesn't match the filters" warning names the branch (or a short hash) instead of the full hash.
+- Text in the tool windows is no longer thinned on macOS (no `-webkit-font-smoothing: antialiased`), which made it look blurry on 1x screens.
+- "vscode" appearance: the commit graph uses IntelliJ's light-theme brightness in light themes.
+
 ## 0.4.1
 
 - Jump to Source from Diff via the editor context menu or F4, including native multi-file diff editors. Context-menu navigation uses the clicked file even when no text editor is active, and renamed files open their current working path.
