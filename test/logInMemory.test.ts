@@ -12,7 +12,8 @@ const env = { ...process.env, GIT_AUTHOR_NAME: 'a', GIT_AUTHOR_EMAIL: 'a@x', GIT
 function makeRepo() {
   const dir = mkdtempSync(join(tmpdir(), 'ideagittool-inmem-'));
   const sh = (c: string) => execSync(c, { cwd: dir, env, encoding: 'utf8' });
-  sh('git init -q -b main');
+  // The code under test commits with its own environment, so the identity must be in the repository config.
+  sh('git init -q -b main && git config user.name a && git config user.email a@x');
   writeFileSync(join(dir, 'a.txt'), 'a1\n');
   writeFileSync(join(dir, 'b.txt'), 'b1\n');
   sh('git add -A && git commit -qm base');
@@ -51,10 +52,10 @@ test('drop selected changes rewrites the commit and its descendants and updates 
 test('extract selected changes splits a commit without changing the final tree', async () => {
   const { dir, sh } = makeRepo();
   const repo = await open(dir);
-  const treeBefore = sh('git rev-parse HEAD^{tree}').trim();
+  const treeBefore = sh('git rev-parse "HEAD^{tree}"').trim();
   const target = sh('git rev-parse HEAD~1').trim();
   const r = await extractSelectedChanges(repo, target, [{ path: 'c.txt' }], 'add c');
-  assert.equal(sh('git rev-parse HEAD^{tree}').trim(), treeBefore);
+  assert.equal(sh('git rev-parse "HEAD^{tree}"').trim(), treeBefore);
   assert.equal(sh('git log --format=%s').trim().split('\n').join('|'), 'add d|add c|change a b c|base');
   assert.equal(sh('git show --name-only --format= HEAD~1').trim(), 'c.txt');
   assert.equal(sh('git show --name-only --format= HEAD~2').trim().split('\n').join(','), 'a.txt,b.txt');
