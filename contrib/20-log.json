@@ -80,7 +80,7 @@
       "command": "ideagittool.showLog",
       "title": "Show Git Log",
       "category": "IdeaGitTool",
-      "icon": "$(git-commit)"
+      "icon": "$(history)"
     },
     {
       "command": "ideagittool.log.newTab",

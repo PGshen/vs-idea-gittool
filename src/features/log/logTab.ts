@@ -142,7 +142,7 @@ export class LogTab implements vscode.Disposable {
       contextInfo: (hashes: string[]) => this.contextInfo(hashes),
       saveSettings: (s: LogUiSettings) => this.saveSettings(s),
       authors: () => this.authors(),
-      find: (q: string) => this.find(q),
+      find: (p: string | { q: string; label?: string }) => (typeof p === 'string' ? this.find(p) : this.find(p.q, p.label)),
       commitAction: (p: { id: string; hashes: string[]; arg?: string }) => this.commitAction(p.id, p.hashes, p.arg),
       changeAction: (p: { id: string; changes: Change[]; left: string; right: string; hashes: string[] }) => this.changeAction(p.id, p.changes, p.left, p.right, p.hashes),
       branchAction: (p: { id: string; name: string; type: string; root?: string }) => this.branchAction(p.id, p.name, p.type, p.root),
@@ -373,7 +373,8 @@ export class LogTab implements vscode.Disposable {
     return [...seen].slice(0, 300);
   }
 
-  private async find(q: string): Promise<{ index: number; hash: string } | undefined> {
+  /** Finds a commit or reference. label names it in the messages (e.g. the branch whose head hash is q). */
+  private async find(q: string, label?: string): Promise<{ index: number; hash: string } | undefined> {
     let hash: string | undefined;
     for (const repo of this.model.repositories) {
       const ref = repo.refs.find(r => r.name === q || r.fullName === q);
@@ -390,7 +391,8 @@ export class LogTab implements vscode.Disposable {
     }
     const i = await this.findIndex(hash);
     if (i < 0) {
-      const pick = await vscode.window.showWarningMessage(`Commit or reference '${q}' doesn't match the filters`, 'View and reset filters', 'View in new tab');
+      const name = label ?? (/^[0-9a-f]{40}$/i.test(q) ? q.slice(0, 8) : q);
+      const pick = await vscode.window.showWarningMessage(`Commit or reference '${name}' doesn't match the filters`, 'View and reset filters', 'View in new tab');
       if (pick === 'View and reset filters') {
         await this.setFilters({ ...EMPTY_FILTERS }, this.state.options);
         this.conn?.post('filtersReset', { filters: this.state.filters });
@@ -404,6 +406,16 @@ export class LogTab implements vscode.Disposable {
   }
 
   // ------------------------------------------------------------------ highlighters and columns
+
+  /** The last single-file diff opened from this log, followed by single clicks in the changes tree. */
+  private diffTab?: { original: vscode.Uri; modified: vscode.Uri };
+
+  /** The editor tab showing that diff, when it is open and the active tab of its group. */
+  private shownDiffTab(d: { original: vscode.Uri; modified: vscode.Uri }): vscode.Tab | undefined {
+    return vscode.window.tabGroups.all
+      .map(g => g.activeTab)
+      .find(t => t?.input instanceof vscode.TabInputTextDiff && t.input.original.toString() === d.original.toString() && t.input.modified.toString() === d.modified.toString());
+  }
 
   private signatureCache = new Map<string, SignatureInfo>();
 
@@ -652,8 +664,18 @@ export class LogTab implements vscode.Disposable {
     const leftRev = left === EMPTY_TREE ? REV_EMPTY : left;
     switch (id) {
       case 'diff':
-        if (changes.length === 1) return openChangeDiff(changes[0], leftRev, right);
+        if (changes.length === 1) {
+          this.diffTab = await openChangeDiff(changes[0], leftRev, right);
+          return;
+        }
         return openMultiDiff(`${right.slice(0, 8)}`, changes, () => leftRev, () => right);
+      case 'followDiff': {
+        // Single click: the diff this log opened follows the selected file while it is still shown, like IntelliJ's
+        // diff preview tab. Without one, a click only selects.
+        const tab = changes.length === 1 && this.diffTab ? this.shownDiffTab(this.diffTab) : undefined;
+        if (tab) this.diffTab = await openChangeDiff(changes[0], leftRev, right, { viewColumn: tab.group.viewColumn, preserveFocus: true });
+        return;
+      }
       case 'compareWithLocal':
         for (const c of changes) await openChangeDiff({ ...c, status: c.status === 'D' ? 'D' : 'M' }, right, 'WORKTREE', { preview: changes.length === 1 });
         return;

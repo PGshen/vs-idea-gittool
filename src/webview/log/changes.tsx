@@ -168,6 +168,7 @@ function ChangesTree() {
         if (lead?.data?.change && store.previewChange !== lead.data.change) {
           store.previewChange = lead.data.change;
           store.emit();
+          if (sel.size === 1) changeAction('followDiff', [lead.data.change]);
         }
       }}
       onOpen={n => n.data?.change && changeAction('diff', [n.data.change])}

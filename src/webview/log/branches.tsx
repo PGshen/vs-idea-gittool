@@ -182,8 +182,9 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
     const hash = n.key === 'head' ? store.head.hash : n.data?.ref?.hash;
     if (!hash) return;
     const i = store.indexOfHash(hash);
+    const label = n.key === 'head' ? 'HEAD' : n.data?.ref?.name;
     if (i >= 0) void store.selectIndex(i);
-    else void call<{ index: number; hash: string } | undefined>('find', hash).then(r => r && store.selectIndex(r.index, { hash: r.hash }));
+    else void call<{ index: number; hash: string } | undefined>('find', { q: hash, label }).then(r => r && store.selectIndex(r.index, { hash: r.hash }));
   };
 
   const settingsMenu = (): MenuEntry[] => [
