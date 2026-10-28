@@ -11,7 +11,21 @@
 
 **环境要求：** VS Code 1.90 或更高版本；Git 2.25 或更高版本，并已加入 `PATH`（也可以在设置 `ideagittool.gitPath` 里指定 git 路径）。Log 里不动工作区直接改提交的操作（Drop / Extract Selected Changes、Add Commits to Remote Branch）需要 Git 2.40 或更高版本；Rebase 的 `--update-refs` 选项需要 Git 2.38 或更高版本。
 
-### 用 .vsix 安装包安装（推荐）
+### 从插件市场安装（推荐）
+
+- 在 VS Code 里打开扩展视图（Ctrl+Shift+X / Cmd+Shift+X），搜索 **IdeaGitTool**（发布者 `ideagittool`），点 **Install**（安装）。
+- 或者打开[插件市场页面](https://marketplace.visualstudio.com/items?itemName=ideagittool.ideagittool)，点 **Install**。
+- 或者按 Ctrl+P / Cmd+P，输入 `ext install ideagittool.ideagittool` 回车。
+- 或者在终端执行：
+  ```
+  code --install-extension ideagittool.ideagittool
+  ```
+
+插件市场发布新版本后，VS Code 会自动更新。
+
+![](docs/image/20261028181018.jpg)
+
+### 用 .vsix 安装包安装
 
 1. 从本仓库的 `releases/` 目录下载 [`ideagittool-0.4.2.vsix`](https://github.com/PGshen/vs-idea-gittool/raw/master/releases/ideagittool-0.4.2.vsix)。
 2. 任选一种方式安装：

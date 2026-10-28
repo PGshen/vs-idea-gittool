@@ -11,7 +11,21 @@ IntelliJ platform. It keeps the IntelliJ git workflow, menu wording, keyboard sh
 
 **Requirements:** VS Code 1.90 or later, and Git 2.25 or later on your `PATH` (or set `ideagittool.gitPath`). The log actions that edit commits without touching the working tree (Drop / Extract Selected Changes, Add Commits to Remote Branch) need Git 2.40 or later, and the `--update-refs` rebase option needs Git 2.38 or later.
 
-### From the .vsix package (recommended)
+### From the Marketplace (recommended)
+
+- In VS Code, open the Extensions view (Ctrl+Shift+X / Cmd+Shift+X), search for **IdeaGitTool** (publisher `ideagittool`) and click **Install**.
+- Or open the [Marketplace page](https://marketplace.visualstudio.com/items?itemName=ideagittool.ideagittool) and click **Install**.
+- Or press Ctrl+P / Cmd+P and run `ext install ideagittool.ideagittool`.
+- Or from a terminal:
+  ```
+  code --install-extension ideagittool.ideagittool
+  ```
+
+VS Code updates the extension automatically when a new version is published.
+
+![](docs/image/20261028181018.jpg)
+
+### From the .vsix package
 
 1. Download [`ideagittool-0.4.2.vsix`](https://github.com/PGshen/vs-idea-gittool/raw/master/releases/ideagittool-0.4.2.vsix) from the `releases/` folder of this repository.
 2. Install it in one of these ways:
