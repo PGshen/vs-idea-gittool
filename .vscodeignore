@@ -10,3 +10,6 @@ tsconfig.json
 media/icons/PlatformIconMappings.json
 releases/**
 l10n/README.md
+ARCHITECTURE.md
+docs/**
+media/ideagittool.svg
