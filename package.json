@@ -41,7 +41,7 @@
     "watch": "node scripts/build.mjs --watch",
     "typecheck": "tsc -p . --noEmit && tsc -p src/webview --noEmit",
     "test": "node scripts/test.mjs",
-    "package": "npm run contrib && node scripts/build.mjs --production && vsce package --no-dependencies --allow-missing-repository",
+    "package": "npm run contrib && node scripts/build.mjs --production && vsce package --no-dependencies",
     "l10n": "node scripts/l10n-check.mjs"
   },
   "contributes": {
