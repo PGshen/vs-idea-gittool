@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { Repository } from '../../git/repository';
 import { ShelfFileInfo, ShelfInfo } from '../../shared/commitProtocol';
 import { Change } from '../../shared/types';
@@ -72,10 +73,10 @@ export class Shelf {
   /** Saves changes to the shelf; when `rollback`, reverts them in the work tree (Shelve Changes). */
   async shelve(repo: Repository, changes: Change[], name: string, rollback = true): Promise<StoredShelf> {
     const { patch, files } = await createPatch(repo, changes);
-    if (!files.length) throw new Error(vscode.l10n.t('The selected changes affect only directories and no files, so they cannot be shelved'));
+    if (!files.length) throw new Error(translate('The selected changes affect only directories and no files, so they cannot be shelved'));
     const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
     fs.writeFileSync(this.patchFile(id), patch);
-    const item: StoredShelf = { id, root: repo.root, name: name.trim() || vscode.l10n.t('Shelved changes'), date: Math.floor(Date.now() / 1000), files };
+    const item: StoredShelf = { id, root: repo.root, name: name.trim() || translate('Shelved changes'), date: Math.floor(Date.now() / 1000), files };
     this.items.push(item);
     this.save();
     if (rollback) {
@@ -93,7 +94,7 @@ export class Shelf {
    */
   async unshelve(repo: Repository, id: string, paths: string[] | undefined, removeApplied: boolean): Promise<{ conflicts: boolean }> {
     const item = this.get(id);
-    if (!item) throw new Error(vscode.l10n.t('Shelved changeList {0} not found', id));
+    if (!item) throw new Error(translate('Shelved changeList {0} not found', id));
     const sections = splitPatch(this.readPatch(id));
     const files = item.files.filter(f => !paths || paths.includes(f.path));
     const patch = files.map(f => sections.get(f.path) ?? '').join('');

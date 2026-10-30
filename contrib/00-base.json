@@ -20,6 +20,22 @@
         "default": "vscode",
         "description": "Look of the IdeaGitTool views and dialogs. The layout and the features are the same in both."
       },
+      "ideagittool.language": {
+        "type": "string",
+        "enum": [
+          "system",
+          "en",
+          "zh-cn"
+        ],
+        "enumDescriptions": [
+          "Follow the VS Code display language.",
+          "Use English.",
+          "Use Simplified Chinese."
+        ],
+        "default": "system",
+        "scope": "window",
+        "description": "Language used by IdeaGitTool views, dialogs, and notifications. Reload the window after changing this setting. VS Code contribution labels follow the VS Code display language."
+      },
       "ideagittool.untrackedFiles": {
         "type": "string",
         "enum": [

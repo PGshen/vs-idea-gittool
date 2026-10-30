@@ -1,5 +1,4 @@
-// UI text translation for webviews. The host sends vscode.l10n.bundle (l10n/bundle.l10n.<language>.json, keyed by
-// the English text) in the boot data; without a bundle (English, previews) the English text is shown.
+// UI text translation for webviews. The host sends the selected language bundle, keyed by the English text.
 import { boot } from './rpc';
 
 const bundle: Record<string, string> = boot.l10n ?? {};

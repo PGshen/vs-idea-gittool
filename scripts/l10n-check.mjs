@@ -1,4 +1,4 @@
-// Checks the UI text translations: every string passed to vscode.l10n.t() (host) or t() (webviews, src/webview/lib/l10n.ts)
+// Checks the UI text translations: every string passed to translate() (host) or t() (webviews, src/webview/lib/l10n.ts)
 // must be a plain string literal with a translation in l10n/bundle.l10n.<language>.json, with the same {n} placeholders.
 // Usage: npm run l10n -- [--merge] [--strict]
 //   --merge   merges l10n/parts/*.json (partial translations) into the bundles, then deletes the parts
@@ -16,10 +16,12 @@ function files(dir) {
   });
 }
 
-// vscode.l10n.t('...') anywhere; t('...') in files that import t from webview/lib/l10n or Translate from shared/l10n.
+// vscode.l10n.t('...') anywhere; t('...') and translate('...') in files importing them from shared/l10n.
 const L10N_CALL = /\bl10n\.t\(\s*(?:'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)"|(`))/g;
 const T_CALL = /(?<![\w$.])t\(\s*(?:'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)"|(`))/g;
+const TRANSLATE_CALL = /\btranslate\(\s*(?:'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)"|(`))/g;
 const IMPORTS_T = /import\s*(?:type\s*)?\{[^}]*\b(?:t|Translate)\b[^}]*\}\s*from\s*'[^']*\/l10n'/;
+const IMPORTS_TRANSLATE = /import\s*\{[^}]*\btranslate\b[^}]*\}\s*from\s*'[^']*\/shared\/l10n'/;
 // Value of a string literal of our own sources.
 const literal = (raw, quote) => new Function(`return ${quote}${raw}${quote}`)();
 
@@ -27,7 +29,12 @@ const keys = new Map(); // message -> first location
 const problems = [];
 for (const f of files('src')) {
   const text = readFileSync(f, 'utf8');
-  for (const m of [...text.matchAll(L10N_CALL), ...(IMPORTS_T.test(text) ? text.matchAll(T_CALL) : [])]) {
+  const calls = [
+    ...text.matchAll(L10N_CALL),
+    ...(IMPORTS_T.test(text) ? text.matchAll(T_CALL) : []),
+    ...(IMPORTS_TRANSLATE.test(text) ? text.matchAll(TRANSLATE_CALL) : []),
+  ];
+  for (const m of calls) {
     const line = text.slice(0, m.index).split('\n').length;
     if (m[3]) {
       problems.push(`${f}:${line}: template literal in t(); use t('... {0} ...', value)`);

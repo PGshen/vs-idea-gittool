@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import * as vscode from 'vscode';
+import { translate } from '../shared/l10n';
 import { log } from '../host/output';
 
 export class GitError extends Error {
@@ -74,7 +75,7 @@ export function git(args: string[], opts: ExecOptions): Promise<ExecResult> {
     const sub = opts.token?.onCancellationRequested(() => child.kill());
     child.on('error', e => {
       sub?.dispose();
-      reject(new GitError(vscode.l10n.t('Cannot run git: {0}', e.message), args, null, '', String(e)));
+      reject(new GitError(translate('Cannot run git: {0}', e.message), args, null, '', String(e)));
     });
     child.on('close', code => {
       sub?.dispose();
@@ -84,7 +85,7 @@ export function git(args: string[], opts: ExecOptions): Promise<ExecResult> {
       if (!opts.quiet && Date.now() - started > 1000) log(`  (${Date.now() - started} ms)`);
       if (code !== 0 && !opts.allowFailure) {
         if (!opts.quiet) log(stderr.trim());
-        reject(new GitError(stderr.trim() || stdout.trim() || vscode.l10n.t('git {0} failed with exit code {1}', args[0], String(code)), args, code, stdout, stderr));
+        reject(new GitError(stderr.trim() || stdout.trim() || translate('git {0} failed with exit code {1}', args[0], String(code)), args, code, stdout, stderr));
         return;
       }
       resolve({ stdout, stderr, exitCode: code ?? 0, buffer: opts.binary ? buffer : undefined });

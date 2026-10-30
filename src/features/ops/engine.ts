@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { GitError } from '../../git/exec';
 import { Repository } from '../../git/repository';
 
@@ -83,14 +84,14 @@ export async function runConflictAware(repo: Repository, args: string[], opts: R
   const files = await conflictedFiles(repo);
   if (files.length > 0 || /CONFLICT|Merge conflict|could not apply|after resolving the conflicts/i.test(output)) return { kind: 'conflicts', output, files };
   if (repo.detectOperation() === 'rebase' && /Stopped at/.test(output)) return { kind: 'stopped', output };
-  return { kind: 'error', output, error: new GitError(r.stderr.trim() || r.stdout.trim() || vscode.l10n.t('git {0} failed', args[0]), args, r.exitCode, r.stdout, r.stderr) };
+  return { kind: 'error', output, error: new GitError(r.stderr.trim() || r.stdout.trim() || translate('git {0} failed', args[0]), args, r.exitCode, r.stdout, r.stderr) };
 }
 
 // ------------------------------------------------------------------ refs
 
 export function isValidBranchName(name: string): string | undefined {
-  if (!name.trim()) return vscode.l10n.t('Specify name for the new branch');
-  if (name === 'HEAD') return vscode.l10n.t('HEAD is a reserved keyword');
+  if (!name.trim()) return translate('Specify name for the new branch');
+  if (name === 'HEAD') return translate('HEAD is a reserved keyword');
   // git check-ref-format rules
   if (
     /(^|\/)\./.test(name) ||
@@ -105,7 +106,7 @@ export function isValidBranchName(name: string): string | undefined {
     name.startsWith('-') ||
     name === '@'
   ) {
-    return vscode.l10n.t('Branch name {0} is not valid', name);
+    return translate('Branch name {0} is not valid', name);
   }
   return undefined;
 }
@@ -115,10 +116,10 @@ export function validateNewBranch(repo: Repository, name: string, overwrite: boo
   const invalid = isValidBranchName(name);
   if (invalid) return invalid;
   const locals = repo.refs.filter(r => r.type === 'local');
-  if (!overwrite && locals.some(r => r.name === name)) return vscode.l10n.t('Branch name {0} already exists', name);
-  if (repo.refs.some(r => r.type === 'remote' && r.name === name)) return vscode.l10n.t('Branch name {0} conflicts with remote branch with the same name', name);
-  if (locals.some(r => r.name.startsWith(name + '/'))) return vscode.l10n.t('Branch name {0} conflicts with local branch directory with the same name', name);
-  if (locals.some(r => name.startsWith(r.name + '/'))) return vscode.l10n.t('Branch name {0} conflicts with local branch with the same name', name);
+  if (!overwrite && locals.some(r => r.name === name)) return translate('Branch name {0} already exists', name);
+  if (repo.refs.some(r => r.type === 'remote' && r.name === name)) return translate('Branch name {0} conflicts with remote branch with the same name', name);
+  if (locals.some(r => r.name.startsWith(name + '/'))) return translate('Branch name {0} conflicts with local branch directory with the same name', name);
+  if (locals.some(r => name.startsWith(r.name + '/'))) return translate('Branch name {0} conflicts with local branch with the same name', name);
   return undefined;
 }
 
@@ -177,7 +178,7 @@ export class StashSaver implements ChangesSaver {
     const msg = `Uncommitted changes before ${reason} at ${new Date().toLocaleString()}`;
     const args = ['stash', 'push', ...(this.includeUntracked ? ['--include-untracked'] : []), '-m', msg];
     const r = await repo.exec(args, { allowFailure: true });
-    if (r.exitCode !== 0) throw new GitError(r.stderr.trim() || vscode.l10n.t('Could not stash local changes'), args, r.exitCode, r.stdout, r.stderr);
+    if (r.exitCode !== 0) throw new GitError(r.stderr.trim() || translate('Could not stash local changes'), args, r.exitCode, r.stdout, r.stderr);
     if (/No local changes to save/.test(r.stdout + r.stderr)) return false;
     this.hash = (await revParse(repo, 'refs/stash')) ?? undefined;
     return true;
@@ -298,17 +299,17 @@ export async function push(repo: Repository, spec: PushSpec, opts: RunOptions = 
     needsUpdate,
     refs,
     output: (r.stdout + '\n' + r.stderr).trim(),
-    error: ok ? undefined : new GitError(r.stderr.trim() || vscode.l10n.t('Push failed'), args, r.exitCode, r.stdout, r.stderr),
+    error: ok ? undefined : new GitError(r.stderr.trim() || translate('Push failed'), args, r.exitCode, r.stdout, r.stderr),
   };
 }
 
 /** IntelliJ's success text: "Pushed 1 commit to origin/master", "Pushed master to new branch origin/master". */
 export function pushSuccessMessage(spec: PushSpec, commitCount: number, newBranch: boolean, forced: boolean): string {
   const target = `${spec.remote}/${spec.target}`;
-  if (newBranch) return vscode.l10n.t('Pushed {0} to new branch {1}', spec.source.replace(/^refs\/heads\//, ''), target);
-  if (forced) return vscode.l10n.t('Force pushed {0} to {1}', spec.source.replace(/^refs\/heads\//, ''), target);
-  if (commitCount === 0) return vscode.l10n.t('Everything is up to date');
-  return commitCount === 1 ? vscode.l10n.t('Pushed {0} commit to {1}', commitCount, target) : vscode.l10n.t('Pushed {0} commits to {1}', commitCount, target);
+  if (newBranch) return translate('Pushed {0} to new branch {1}', spec.source.replace(/^refs\/heads\//, ''), target);
+  if (forced) return translate('Force pushed {0} to {1}', spec.source.replace(/^refs\/heads\//, ''), target);
+  if (commitCount === 0) return translate('Everything is up to date');
+  return commitCount === 1 ? translate('Pushed {0} commit to {1}', commitCount, target) : translate('Pushed {0} commits to {1}', commitCount, target);
 }
 
 // ------------------------------------------------------------------ fetch / update
@@ -359,7 +360,7 @@ export async function updateRepository(repo: Repository, method: UpdateMethod, o
   const upBefore = await revParse(repo, up);
   const remoteName = await repo.getConfig(`branch.${branch.stdout.trim()}.remote`);
   if (remoteName && remoteName !== '.') {
-    opts.progress?.(vscode.l10n.t('Fetching {0}…', remoteName));
+    opts.progress?.(translate('Fetching {0}…', remoteName));
     const f = await fetch(repo, remoteName, opts);
     if (!f.ok) return { outcome: { kind: 'error', output: f.output, error: f.error! }, commits: 0, files: 0 };
   }
@@ -371,7 +372,7 @@ export async function updateRepository(repo: Repository, method: UpdateMethod, o
   if (incoming === 0) return { outcome: { kind: 'success', output: '' }, commits: 0, files: 0, before, after: before, forcePushed };
   let saved = false;
   if (opts.saver) {
-    opts.progress?.(opts.saver.method === 'shelve' ? vscode.l10n.t('Shelving local changes…') : vscode.l10n.t('Stashing local changes…'));
+    opts.progress?.(opts.saver.method === 'shelve' ? translate('Shelving local changes…') : translate('Stashing local changes…'));
     try {
       saved = await opts.saver.save(repo, 'update');
     } catch (e) {
@@ -379,7 +380,7 @@ export async function updateRepository(repo: Repository, method: UpdateMethod, o
       return { outcome: { kind: 'error', output: err.message, error: err }, commits: 0, files: 0, before, forcePushed };
     }
   }
-  opts.progress?.(method === 'rebase' ? vscode.l10n.t('Rebasing onto {0}…', up) : vscode.l10n.t('Merging {0}…', up));
+  opts.progress?.(method === 'rebase' ? translate('Rebasing onto {0}…', up) : translate('Merging {0}…', up));
   const auto = opts.saver ? [] : ['--autostash'];
   const args = method === 'rebase' ? ['rebase', ...auto, up] : ['merge', ...auto, '--no-edit', up];
   const outcome = await runConflictAware(repo, args, opts);
@@ -396,7 +397,7 @@ export async function updateRepository(repo: Repository, method: UpdateMethod, o
       // IntelliJ keeps the changes saved until the merge / rebase is finished.
       savedChangesKept = true;
     } else {
-      opts.progress?.(opts.saver.method === 'shelve' ? vscode.l10n.t('Unshelving local changes…') : vscode.l10n.t('Unstashing local changes…'));
+      opts.progress?.(opts.saver.method === 'shelve' ? translate('Unshelving local changes…') : translate('Unstashing local changes…'));
       restore = await opts.saver.restore(repo);
       savedChangesKept = restore.kind === 'error';
     }
@@ -438,7 +439,7 @@ export async function updateForcePushedBranch(repo: Repository, opts: RunOptions
   }
   const backup = local.length ? `${branch}-${randomId()}` : undefined;
   if (backup) await repo.exec(['branch', backup, 'HEAD']);
-  opts.progress?.(vscode.l10n.t('Fetching {0}…', remote));
+  opts.progress?.(translate('Fetching {0}…', remote));
   const f = await fetch(repo, remote, opts);
   if (!f.ok) {
     if (backup) await repo.exec(['branch', '-D', backup], { allowFailure: true });
@@ -460,7 +461,7 @@ export async function updateForcePushedBranch(repo: Repository, opts: RunOptions
   }
   let cherryPick: OperationOutcome | undefined;
   if (local.length) {
-    opts.progress?.(vscode.l10n.t('Cherry-picking local commits…'));
+    opts.progress?.(translate('Cherry-picking local commits…'));
     cherryPick = await runConflictAware(repo, ['cherry-pick', ...local.map(c => c[0]).reverse()], opts);
     if (cherryPick.kind !== 'success') return { result: 'incomplete', backup, cherryPick };
     await repo.exec(['branch', '-D', backup!], { allowFailure: true });
@@ -481,7 +482,7 @@ export async function resetToRemoteBranch(repo: Repository, opts: RunOptions & {
   const up = upstream.stdout.trim();
   const remote = await repo.getConfig(`branch.${branch}.remote`);
   if (remote && remote !== '.') {
-    opts.progress?.(vscode.l10n.t('Fetching {0}…', remote));
+    opts.progress?.(translate('Fetching {0}…', remote));
     const f = await fetch(repo, remote, opts);
     if (!f.ok) return { outcome: { kind: 'error', output: f.output, error: f.error! } };
   }
@@ -581,8 +582,8 @@ export async function removeWorktree(repo: Repository, wtPath: string, force = f
 }
 
 export function updateSummary(files: number, commits: number): string {
-  if (files === 1) return commits === 1 ? vscode.l10n.t('{0} file updated in {1} commit', files, commits) : vscode.l10n.t('{0} file updated in {1} commits', files, commits);
-  return commits === 1 ? vscode.l10n.t('{0} files updated in {1} commit', files, commits) : vscode.l10n.t('{0} files updated in {1} commits', files, commits);
+  if (files === 1) return commits === 1 ? translate('{0} file updated in {1} commit', files, commits) : translate('{0} file updated in {1} commits', files, commits);
+  return commits === 1 ? translate('{0} files updated in {1} commit', files, commits) : translate('{0} files updated in {1} commits', files, commits);
 }
 
 // ------------------------------------------------------------------ interactive rebase

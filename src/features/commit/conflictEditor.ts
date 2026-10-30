@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { Ctx } from '../../context';
 import { changeKey } from '../../shared/commitProtocol';
 import { ConflictsController } from './conflicts';
@@ -128,10 +129,10 @@ function vscodeHost(ctx: Ctx): ConflictUiHost {
     saved: () => ctx.extension.globalState.get(SAVED_KEY, {}),
     setSaved: v => ctx.extension.globalState.update(SAVED_KEY, v),
     askUser: async () => {
-      const yes = vscode.l10n.t('Use IdeaGitTool');
-      const no = vscode.l10n.t("Keep VS Code's");
+      const yes = translate('Use IdeaGitTool');
+      const no = translate("Keep VS Code's");
       const a = await vscode.window.showInformationMessage(
-        vscode.l10n.t(
+        translate(
           "Resolve merge conflicts with IdeaGitTool? IdeaGitTool opens its Conflicts dialog when an operation stops with conflicts. VS Code's conflict CodeLens and decorations (merge-conflict.codeLens.enabled, merge-conflict.decorators.enabled) and its merge editor (git.mergeEditor) will be turned off. You can restore them with \"Restore VS Code's Built-in Merge Conflict UI\".",
         ),
         yes,
@@ -176,7 +177,7 @@ export function registerConflictEditor(ctx: Ctx, conflicts: ConflictsController)
           if (!files.has(doc.uri.toString())) return [];
           for (let i = 0; i < doc.lineCount; i++) {
             if (/^<{7}( |$)/.test(doc.lineAt(i).text)) {
-              return [new vscode.CodeLens(new vscode.Range(i, 0, i, 0), { title: vscode.l10n.t('Resolve Conflicts… (IdeaGitTool)'), command: 'ideagittool.resolveConflictsInFile', arguments: [doc.uri] })];
+              return [new vscode.CodeLens(new vscode.Range(i, 0, i, 0), { title: translate('Resolve Conflicts… (IdeaGitTool)'), command: 'ideagittool.resolveConflictsInFile', arguments: [doc.uri] })];
             }
           }
           return [];
@@ -191,7 +192,7 @@ export function registerConflictEditor(ctx: Ctx, conflicts: ConflictsController)
     const repo = ctx.repos.getForFile(target.fsPath);
     const c = repo?.status.conflicts.find(x => path.join(x.root, x.path) === target.fsPath);
     if (!repo || !c) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('No conflicts to resolve'));
+      void vscode.window.showInformationMessage(translate('No conflicts to resolve'));
       return;
     }
     // The Conflicts dialog for this file, with its merge window open.
@@ -200,11 +201,11 @@ export function registerConflictEditor(ctx: Ctx, conflicts: ConflictsController)
   ctx.command('ideagittool.merge.useIdeaGitToolForConflicts', async () => {
     await settings.apply();
     await vscode.workspace.getConfiguration('ideagittool').update('merge.handleConflicts', 'always', vscode.ConfigurationTarget.Global);
-    void vscode.window.showInformationMessage(vscode.l10n.t("IdeaGitTool resolves merge conflicts: VS Code's conflict CodeLens, decorations and merge editor are turned off"));
+    void vscode.window.showInformationMessage(translate("IdeaGitTool resolves merge conflicts: VS Code's conflict CodeLens, decorations and merge editor are turned off"));
   });
   ctx.command('ideagittool.merge.restoreVsCodeConflictUi', async () => {
     await settings.restore();
-    void vscode.window.showInformationMessage(vscode.l10n.t("VS Code's built-in merge conflict UI was restored"));
+    void vscode.window.showInformationMessage(translate("VS Code's built-in merge conflict UI was restored"));
   });
   ctx.extension.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(e => {

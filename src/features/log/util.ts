@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 
@@ -17,12 +18,12 @@ export async function fileFromArg(ctx: Ctx, arg: any): Promise<{ repo: Repositor
     return repo ? { repo, path: q.path } : undefined;
   }
   if (!uri || uri.scheme !== 'file') {
-    void vscode.window.showWarningMessage(vscode.l10n.t('Select a file under Git version control.'));
+    void vscode.window.showWarningMessage(translate('Select a file under Git version control.'));
     return undefined;
   }
   const repo = ctx.repos.getForFile(uri.fsPath);
   if (!repo) {
-    void vscode.window.showWarningMessage(vscode.l10n.t('{0} is not under Git version control.', path.basename(uri.fsPath)));
+    void vscode.window.showWarningMessage(translate('{0} is not under Git version control.', path.basename(uri.fsPath)));
     return undefined;
   }
   return { repo, path: repo.relPath(uri.fsPath) };
