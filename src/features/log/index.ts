@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { getExtensionUri } from '../../host/webviewHost';
@@ -101,7 +102,7 @@ class LogTabs {
     await this.ctx.repos.ready();
     const repo = this.ctx.repos.repositories[0];
     if (!repo) {
-      view.webview.html = `<body style="padding:16px;font-family:sans-serif;opacity:.7">${vscode.l10n.t('No Git repository found in the workspace.')}</body>`;
+      view.webview.html = `<body style="padding:16px;font-family:sans-serif;opacity:.7">${translate('No Git repository found in the workspace.')}</body>`;
       return;
     }
     const tab = new LogTab(this.ctx, repo, this.mainState(repo), `${MAIN_KEY}:${repo.root}`);
@@ -130,7 +131,7 @@ class LogTabs {
     }
     const main = await this.showMain(repo);
     if (main && !(await main.tab.select(hash))) {
-      void vscode.window.showWarningMessage(vscode.l10n.t('Commit {0} not found in the log', hash.slice(0, 8)));
+      void vscode.window.showWarningMessage(translate('Commit {0} not found in the log', hash.slice(0, 8)));
     }
   }
 }

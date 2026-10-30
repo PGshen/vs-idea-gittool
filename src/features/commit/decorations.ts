@@ -1,19 +1,8 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { RepositoryManager } from '../../git/manager';
 import { ChangeStatus } from '../../shared/types';
-
-const COLORS: Partial<Record<ChangeStatus, { color: string; tooltip: string }>> = {
-  M: { color: 'ideagittool.fileStatus.modified', tooltip: vscode.l10n.t('Modified') },
-  R: { color: 'ideagittool.fileStatus.modified', tooltip: vscode.l10n.t('Renamed') },
-  T: { color: 'ideagittool.fileStatus.modified', tooltip: vscode.l10n.t('Type changed') },
-  C: { color: 'ideagittool.fileStatus.added', tooltip: vscode.l10n.t('Copied') },
-  A: { color: 'ideagittool.fileStatus.added', tooltip: vscode.l10n.t('Added') },
-  D: { color: 'ideagittool.fileStatus.deleted', tooltip: vscode.l10n.t('Deleted') },
-  U: { color: 'ideagittool.fileStatus.conflict', tooltip: vscode.l10n.t('Merged with conflicts') },
-  '?': { color: 'ideagittool.fileStatus.unknown', tooltip: vscode.l10n.t('Unversioned') },
-  '!': { color: 'ideagittool.fileStatus.ignored', tooltip: vscode.l10n.t('Ignored') },
-};
 
 /**
  * Colors file names in the Explorer and editor tabs by VCS status, like IntelliJ's file status colors.
@@ -23,6 +12,17 @@ export class StatusDecorations implements vscode.FileDecorationProvider {
   private readonly emitter = new vscode.EventEmitter<vscode.Uri[] | undefined>();
   readonly onDidChangeFileDecorations = this.emitter.event;
   private map = new Map<string, ChangeStatus>();
+  private readonly colors: Partial<Record<ChangeStatus, { color: string; tooltip: string }>> = {
+    M: { color: 'ideagittool.fileStatus.modified', tooltip: translate('Modified') },
+    R: { color: 'ideagittool.fileStatus.modified', tooltip: translate('Renamed') },
+    T: { color: 'ideagittool.fileStatus.modified', tooltip: translate('Type changed') },
+    C: { color: 'ideagittool.fileStatus.added', tooltip: translate('Copied') },
+    A: { color: 'ideagittool.fileStatus.added', tooltip: translate('Added') },
+    D: { color: 'ideagittool.fileStatus.deleted', tooltip: translate('Deleted') },
+    U: { color: 'ideagittool.fileStatus.conflict', tooltip: translate('Merged with conflicts') },
+    '?': { color: 'ideagittool.fileStatus.unknown', tooltip: translate('Unversioned') },
+    '!': { color: 'ideagittool.fileStatus.ignored', tooltip: translate('Ignored') },
+  };
 
   constructor(private readonly repos: RepositoryManager) {
     repos.onDidChangeRepository(() => this.rebuild());
@@ -47,7 +47,7 @@ export class StatusDecorations implements vscode.FileDecorationProvider {
     if (uri.scheme !== 'file' || !vscode.workspace.getConfiguration('ideagittool').get<boolean>('fileStatusColors', true)) return undefined;
     const st = this.map.get(uri.fsPath);
     if (!st) return undefined;
-    const c = COLORS[st];
+    const c = this.colors[st];
     if (!c) return undefined;
     return { color: new vscode.ThemeColor(c.color), tooltip: c.tooltip };
   }

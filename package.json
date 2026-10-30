@@ -66,6 +66,22 @@
           "default": "vscode",
           "description": "%config.appearance.description%"
         },
+        "ideagittool.language": {
+          "type": "string",
+          "enum": [
+            "system",
+            "en",
+            "zh-cn"
+          ],
+          "enumDescriptions": [
+            "%config.language.enumDescriptions.0%",
+            "%config.language.enumDescriptions.1%",
+            "%config.language.enumDescriptions.2%"
+          ],
+          "default": "system",
+          "scope": "window",
+          "description": "%config.language.description%"
+        },
         "ideagittool.untrackedFiles": {
           "type": "string",
           "enum": [

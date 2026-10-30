@@ -7,13 +7,22 @@ import { GIT_SCHEME, GitContentProvider } from './host/gitContent';
 import { getOutputChannel } from './host/output';
 import { initWebviewHost, showError } from './host/webviewHost';
 import { FEATURES } from './features';
+import { translate } from './shared/l10n';
+import { initLanguage } from './host/l10n';
 
 export async function activate(extension: vscode.ExtensionContext) {
   initWebviewHost(extension);
   const cfg = () => vscode.workspace.getConfiguration('ideagittool');
+  initLanguage(extension);
   setGitPath(cfg().get<string>('gitPath'));
   vscode.workspace.onDidChangeConfiguration(e => {
     if (e.affectsConfiguration('ideagittool.gitPath')) setGitPath(cfg().get<string>('gitPath'));
+    if (e.affectsConfiguration('ideagittool.language')) {
+      const reload = translate('Reload Window');
+      void vscode.window.showInformationMessage(translate('Reload the window to apply the IdeaGitTool language change.'), reload).then(action => {
+        if (action === reload) void vscode.commands.executeCommand('workbench.action.reloadWindow');
+      });
+    }
   }, null, extension.subscriptions);
 
   const repos = new RepositoryManager(extension);

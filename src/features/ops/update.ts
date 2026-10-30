@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { showDialog } from '../../host/dialog';
@@ -8,7 +9,7 @@ import { ChangesSaver, OperationOutcome, resetToRemoteBranch, updateForcePushedB
 
 /** Text of a skip reason of updateRepository ('detached HEAD', 'no tracked branch'). */
 function skipReason(reason: string): string {
-  return reason === 'detached HEAD' ? vscode.l10n.t('detached HEAD') : reason === 'no tracked branch' ? vscode.l10n.t('no tracked branch') : reason;
+  return reason === 'detached HEAD' ? translate('detached HEAD') : reason === 'no tracked branch' ? translate('no tracked branch') : reason;
 }
 
 type UpdateDialogResult = { method: UpdateMethod; saveChanges: string; dontShow: boolean; button?: 'reset' };
@@ -30,7 +31,7 @@ export async function updateWithSavedChanges(
   opts: { progress?: (t: string) => void; token?: vscode.CancellationToken; saver?: ChangesSaver } = {},
 ): Promise<UpdateResult & { saver: ChangesSaver }> {
   const saver = opts.saver ?? makeSaver();
-  await putLocalHistoryLabel(repo, vscode.l10n.t('Before Update'));
+  await putLocalHistoryLabel(repo, translate('Before Update'));
   const res = await repo.batch(() => updateRepository(repo, method, { progress: opts.progress, token: opts.token, saver }));
   return { ...res, saver };
 }
@@ -39,13 +40,13 @@ export async function updateWithSavedChanges(
 export async function updateProjectCommand(ctx: Ctx, arg?: RootArg & { method?: UpdateMethod }) {
   await ctx.repos.ready();
   const repos = arg?.root ? [await repoFor(ctx, arg)] : ctx.repos.repositories;
-  if (repos.length === 0) throw new Error(vscode.l10n.t('No Git repository found in the workspace.'));
+  if (repos.length === 0) throw new Error(translate('No Git repository found in the workspace.'));
   let method: UpdateMethod = arg?.method ?? (settings().get<string>('updateMethod', 'merge') === 'rebase' ? 'rebase' : 'merge');
   if (!arg?.method && settings().get<boolean>('update.showDialog', true)) {
     const r = await showDialog<UpdateDialogResult>(
       'ops.update',
       { method, saveChanges: settings().get('update.saveChangesPolicy', 'stash'), repos: repos.map(r => r.name), canReset: repos.length === 1 },
-      { title: vscode.l10n.t('Update Project') },
+      { title: translate('Update Project') },
     );
     if (!r) return;
     if (r.button === 'reset') return resetToRemoteCommand(ctx, { root: repos[0].root });
@@ -58,15 +59,15 @@ export async function updateProjectCommand(ctx: Ctx, arg?: RootArg & { method?: 
     if (repo.detectOperation() !== 'none' || repo.status.conflicts.length) {
       void vscode.window.showErrorMessage(
         repo.detectOperation() === 'rebase'
-          ? vscode.l10n.t("Can't update: You have unfinished rebase process. These conflicts must be resolved before update.")
-          : vscode.l10n.t("Can't update: Unmerged files detected. These conflicts must be resolved before update."),
+          ? translate("Can't update: You have unfinished rebase process. These conflicts must be resolved before update.")
+          : translate("Can't update: Unmerged files detected. These conflicts must be resolved before update."),
       );
       return;
     }
   }
   const results: { repo: Repository; res: UpdateResult & { saver: ChangesSaver } }[] = [];
   await withProgress(
-    vscode.l10n.t('Updating…'),
+    translate('Updating…'),
     async (progress, token) => {
       for (const repo of repos) {
         const m = await methodFor(repo, method);
@@ -78,7 +79,7 @@ export async function updateProjectCommand(ctx: Ctx, arg?: RootArg & { method?: 
   const skipped = results.filter(r => r.res.outcome.kind === 'skipped');
   const failed = results.filter(r => r.res.outcome.kind !== 'success' && r.res.outcome.kind !== 'skipped');
   // Conflicts of the update are resolved first, then the restored local changes are reported (GitUpdateProcess).
-  for (const f of failed) await reportOutcome(f.repo, f.res.outcome as OperationOutcome, { operation: 'update', failedTitle: vscode.l10n.t('Update failed') });
+  for (const f of failed) await reportOutcome(f.repo, f.res.outcome as OperationOutcome, { operation: 'update', failedTitle: translate('Update failed') });
   for (const { repo, res } of results) {
     if (res.outcome.kind !== 'skipped') await reportRestore(repo, res.saver, 'update', res.restore, res.savedChangesKept ?? false);
   }
@@ -87,11 +88,11 @@ export async function updateProjectCommand(ctx: Ctx, arg?: RootArg & { method?: 
     if (!res.forcePushed) continue;
     void vscode.window
       .showWarningMessage(
-        vscode.l10n.t(
+        translate(
           '{0} was force-pushed: the tracked branch was rewritten on the remote. Update the current branch by resetting it to {0} and cherry-picking the local commits?',
           res.forcePushed.upstream,
         ),
-        vscode.l10n.t('Update Force-Pushed Branch'),
+        translate('Update Force-Pushed Branch'),
       )
       .then(a => a && vscode.commands.executeCommand('ideagittool.updateForcePushedBranch', { root: repo.root }));
   }
@@ -101,24 +102,24 @@ export async function updateProjectCommand(ctx: Ctx, arg?: RootArg & { method?: 
     const name = currentName(skipped[0].repo);
     void vscode.window.showWarningMessage(
       reason === 'detached HEAD'
-        ? vscode.l10n.t("Can't update: no current branch. You are in 'detached HEAD' state, which means that you're not on any branch. Checkout a branch to make update possible.")
-        : vscode.l10n.t("Can't update: no tracked branch. No tracked branch configured for branch {0} or the branch doesn't exist. To make your branch track a remote branch call, for example, git branch --set-upstream-to=origin/{0} {0}", name),
+        ? translate("Can't update: no current branch. You are in 'detached HEAD' state, which means that you're not on any branch. Checkout a branch to make update possible.")
+        : translate("Can't update: no tracked branch. No tracked branch configured for branch {0} or the branch doesn't exist. To make your branch track a remote branch call, for example, git branch --set-upstream-to=origin/{0} {0}", name),
     );
     return;
   }
   const commits = results.reduce((s, r) => s + r.res.commits, 0);
   const files = results.reduce((s, r) => s + r.res.files, 0);
-  const title = skipped.length ? vscode.l10n.t('Project Partially Updated') : vscode.l10n.t('Project updated');
-  const skippedList = skipped.map(s => vscode.l10n.t('{0} was skipped ({1})', s.repo.name, skipReason((s.res.outcome as { reason: string }).reason))).join(', ');
+  const title = skipped.length ? translate('Project Partially Updated') : translate('Project updated');
+  const skippedList = skipped.map(s => translate('{0} was skipped ({1})', s.repo.name, skipReason((s.res.outcome as { reason: string }).reason))).join(', ');
   const skippedText = skipped.length
-    ? ' ' + (skipped.length === 1 ? vscode.l10n.t('Skipped {0} repository: {1}', skipped.length, skippedList) : vscode.l10n.t('Skipped {0} repositories: {1}', skipped.length, skippedList))
+    ? ' ' + (skipped.length === 1 ? translate('Skipped {0} repository: {1}', skipped.length, skippedList) : translate('Skipped {0} repositories: {1}', skipped.length, skippedList))
     : '';
   if (commits === 0) {
-    void vscode.window.showInformationMessage(vscode.l10n.t('All files are up-to-date') + skippedText);
+    void vscode.window.showInformationMessage(translate('All files are up-to-date') + skippedText);
     return;
   }
   const first = results.find(r => r.res.commits > 0)!;
-  const a = await vscode.window.showInformationMessage(`${vscode.l10n.t('{0}: {1}', title, updateSummary(files, commits))}${skippedText}`, vscode.l10n.t('View Commits'));
+  const a = await vscode.window.showInformationMessage(`${translate('{0}: {1}', title, updateSummary(files, commits))}${skippedText}`, translate('View Commits'));
   if (a) void vscode.commands.executeCommand('ideagittool.compareRefs', { root: first.repo.root, ref: first.res.after, with: first.res.before });
 }
 
@@ -127,40 +128,40 @@ export async function resetToRemoteCommand(ctx: Ctx, arg?: RootArg) {
   const repo = await repoFor(ctx, arg);
   const branch = repo.info.branch;
   if (!branch) {
-    void vscode.window.showErrorMessage(vscode.l10n.t("Can't update: no current branch. You are in 'detached HEAD' state, which means that you're not on any branch. Checkout a branch to make update possible."));
+    void vscode.window.showErrorMessage(translate("Can't update: no current branch. You are in 'detached HEAD' state, which means that you're not on any branch. Checkout a branch to make update possible."));
     return;
   }
   const upstream = repo.currentBranchRef?.upstream;
   if (!upstream) {
     void vscode.window.showErrorMessage(
-      vscode.l10n.t("Can't update: no tracked branch. No tracked branch configured for branch {0} or the branch doesn't exist. To make your branch track a remote branch call, for example, git branch --set-upstream-to=origin/{0} {0}", branch),
+      translate("Can't update: no tracked branch. No tracked branch configured for branch {0} or the branch doesn't exist. To make your branch track a remote branch call, for example, git branch --set-upstream-to=origin/{0} {0}", branch),
     );
     return;
   }
-  const okLabel = vscode.l10n.t('OK');
+  const okLabel = translate('OK');
   const ok = await vscode.window.showWarningMessage(
-    vscode.l10n.t('Reset to the Remote Branch'),
-    { modal: true, detail: vscode.l10n.t('Do you want to reset local branch {0} to {1}? Local commits will be dropped', branch, upstream) },
+    translate('Reset to the Remote Branch'),
+    { modal: true, detail: translate('Do you want to reset local branch {0} to {1}? Local commits will be dropped', branch, upstream) },
     okLabel,
   );
   if (ok !== okLabel) return;
-  await putLocalHistoryLabel(repo, vscode.l10n.t('Before Update'));
+  await putLocalHistoryLabel(repo, translate('Before Update'));
   let res: Awaited<ReturnType<typeof resetToRemoteBranch>> | undefined;
   const outcome = await withSmartOperation(
     repo,
     'checkout',
     async force => {
-      res = await withProgress(vscode.l10n.t('Updating…'), (progress, token) => repo.batch(() => resetToRemoteBranch(repo, { progress, token, force })));
+      res = await withProgress(translate('Updating…'), (progress, token) => repo.batch(() => resetToRemoteBranch(repo, { progress, token, force })));
       return res.outcome.kind === 'skipped' ? { kind: 'success', output: '' } : res.outcome;
     },
     { destination: upstream },
   );
   if (!outcome || !res) return;
   if (outcome.kind !== 'success') {
-    await reportOutcome(repo, outcome, { operation: 'update', failedTitle: vscode.l10n.t('Update failed') });
+    await reportOutcome(repo, outcome, { operation: 'update', failedTitle: translate('Update failed') });
     return;
   }
-  void vscode.window.showInformationMessage(res.before === res.after ? vscode.l10n.t('All files are up-to-date') : vscode.l10n.t('Project updated: {0} was reset to {1}', branch, upstream));
+  void vscode.window.showInformationMessage(res.before === res.after ? translate('All files are up-to-date') : translate('Project updated: {0} was reset to {1}', branch, upstream));
 }
 
 /** `ideagittool.updateForcePushedBranch {root?}`: IntelliJ's "Update Force-Pushed Branch". */
@@ -169,34 +170,34 @@ export async function updateForcePushedBranchCommand(ctx: Ctx, arg?: RootArg) {
   const repos = arg?.root ? [await repoFor(ctx, arg)] : ctx.repos.repositories;
   const method: UpdateMethod = settings().get<string>('updateMethod', 'merge') === 'rebase' ? 'rebase' : 'merge';
   let anyError = false;
-  await withProgress(vscode.l10n.t('Performing force-pushed branch update…'), async (progress, token) => {
+  await withProgress(translate('Performing force-pushed branch update…'), async (progress, token) => {
     for (const repo of repos) {
       if (repo.detectOperation() !== 'none' || repo.status.conflicts.length) {
-        void vscode.window.showErrorMessage(vscode.l10n.t("Can't update: Unmerged files detected. These conflicts must be resolved before update."));
+        void vscode.window.showErrorMessage(translate("Can't update: Unmerged files detected. These conflicts must be resolved before update."));
         anyError = true;
         continue;
       }
       const saver = makeSaver();
-      await putLocalHistoryLabel(repo, vscode.l10n.t('Before Update'));
+      await putLocalHistoryLabel(repo, translate('Before Update'));
       const m = await methodFor(repo, method);
       const r = await repo.batch(() => updateForcePushedBranch(repo, { progress, token, saver, method: m }));
       if (r.result === 'regular' && r.update) {
         if (r.update.outcome.kind !== 'success' && r.update.outcome.kind !== 'skipped') {
           anyError = true;
-          await reportOutcome(repo, r.update.outcome, { operation: 'update', failedTitle: vscode.l10n.t('Update failed') });
+          await reportOutcome(repo, r.update.outcome, { operation: 'update', failedTitle: translate('Update failed') });
         }
         await reportRestore(repo, saver, 'update', r.update.restore, r.update.savedChangesKept ?? false);
       } else if (r.result === 'incomplete') {
         anyError = true;
-        void vscode.window.showWarningMessage(vscode.l10n.t('Not all local commits were cherry-picked from {0} branch', r.backup ?? ''));
+        void vscode.window.showWarningMessage(translate('Not all local commits were cherry-picked from {0} branch', r.backup ?? ''));
         if (r.cherryPick && r.cherryPick.kind !== 'success') await reportOutcome(repo, r.cherryPick, { operation: 'cherry-pick' });
       } else if (r.result === 'error') {
         anyError = true;
-        await reportOutcome(repo, { kind: 'error', output: '', error: r.error! }, { operation: 'update', failedTitle: vscode.l10n.t('Update failed') });
+        await reportOutcome(repo, { kind: 'error', output: '', error: r.error! }, { operation: 'update', failedTitle: translate('Update failed') });
       } else if (r.restore) {
         await reportRestore(repo, saver, 'update', r.restore, r.restore.kind === 'error');
       }
     }
   });
-  if (!anyError) void vscode.window.showInformationMessage(vscode.l10n.t('Update of possible force-pushed branch was successful'));
+  if (!anyError) void vscode.window.showInformationMessage(translate('Update of possible force-pushed branch was successful'));
 }

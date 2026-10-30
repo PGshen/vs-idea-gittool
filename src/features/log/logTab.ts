@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { Ctx } from '../../context';
 import { LONG_EDGE_SIZE, visualizeRow } from '../../git/graph';
 import { Repository } from '../../git/repository';
@@ -108,10 +109,10 @@ export class LogTab implements vscode.Disposable {
   }
 
   get title(): string {
-    if (this.state.mode === 'history') return vscode.l10n.t('History: {0}', filtersTitle(this.state.filters));
-    if (this.state.mode === 'compare' && this.state.compare) return vscode.l10n.t('{0} vs {1}', this.state.compare.ref, this.state.compare.with);
+    if (this.state.mode === 'history') return translate('History: {0}', filtersTitle(this.state.filters));
+    if (this.state.mode === 'compare' && this.state.compare) return translate('{0} vs {1}', this.state.compare.ref, this.state.compare.with);
     const t = filtersTitle(this.state.filters);
-    return t ? vscode.l10n.t('Log: {0}', t) : vscode.l10n.t('Log');
+    return t ? translate('Log: {0}', t) : translate('Log');
   }
 
   get root() {
@@ -386,15 +387,15 @@ export class LogTab implements vscode.Disposable {
       if (hash) break;
     }
     if (!hash) {
-      void vscode.window.showWarningMessage(vscode.l10n.t('{0} not found', q));
+      void vscode.window.showWarningMessage(translate('{0} not found', q));
       return undefined;
     }
     const i = await this.findIndex(hash);
     if (i < 0) {
-      const viewAndReset = vscode.l10n.t('View and reset filters');
-      const viewInNewTab = vscode.l10n.t('View in new tab');
+      const viewAndReset = translate('View and reset filters');
+      const viewInNewTab = translate('View in new tab');
       const name = label ?? (/^[0-9a-f]{40}$/i.test(q) ? q.slice(0, 8) : q);
-      const pick = await vscode.window.showWarningMessage(vscode.l10n.t("Commit or reference '{0}' doesn't match the filters", name), viewAndReset, viewInNewTab);
+      const pick = await vscode.window.showWarningMessage(translate("Commit or reference '{0}' doesn't match the filters", name), viewAndReset, viewInNewTab);
       if (pick === viewAndReset) {
         await this.setFilters({ ...EMPTY_FILTERS }, this.state.options);
         this.conn?.post('filtersReset', { filters: this.state.filters });
@@ -555,8 +556,8 @@ export class LogTab implements vscode.Disposable {
   private async addToRemoteBranch(repo: Repository, oldestFirst: string[]) {
     const remotes = repo.refs.filter(r => r.type === 'remote');
     const picked = await vscode.window.showQuickPick(
-      remotes.map(r => ({ label: r.name, description: r.name === repo.info.upstream ? vscode.l10n.t('tracked') : undefined, ref: r })),
-      { title: oldestFirst.length === 1 ? vscode.l10n.t('Select Remote Branch for Commit') : vscode.l10n.t('Select Remote Branch for Commits'), placeHolder: vscode.l10n.t('Search remote branches'), matchOnDescription: true },
+      remotes.map(r => ({ label: r.name, description: r.name === repo.info.upstream ? translate('tracked') : undefined, ref: r })),
+      { title: oldestFirst.length === 1 ? translate('Select Remote Branch for Commit') : translate('Select Remote Branch for Commits'), placeHolder: translate('Search remote branches'), matchOnDescription: true },
     );
     if (!picked) return;
     const remote = picked.ref.remote ?? picked.ref.name.split('/')[0];
@@ -564,29 +565,29 @@ export class LogTab implements vscode.Disposable {
     const n = oldestFirst.length;
     try {
       const tip = await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: n === 1 ? vscode.l10n.t('Adding commit to {0}', branch) : vscode.l10n.t('Adding commits to {0}', branch), cancellable: false },
+        { location: vscode.ProgressLocation.Notification, title: n === 1 ? translate('Adding commit to {0}', branch) : translate('Adding commits to {0}', branch), cancellable: false },
         p => addCommitsToRemoteBranch(repo, oldestFirst, remote, branch, text => p.report({ message: text })),
       );
       if (!tip) {
-        void vscode.window.showInformationMessage(vscode.l10n.t('Nothing to add: All selected commits are already present on {0}', picked.ref.name));
+        void vscode.window.showInformationMessage(translate('Nothing to add: All selected commits are already present on {0}', picked.ref.name));
         return;
       }
-      const push = vscode.l10n.t('Push');
+      const push = translate('Push');
       const ok = await vscode.window.showInformationMessage(
-        n === 1 ? vscode.l10n.t('Push {0} commit to {1} : {2}?', n, remote, branch) : vscode.l10n.t('Push {0} commits to {1} : {2}?', n, remote, branch),
-        { modal: true, detail: vscode.l10n.t('{0} will become the new head of {1}.', tip.slice(0, 8), picked.ref.name) },
+        n === 1 ? translate('Push {0} commit to {1} : {2}?', n, remote, branch) : translate('Push {0} commits to {1} : {2}?', n, remote, branch),
+        { modal: true, detail: translate('{0} will become the new head of {1}.', tip.slice(0, 8), picked.ref.name) },
         push,
       );
       if (ok !== push) return;
-      await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: vscode.l10n.t('Pushing to {0}/{1}…', remote, branch) }, () =>
+      await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: translate('Pushing to {0}/{1}…', remote, branch) }, () =>
         repo.exec(['push', '--porcelain', remote, `${tip}:refs/heads/${branch}`]),
       );
       await repo.exec(['fetch', remote, `refs/heads/${branch}:refs/remotes/${remote}/${branch}`], { allowFailure: true });
       await repo.refresh();
-      void vscode.window.showInformationMessage(n === 1 ? vscode.l10n.t('Pushed {0} commit to {1}/{2}', n, remote, branch) : vscode.l10n.t('Pushed {0} commits to {1}/{2}', n, remote, branch));
+      void vscode.window.showInformationMessage(n === 1 ? translate('Pushed {0} commit to {1}/{2}', n, remote, branch) : translate('Pushed {0} commits to {1}/{2}', n, remote, branch));
     } catch (e) {
-      if (e instanceof MergeConflictError) void vscode.window.showErrorMessage(vscode.l10n.t('Cherry-pick conflict: Failed to cherry-pick commits onto {0}:\n{1}', picked.ref.name, e.files.join('\n')));
-      else void vscode.window.showErrorMessage(vscode.l10n.t('Add to remote branch failed: {0}', e instanceof Error ? e.message : String(e)));
+      if (e instanceof MergeConflictError) void vscode.window.showErrorMessage(translate('Cherry-pick conflict: Failed to cherry-pick commits onto {0}:\n{1}', picked.ref.name, e.files.join('\n')));
+      else void vscode.window.showErrorMessage(translate('Add to remote branch failed: {0}', e instanceof Error ? e.message : String(e)));
     }
   }
 
@@ -618,7 +619,7 @@ export class LogTab implements vscode.Disposable {
     const change: Change = { root, path: info.path, oldPath: info.oldPath, status: info.status as Change['status'] };
     switch (id) {
       case 'historyGet': {
-        const ok = await vscode.window.showWarningMessage(vscode.l10n.t('Get revision {0} of {1}? Local changes will be overwritten.', hash.slice(0, 8), info.path), { modal: true }, vscode.l10n.t('Get'));
+        const ok = await vscode.window.showWarningMessage(translate('Get revision {0} of {1}? Local changes will be overwritten.', hash.slice(0, 8), info.path), { modal: true }, translate('Get'));
         if (ok) await this.repo.exec(['checkout', hash, '--', info.path]);
         return;
       }
@@ -655,10 +656,10 @@ export class LogTab implements vscode.Disposable {
     const out = await repo.execText(['diff', '--name-status', '-z', '-M', hash, '--'], { quiet: true });
     const changes = parseNameStatus(repo.root, out);
     if (!changes.length) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('No differences'));
+      void vscode.window.showInformationMessage(translate('No differences'));
       return;
     }
-    await openMultiDiff(vscode.l10n.t('{0} ↔ Local', hash.slice(0, 8)), changes, () => hash, () => 'WORKTREE');
+    await openMultiDiff(translate('{0} ↔ Local', hash.slice(0, 8)), changes, () => hash, () => 'WORKTREE');
   }
 
   private async changeAction(id: string, changes: Change[], left: string, right: string, hashes: string[]) {
@@ -704,10 +705,10 @@ export class LogTab implements vscode.Disposable {
           const res = await vscode.commands.executeCommand<{ remaining?: number } | undefined>('ideagittool.resolveConflicts', { root });
           const text =
             id === 'revertSelected'
-              ? vscode.l10n.t('Revert of selected changes finished with conflicts: {0}', r.stderr.trim())
-              : vscode.l10n.t('Cherry-pick of selected changes finished with conflicts: {0}', r.stderr.trim());
+              ? translate('Revert of selected changes finished with conflicts: {0}', r.stderr.trim())
+              : translate('Cherry-pick of selected changes finished with conflicts: {0}', r.stderr.trim());
           if (res?.remaining !== 0) void vscode.window.showWarningMessage(text);
-        } else void vscode.window.showInformationMessage(id === 'revertSelected' ? vscode.l10n.t('Selected changes reverted') : vscode.l10n.t('Selected changes applied'));
+        } else void vscode.window.showInformationMessage(id === 'revertSelected' ? translate('Selected changes reverted') : translate('Selected changes applied'));
         return;
       }
       case 'dropSelected':
@@ -717,11 +718,11 @@ export class LogTab implements vscode.Disposable {
       case 'createPatch':
         return vscode.commands.executeCommand('ideagittool.createPatch', { root, hashes, changes });
       case 'get': {
-        const get = vscode.l10n.t('Get');
+        const get = translate('Get');
         const question =
           changes.length === 1
-            ? vscode.l10n.t("Get '{0}' from revision {1}? Local changes will be overwritten.", changes[0].path, right.slice(0, 8))
-            : vscode.l10n.t('Get {0} files from revision {1}? Local changes will be overwritten.', changes.length, right.slice(0, 8));
+            ? translate("Get '{0}' from revision {1}? Local changes will be overwritten.", changes[0].path, right.slice(0, 8))
+            : translate('Get {0} files from revision {1}? Local changes will be overwritten.', changes.length, right.slice(0, 8));
         const answer = await vscode.window.showWarningMessage(question, { modal: true }, get);
         if (answer !== get) return;
         const existing = changes.filter(c => c.status !== 'D').map(c => c.path);
@@ -743,18 +744,18 @@ export class LogTab implements vscode.Disposable {
   /** Drop Selected Changes (GitDropSelectedChangesAction). */
   private async dropSelected(repo: Repository, hash: string, changes: Change[]) {
     if (repo.info.operation !== 'none') {
-      void vscode.window.showErrorMessage(vscode.l10n.t('Could Not Drop Selected Changes: Another operation is in progress'));
+      void vscode.window.showErrorMessage(translate('Could Not Drop Selected Changes: Another operation is in progress'));
       return;
     }
     await this.runEdit(
       repo,
       'drop selected changes',
       {
-        progress: vscode.l10n.t('Drop selected changes…'),
-        success: vscode.l10n.t('Selected changes dropped'),
-        failure: vscode.l10n.t('Could Not Drop Selected Changes'),
-        cannotUndo: vscode.l10n.t('Cannot undo drop selected changes: the repository has changed'),
-        undoFailed: (msg: string) => vscode.l10n.t('Undo drop selected changes failed: {0}', msg),
+        progress: translate('Drop selected changes…'),
+        success: translate('Selected changes dropped'),
+        failure: translate('Could Not Drop Selected Changes'),
+        cannotUndo: translate('Cannot undo drop selected changes: the repository has changed'),
+        undoFailed: (msg: string) => translate('Undo drop selected changes failed: {0}', msg),
       },
       () => dropSelectedChanges(repo, hash, changes),
     );
@@ -763,30 +764,30 @@ export class LogTab implements vscode.Disposable {
   /** Extract Selected Changes to Separate Commit… (GitExtractSelectedChangesAction). */
   private async extractSelected(repo: Repository, hash: string, changes: Change[]) {
     if (repo.info.operation !== 'none') {
-      void vscode.window.showErrorMessage(vscode.l10n.t('Could Not Extract Selected Changes: Another operation is in progress'));
+      void vscode.window.showErrorMessage(translate('Could Not Extract Selected Changes: Another operation is in progress'));
       return;
     }
     const all = (await this.details([hash])).changes;
     if (changes.length >= all.length) {
-      void vscode.window.showWarningMessage(vscode.l10n.t('Unable to extract all changes from the commit'));
+      void vscode.window.showWarningMessage(translate('Unable to extract all changes from the commit'));
       return;
     }
     const d = (await loadDetails(repo, [hash]))[0];
     const message = await showDialog<{ message: string }>(
       'log.newCommitMessage',
-      { label: vscode.l10n.t('Changes extracted from commit {0} by {1}', hash.slice(0, 8), d?.authorName ?? ''), message: d?.body ?? '', okText: vscode.l10n.t('OK') },
-      { title: vscode.l10n.t('New Commit Message'), validate: (v: { message: string }) => (v.message.trim() ? true : vscode.l10n.t('Specify commit message')) },
+      { label: translate('Changes extracted from commit {0} by {1}', hash.slice(0, 8), d?.authorName ?? ''), message: d?.body ?? '', okText: translate('OK') },
+      { title: translate('New Commit Message'), validate: (v: { message: string }) => (v.message.trim() ? true : translate('Specify commit message')) },
     );
     if (!message) return;
     await this.runEdit(
       repo,
       'extract selected changes',
       {
-        progress: vscode.l10n.t('Extract selected changes…'),
-        success: vscode.l10n.t('Changes extracted'),
-        failure: vscode.l10n.t('Could Not Extract Selected Changes'),
-        cannotUndo: vscode.l10n.t('Cannot undo extract selected changes: the repository has changed'),
-        undoFailed: (msg: string) => vscode.l10n.t('Undo extract selected changes failed: {0}', msg),
+        progress: translate('Extract selected changes…'),
+        success: translate('Changes extracted'),
+        failure: translate('Could Not Extract Selected Changes'),
+        cannotUndo: translate('Cannot undo extract selected changes: the repository has changed'),
+        undoFailed: (msg: string) => translate('Undo extract selected changes failed: {0}', msg),
       },
       () => extractSelectedChanges(repo, hash, changes, message.message),
     );
@@ -804,12 +805,12 @@ export class LogTab implements vscode.Disposable {
       result = await repo.batch(async () => vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: text.progress }, fn));
     } catch (e) {
       const msg = e instanceof InMemoryError || e instanceof Error ? e.message : String(e);
-      void vscode.window.showErrorMessage(vscode.l10n.t('{0}: {1}', text.failure, msg));
+      void vscode.window.showErrorMessage(translate('{0}: {1}', text.failure, msg));
       return;
     }
     await this.refresh();
     void this.select(result.focus);
-    const undo = vscode.l10n.t('Undo');
+    const undo = translate('Undo');
     const picked = await vscode.window.showInformationMessage(text.success, undo);
     if (picked !== undo) return;
     try {
@@ -830,7 +831,7 @@ export class LogTab implements vscode.Disposable {
   }
 
   private async pickPaths(): Promise<string[] | undefined> {
-    const uris = await vscode.window.showOpenDialog({ canSelectFiles: true, canSelectFolders: true, canSelectMany: true, defaultUri: vscode.Uri.file(this.repo.root), openLabel: vscode.l10n.t('Select') });
+    const uris = await vscode.window.showOpenDialog({ canSelectFiles: true, canSelectFolders: true, canSelectMany: true, defaultUri: vscode.Uri.file(this.repo.root), openLabel: translate('Select') });
     if (!uris) return undefined;
     // In a multi-root log paths are absolute; each repository gets the paths inside it.
     if (this.multi) return uris.map(u => u.fsPath);
@@ -839,10 +840,10 @@ export class LogTab implements vscode.Disposable {
 
   private async pickDate(which: 'since' | 'until'): Promise<number | undefined> {
     const v = await vscode.window.showInputBox({
-      title: vscode.l10n.t('Select Period'),
-      prompt: which === 'since' ? vscode.l10n.t('Show commits made since (YYYY-MM-DD or "2 weeks ago")') : vscode.l10n.t('Show commits made until (YYYY-MM-DD)'),
+      title: translate('Select Period'),
+      prompt: which === 'since' ? translate('Show commits made since (YYYY-MM-DD or "2 weeks ago")') : translate('Show commits made until (YYYY-MM-DD)'),
       placeHolder: new Date().toISOString().slice(0, 10),
-      validateInput: s => (parseDate(s) === undefined ? vscode.l10n.t('Enter a date like 2026-06-01 or a relative period like "3 days ago"') : undefined),
+      validateInput: s => (parseDate(s) === undefined ? translate('Enter a date like 2026-06-01 or a relative period like "3 days ago"') : undefined),
     });
     return v === undefined ? undefined : parseDate(v);
   }
@@ -851,8 +852,8 @@ export class LogTab implements vscode.Disposable {
     const seen = new Set<string>();
     const items = this.allRefs()
       .filter(r => !seen.has(r.name) && seen.add(r.name))
-      .map(r => ({ label: r.name, description: r.type === 'tag' ? vscode.l10n.t('tag') : r.type === 'remote' ? vscode.l10n.t('remote') : vscode.l10n.t('local') }));
-    const picked = await vscode.window.showQuickPick([{ label: 'HEAD', description: '' }, ...items], { canPickMany: true, title: vscode.l10n.t('Filter by Branch'), placeHolder: vscode.l10n.t('Select branches, tags or revisions') });
+      .map(r => ({ label: r.name, description: r.type === 'tag' ? translate('tag') : r.type === 'remote' ? translate('remote') : translate('local') }));
+    const picked = await vscode.window.showQuickPick([{ label: 'HEAD', description: '' }, ...items], { canPickMany: true, title: translate('Filter by Branch'), placeHolder: translate('Select branches, tags or revisions') });
     return picked?.map(p => p.label);
   }
 

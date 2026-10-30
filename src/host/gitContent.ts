@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../shared/l10n';
 import { RepositoryManager } from '../git/manager';
 import { Change } from '../shared/types';
 
@@ -82,9 +83,9 @@ export function shortHash(ref: string) {
 }
 
 function revLabel(ref: string) {
-  if (ref === REV_EMPTY) return vscode.l10n.t('Empty');
-  if (ref === REV_INDEX) return vscode.l10n.t('Staged');
-  if (ref === 'WORKTREE') return vscode.l10n.t('Local');
+  if (ref === REV_EMPTY) return translate('Empty');
+  if (ref === REV_INDEX) return translate('Staged');
+  if (ref === 'WORKTREE') return translate('Local');
   return shortHash(ref);
 }
 

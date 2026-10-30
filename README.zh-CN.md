@@ -108,6 +108,7 @@ code --install-extension ideagittool-*.vsix
 
 ## 设置
 
+- `ideagittool.language`（默认 `system`）：选择 `system` 跟随 VS Code 显示语言，也可以指定 `en`（英文）或 `zh-cn`（简体中文）。更改设置后需重载窗口。此设置控制 IdeaGitTool 视图、对话框和通知的语言；VS Code 菜单和设置页中的扩展贡献项标签仍跟随 VS Code 显示语言。
 - `ideagittool.appearance`：
   - `vscode`（默认）：所有视图和对话框都按 VS Code 原生样式绘制，按钮、输入框、复选框、列表、菜单、悬停提示、滚动条、字体和颜色都取自当前 VS Code 主题，单色图标使用主题的图标颜色。
   - `intellij`：保留 IntelliJ New UI 的外观（IntelliJ 的浅色/深色配色和控件形状）。

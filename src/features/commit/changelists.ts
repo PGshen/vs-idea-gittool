@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { changeKey } from '../../shared/commitProtocol';
 import { Change, ChangeListInfo } from '../../shared/types';
 
@@ -21,7 +22,7 @@ export const DEFAULT_CHANGELIST_NAME = 'Changes';
 
 /** The name shown for a changelist: the default changelist's stored default name is translated. */
 export function changelistDisplayName(name: string, id = DEFAULT_ID): string {
-  return id === DEFAULT_ID && name === DEFAULT_CHANGELIST_NAME ? vscode.l10n.t('Changes') : name;
+  return id === DEFAULT_ID && name === DEFAULT_CHANGELIST_NAME ? translate('Changes') : name;
 }
 
 /**

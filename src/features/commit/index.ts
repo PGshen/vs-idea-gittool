@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { showDialog } from '../../host/dialog';
@@ -87,7 +88,7 @@ export function register(ctx: Ctx) {
     if (isUriArg(uri) || !uri) {
       const changes = changesFor(uri as vscode.Uri | undefined, uris).filter(c => c.status !== '?');
       if (isUriArg(uri) && !changes.length) {
-        void vscode.window.showInformationMessage(vscode.l10n.t('No changes to roll back'));
+        void vscode.window.showInformationMessage(translate('No changes to roll back'));
         return;
       }
       return view.rollbackDialog(changes.map(changeKey), !isUriArg(uri) && !vscode.window.activeTextEditor);
@@ -135,7 +136,7 @@ export function register(ctx: Ctx) {
   ctx.command('ideagittool.shelveSilently', (arg?: unknown) => {
     if (arg && typeof arg === 'object' && 'root' in arg && typeof (arg as { root: unknown }).root === 'string') {
       const a = arg as { root: string; name?: string };
-      return view.shelveAll(a.root, a.name ?? vscode.l10n.t('Uncommitted changes before Update'));
+      return view.shelveAll(a.root, a.name ?? translate('Uncommitted changes before Update'));
     }
     return view.shelveSilently([]);
   });
@@ -160,7 +161,7 @@ export function register(ctx: Ctx) {
       .filter(c => c.status !== '?')
       .map(changeKey);
     if (!keys.length) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('No changes to roll back'));
+      void vscode.window.showInformationMessage(translate('No changes to roll back'));
       return;
     }
     view.buildState();
@@ -201,7 +202,7 @@ export function register(ctx: Ctx) {
     const res = await showDialog<{ root: string; message: string; keepIndex: boolean; includeUntracked: boolean }>(
       'commit.stash',
       { repos: repos.map(r => ({ root: r.root, name: r.name, branch: r.info.branch ?? r.info.headHash?.slice(0, 8) })), root },
-      { title: vscode.l10n.t('Stash') },
+      { title: translate('Stash') },
     );
     if (!res) return;
     const repo = ctx.repos.get(res.root);
@@ -210,7 +211,7 @@ export function register(ctx: Ctx) {
     if (res.message.trim()) args.push('-m', res.message.trim());
     if (res.keepIndex) args.push('--keep-index');
     if (res.includeUntracked) args.push('--include-untracked');
-    await withProgress(vscode.l10n.t("Stashing changes from '{0}'…", repo.name), () => repo.batch(() => repo.exec(args)), { location: 'window' });
+    await withProgress(translate("Stashing changes from '{0}'…", repo.name), () => repo.batch(() => repo.exec(args)), { location: 'window' });
   });
 
   ctx.command('ideagittool.unstash', async (a?: { root?: string; ref?: string }) => {
@@ -224,7 +225,7 @@ export function register(ctx: Ctx) {
       'commit.unstash',
       { repos: repos.map(r => ({ root: r.root, name: r.name, branch: r.info.branch ?? r.info.headHash?.slice(0, 8) })), root, ref: a?.ref, stashes: list(root) },
       {
-        title: vscode.l10n.t('Unstash Changes'),
+        title: translate('Unstash Changes'),
         onOpen: conn => {
           const sub = ctx.repos.onDidChangeRepository(() => conn.post('stashes', null));
           ctx.extension.subscriptions.push(sub);
@@ -237,7 +238,7 @@ export function register(ctx: Ctx) {
             const files = await stashFiles(repo, p.hash);
             await vscode.commands.executeCommand(
               'vscode.changes',
-              vscode.l10n.t('Paths Affected by {0}', p.ref),
+              translate('Paths Affected by {0}', p.ref),
               files.map(f => [vscode.Uri.file(path.join(f.root, f.path)), f.left && f.status !== 'A' ? toGitUri(f.root, f.oldPath ?? f.path, f.left) : undefined, f.status === 'D' ? undefined : toGitUri(f.root, f.path, f.right)]),
             );
           },
@@ -256,8 +257,8 @@ export function register(ctx: Ctx) {
     const repo = ctx.repos.get(res.root);
     if (!repo) return;
     if (res.branch.trim()) {
-      await withProgress(vscode.l10n.t('Unstashing…'), () => repo.batch(() => repo.exec(['stash', 'branch', res.branch.trim(), res.ref])), { location: 'window' });
-      void notifySuccess(vscode.l10n.t('Stash successfully applied'), vscode.l10n.t('Checked out as new branch {0}', res.branch.trim()));
+      await withProgress(translate('Unstashing…'), () => repo.batch(() => repo.exec(['stash', 'branch', res.branch.trim(), res.ref])), { location: 'window' });
+      void notifySuccess(translate('Stash successfully applied'), translate('Checked out as new branch {0}', res.branch.trim()));
       return;
     }
     await view.stashApply(res.root, res.ref, res.pop, res.reinstateIndex);

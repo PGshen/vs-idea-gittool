@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { withProgress } from '../../host/ui';
@@ -119,9 +120,9 @@ export class BranchesTab implements vscode.Disposable {
   private resolve(p: RefAddress): { repo: Repository; ref: Ref; roots?: string[] } {
     const repos = this.ctx.repos.repositories;
     const repo = p.root ? this.ctx.repos.get(p.root) : repos[0];
-    if (!repo) throw new Error(vscode.l10n.t('The repository is not available any more'));
+    if (!repo) throw new Error(translate('The repository is not available any more'));
     const ref = repo.refs.find(r => r.name === p.name && r.type === p.type);
-    if (!ref) throw new Error(p.type === 'tag' ? vscode.l10n.t('Tag {0} not found', p.name) : vscode.l10n.t('Branch {0} not found', p.name));
+    if (!ref) throw new Error(p.type === 'tag' ? translate('Tag {0} not found', p.name) : translate('Branch {0} not found', p.name));
     return { repo, ref, roots: p.root ? undefined : repos.map(r => r.root) };
   }
 
@@ -173,7 +174,7 @@ export class BranchesTab implements vscode.Disposable {
     this.schedulePush();
     try {
       await withProgress(
-        vscode.l10n.t('Fetching…'),
+        translate('Fetching…'),
         async (progress, token) => {
           for (const r of this.ctx.repos.repositories) await fetch(r, 'all', { progress, token });
         },
