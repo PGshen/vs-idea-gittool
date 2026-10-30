@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.3
+
+- Independent extension language selection with `ideagittool.language`: follow VS Code (`system`, default), English (`en`), or Simplified Chinese (`zh-cn`). Applies to extension views, dialogs, notifications and file status tooltips.
+- Prompt to reload the window after changing the language. VS Code menu labels and setting descriptions continue to follow the VS Code display language.
+
 ## 0.4.2
 
 - Simplified Chinese UI: commands, settings, notifications, dialogs and all tool windows follow the VS Code display language (*Configure Display Language*), with IntelliJ's Chinese wording. English stays the default.
