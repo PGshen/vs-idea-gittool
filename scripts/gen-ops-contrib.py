@@ -63,7 +63,7 @@ keys = [
 ]
 config = {"title": "IdeaGitTool", "properties": {
     "ideagittool.intellijShortcuts": {"type": "boolean", "default": True, "description": "Use IntelliJ keyboard shortcuts for Git actions (Ctrl+T Update Project, Ctrl+Shift+K Push, Ctrl+Shift+` Branches, Alt+` VCS Operations Popup, Ctrl+Alt+N New Branch)."},
-    "ideagittool.intellijShortcutsInEditor": {"type": "boolean", "default": False, "description": "Also use Ctrl+Shift+K for Push while a text editor has focus (it replaces VS Code's Delete Line)."},
+    "ideagittool.intellijShortcutsInEditor": {"type": "boolean", "default": False, "description": "Also use Ctrl+K for Commit everywhere and Ctrl+Shift+K for Push while a text editor has focus. Ctrl+K then no longer starts VS Code's Ctrl+K chords (such as Ctrl+K Ctrl+S), and Ctrl+Shift+K replaces Delete Line."},
     "ideagittool.updateMethod": {"type": "string", "enum": ["merge", "rebase", "branchDefault"], "enumDescriptions": ["Merge incoming changes into the current branch", "Rebase the current branch on top of incoming changes", "Branch Default (git config branch.<name>.rebase / pull.rebase)"], "default": "merge", "description": "Update method used by Update Project."},
     "ideagittool.update.showDialog": {"type": "boolean", "default": True, "description": "Show the Update Project dialog before updating."},
     "ideagittool.update.saveChangesPolicy": {"type": "string", "enum": ["stash", "shelve"], "default": "stash", "enumDescriptions": ["Using Stash", "Using Shelve"], "description": "Clean working tree using: Stash / Shelve. Local changes are saved before Update Project, Smart Checkout and Smart Merge, and restored afterwards."},

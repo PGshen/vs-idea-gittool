@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Change } from '../../../../shared/types';
 import { buildDirectoryTree, Button, Split, Tree, TreeNode, walkTree } from '../../../lib/components';
 import { fileIconName, Icon } from '../../../lib/icons';
+import { shortcutKey } from '../../../lib/keys';
 import { t } from '../../../lib/l10n';
 import { anchorAt, anchorBelow, showMenu, showPopup } from '../../../lib/menu';
 import { call } from '../../../lib/rpc';
@@ -169,7 +170,7 @@ registerDialog<InteractiveRebaseProps>('ops.interactiveRebase', ({ props, submit
       return;
     }
     if (e.ctrlKey || e.metaKey) return;
-    const k = e.altKey && e.code.startsWith('Key') ? e.code.slice(3).toLowerCase() : e.key.toLowerCase();
+    const k = shortcutKey(e);
     const map: Record<string, Action> = { p: 'pick', e: 'edit', r: 'reword', s: 'squash', f: 'fixup', d: 'drop', delete: 'drop', backspace: 'drop' };
     if (map[k]) {
       e.preventDefault();

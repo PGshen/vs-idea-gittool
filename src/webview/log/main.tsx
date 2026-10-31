@@ -4,6 +4,7 @@ import '../lib/base.css';
 import './log.css';
 import { Split } from '../lib/components';
 import { Icon } from '../lib/icons';
+import { shortcutKey } from '../lib/keys';
 import { t } from '../lib/l10n';
 import { call, on, send } from '../lib/rpc';
 import { BranchesPanel } from './branches';
@@ -155,7 +156,7 @@ function App() {
       } else if (ctrl && e.key.toLowerCase() === 'l') {
         e.preventDefault();
         document.getElementById('text-filter')?.focus();
-      } else if (e.altKey && e.key.toLowerCase() === 'g') {
+      } else if (e.altKey && shortcutKey(e) === 'g') {
         e.preventDefault();
         send('newTab', { filters: store.filters });
       } else if ((ctrl && e.key === 'F5') || e.key === 'F5') {

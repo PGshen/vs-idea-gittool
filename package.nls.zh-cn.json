@@ -164,7 +164,7 @@
   "config.annotate.detectMovementsWithinFile.description": "使用 Git Blame 注解：检测文件内移动的行 (-M)。",
   "config.annotate.detectMovementsAcrossFiles.description": "使用 Git Blame 注解：检测从其他文件移动的行 (-C)。",
   "config.inlineBlame.enabled.description": "内联显示 Git Blame 信息：在行尾显示最后一次更改光标所在行的提交的作者、日期和主题（与 IntelliJ 相同）。",
-  "config.intellijShortcutsInEditor.description": "文本编辑器获得焦点时也使用 Ctrl+Shift+K 推送（替换 VS Code 的“删除行”）。",
+  "config.intellijShortcutsInEditor.description": "在任何位置使用 Ctrl+K 提交，并在文本编辑器获得焦点时也使用 Ctrl+Shift+K 推送。开启后 Ctrl+K 不再作为 VS Code 组合键（如 Ctrl+K Ctrl+S）的前缀，Ctrl+Shift+K 会替换“删除行”。",
   "config.updateMethod.description": "更新项目使用的更新方法。",
   "config.updateMethod.enumDescriptions.0": "将传入更改合并到当前分支",
   "config.updateMethod.enumDescriptions.1": "将当前分支变基到传入更改之上",

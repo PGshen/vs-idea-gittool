@@ -674,7 +674,7 @@
       "ideagittool.intellijShortcutsInEditor": {
         "type": "boolean",
         "default": false,
-        "description": "Also use Ctrl+Shift+K for Push while a text editor has focus (it replaces VS Code's Delete Line)."
+        "description": "Also use Ctrl+K for Commit everywhere and Ctrl+Shift+K for Push while a text editor has focus. Ctrl+K then no longer starts VS Code's Ctrl+K chords (such as Ctrl+K Ctrl+S), and Ctrl+Shift+K replaces Delete Line."
       },
       "ideagittool.updateMethod": {
         "type": "string",

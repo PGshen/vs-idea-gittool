@@ -164,7 +164,7 @@
   "config.annotate.detectMovementsWithinFile.description": "Annotate with Git Blame: detect moved lines within the file (-M).",
   "config.annotate.detectMovementsAcrossFiles.description": "Annotate with Git Blame: detect lines moved from other files (-C).",
   "config.inlineBlame.enabled.description": "Show Git blame information inline: the author, date and subject of the last commit that changed the caret line, after the end of the line (like IntelliJ).",
-  "config.intellijShortcutsInEditor.description": "Also use Ctrl+Shift+K for Push while a text editor has focus (it replaces VS Code's Delete Line).",
+  "config.intellijShortcutsInEditor.description": "Also use Ctrl+K for Commit everywhere and Ctrl+Shift+K for Push while a text editor has focus. Ctrl+K then no longer starts VS Code's Ctrl+K chords (such as Ctrl+K Ctrl+S), and Ctrl+Shift+K replaces Delete Line.",
   "config.updateMethod.description": "Update method used by Update Project.",
   "config.updateMethod.enumDescriptions.0": "Merge incoming changes into the current branch",
   "config.updateMethod.enumDescriptions.1": "Rebase the current branch on top of incoming changes",

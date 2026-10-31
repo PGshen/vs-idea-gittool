@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ActionButton, Button, Checkbox } from '../lib/components';
 import { Icon } from '../lib/icons';
+import { shortcutKey } from '../lib/keys';
 import { t } from '../lib/l10n';
 import { anchorBelow, MenuEntry, showMenu, showPopup } from '../lib/menu';
 import { boot, call, on, persist, persisted, send } from '../lib/rpc';
@@ -24,6 +25,8 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
   const [amendTarget, setAmendTarget] = useState<AmendCandidate | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  // Guards against a second commit before `busy` re-renders, e.g. Ctrl+Alt+K handled here and by the keybinding.
+  const committing = useRef(false);
   const draftBeforeAmend = useRef('');
   const textRef = useRef<HTMLTextAreaElement>(null);
   const saveTimer = useRef<number>();
@@ -68,7 +71,8 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
   };
 
   const doCommit = async (push: boolean) => {
-    if (busy) return;
+    if (committing.current) return;
+    committing.current = true;
     setBusy(true);
     try {
       const r = await call<{ ok: boolean; error?: string }>('commit', { message, amend, amendHash: amendTarget?.hash, push, keys: [...included] });
@@ -81,6 +85,7 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
     } catch {
       // Error notification is shown by the host.
     } finally {
+      committing.current = false;
       setBusy(false);
     }
   };
@@ -110,23 +115,24 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
 
   const onKeyDown = (e: KeyboardEvent) => {
     const ctrl = e.ctrlKey || e.metaKey;
+    const key = shortcutKey(e);
     if (ctrl && e.key === 'Enter') {
       e.preventDefault();
       void doCommit(false);
-    } else if (ctrl && e.altKey && e.key.toLowerCase() === 'k') {
+    } else if (ctrl && e.altKey && key === 'k') {
       e.preventDefault();
       void doCommit(true);
-    } else if (ctrl && e.key.toLowerCase() === 'm') {
+    } else if (ctrl && key === 'm') {
       e.preventDefault();
       showHistory(textRef.current!);
-    } else if (ctrl && e.key.toLowerCase() === 'o') {
+    } else if (ctrl && key === 'o') {
       e.preventDefault();
       const gear = document.querySelector('.commit-buttons .action-button');
       if (gear) showOptions(gear);
-    } else if (e.altKey && e.key.toLowerCase() === 'm') {
+    } else if (e.altKey && key === 'm') {
       e.preventDefault();
       void toggleAmend(!amend);
-    } else if (ctrl && e.key.toLowerCase() === 'k') {
+    } else if (ctrl && key === 'k') {
       e.preventDefault();
       void doCommit(false);
     }

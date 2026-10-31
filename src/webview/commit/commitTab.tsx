@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { ActionButton, Separator, Split, Toolbar, Tree, TreeNode } from '../lib/components';
+import { shortcutKey } from '../lib/keys';
 import { anchorAt, MenuEntry, showMenu } from '../lib/menu';
 import { t } from '../lib/l10n';
 import { call, persist, persisted, send } from '../lib/rpc';
@@ -292,6 +293,8 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
     const ctrl = e.ctrlKey || e.metaKey;
     if (ctrl && e.key.toLowerCase() === 'd') return void showDiff(files), true;
     if (e.key === 'F4') return void openSource(files), true;
+    // Ctrl+K: the `focusedView` keybinding does not see focus inside the webview, so move to the message here.
+    if (ctrl && !e.altKey && !e.shiftKey && shortcutKey(e) === 'k') return void document.querySelector<HTMLElement>('.commit-panel .text-area')?.focus(), true;
     if (e.key === 'Enter') {
       if (sel.length === 1 && sel[0].children) return false;
       if (settings.doubleClick === 'source') openSource(files);
@@ -299,9 +302,9 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
       return true;
     }
     if (e.key === 'Delete') return void send('deleteFiles', { keys: keysOf(files) }), true;
-    if (ctrl && e.altKey && e.key.toLowerCase() === 'z') return void rollback(), true;
-    if (ctrl && e.altKey && e.key.toLowerCase() === 'a') return void send('addToVcs', { keys: keysOf(files.filter(f => f.status === '?')) }), true;
-    if (e.altKey && e.shiftKey && e.key.toLowerCase() === 'm') return void send('moveToChangelist', { keys: keysOf(files) }), true;
+    if (ctrl && e.altKey && shortcutKey(e) === 'z') return void rollback(), true;
+    if (ctrl && e.altKey && shortcutKey(e) === 'a') return void send('addToVcs', { keys: keysOf(files.filter(f => f.status === '?')) }), true;
+    if (e.altKey && e.shiftKey && shortcutKey(e) === 'm') return void send('moveToChangelist', { keys: keysOf(files) }), true;
     if (e.key === 'F2') {
       const l = selectedChangelist();
       if (l) send('editChangelist', { id: l.id });

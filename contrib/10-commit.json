@@ -166,6 +166,12 @@
       "when": "focusedView == ideagittool.commit"
     },
     {
+      "command": "ideagittool.commit",
+      "key": "ctrl+k",
+      "mac": "cmd+k",
+      "when": "config.ideagittool.intellijShortcuts && config.ideagittool.intellijShortcutsInEditor"
+    },
+    {
       "command": "ideagittool.commitAndPush",
       "key": "ctrl+alt+k",
       "mac": "alt+cmd+k",
