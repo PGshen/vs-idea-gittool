@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { openChangeDiff, REV_EMPTY, shortHash, toGitUri } from '../../host/gitContent';
@@ -74,7 +75,7 @@ export class CommitView implements vscode.WebviewViewProvider {
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
     this.conn?.dispose();
-    this.conn = new WebviewConnection(view.webview, 'commit', () => ({ state: this.buildState(), draft: this.ctx.extension.workspaceState.get<string>(DRAFT_KEY, '') }), vscode.l10n.t('Commit'));
+    this.conn = new WebviewConnection(view.webview, 'commit', () => ({ state: this.buildState(), draft: this.ctx.extension.workspaceState.get<string>(DRAFT_KEY, '') }), translate('Commit'));
     this.registerHandlers(this.conn);
     this.conn.handleAll(this.extraHandlers);
     view.onDidDispose(() => {
@@ -311,7 +312,7 @@ export class CommitView implements vscode.WebviewViewProvider {
       renameShelf: async (p: { id: string }) => {
         const s = this.shelf.get(p.id);
         if (!s) return;
-        const name = await vscode.window.showInputBox({ title: vscode.l10n.t('Rename Shelved Changelist'), prompt: vscode.l10n.t('New name:'), value: s.name, ignoreFocusOut: true });
+        const name = await vscode.window.showInputBox({ title: translate('Rename Shelved Changelist'), prompt: translate('New name:'), value: s.name, ignoreFocusOut: true });
         if (name?.trim()) this.shelf.rename(p.id, name.trim());
       },
       deleteShelves: (p: { ids: string[] }) => this.deleteShelves(p.ids),
@@ -319,16 +320,16 @@ export class CommitView implements vscode.WebviewViewProvider {
       restoreShelves: (p: { ids: string[] }) => this.shelf.restore(p.ids),
       cleanShelves: async () => {
         const a = await ask(
-          vscode.l10n.t('Delete all already unshelved changelists?'),
-          vscode.l10n.t('Applied shelved changes in "Recently Deleted" are removed permanently.'),
-          vscode.l10n.t('Delete'),
+          translate('Delete all already unshelved changelists?'),
+          translate('Applied shelved changes in "Recently Deleted" are removed permanently.'),
+          translate('Delete'),
         );
         if (a) this.shelf.cleanDeleted();
       },
       shelfCreatePatch: (p: { id: string; paths?: string[] }) => this.shelfCreatePatch(p.id, p.paths),
       shelfCopyPatch: async (p: { id: string; paths?: string[] }) => {
         await vscode.env.clipboard.writeText(this.shelf.patchFor(p.id, p.paths));
-        void notifySuccess(vscode.l10n.t('Patch copied to clipboard'));
+        void notifySuccess(translate('Patch copied to clipboard'));
       },
       importPatches: () => this.importPatches(),
 
@@ -352,7 +353,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     if (changes.length > 1) {
       await vscode.commands.executeCommand(
         'vscode.changes',
-        vscode.l10n.t('Local Changes'),
+        translate('Local Changes'),
         changes.map(c => {
           const left = c.status === 'A' || c.status === '?' ? undefined : toGitUri(c.root, c.oldPath ?? c.path, c.status === 'U' ? ':2' : 'HEAD');
           const right = c.status === 'D' ? undefined : vscode.Uri.file(path.join(c.root, c.path));
@@ -377,17 +378,17 @@ export class CommitView implements vscode.WebviewViewProvider {
   async commit(p: { message: string; amend: boolean; amendHash?: string; push: boolean; keys: string[] }): Promise<{ ok: boolean; error?: string }> {
     const message = p.message.replace(/\s+$/, '');
     const included = this.changes(p.keys);
-    if (!message.trim() && !included.length && !p.amend) return { ok: false, error: vscode.l10n.t('Select files to commit and specify commit message') };
-    if (!included.length && !p.amend) return { ok: false, error: vscode.l10n.t('Select files to commit') };
-    if (!message.trim()) return { ok: false, error: vscode.l10n.t('Specify commit message') };
+    if (!message.trim() && !included.length && !p.amend) return { ok: false, error: translate('Select files to commit and specify commit message') };
+    if (!included.length && !p.amend) return { ok: false, error: translate('Select files to commit') };
+    if (!message.trim()) return { ok: false, error: translate('Specify commit message') };
     const conflicted = included.filter(c => c.status === 'U');
     if (conflicted.length) {
-      const resolve = vscode.l10n.t('Resolve…');
+      const resolve = translate('Resolve…');
       const a = await ask(
-        vscode.l10n.t('Commit with unresolved conflicts?'),
-        vscode.l10n.t('{0} file(s) have unresolved merge conflicts.', conflicted.length),
+        translate('Commit with unresolved conflicts?'),
+        translate('{0} file(s) have unresolved merge conflicts.', conflicted.length),
         resolve,
-        vscode.l10n.t('Commit Anyway'),
+        translate('Commit Anyway'),
       );
       if (a === resolve) {
         await this.conflicts.show();
@@ -413,7 +414,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     const committed: Repository[] = [];
     try {
       await withProgress(
-        vscode.l10n.t('Committing…'),
+        translate('Committing…'),
         async () => {
           for (const [repo, list] of groups) {
             await repo.batch(async () => {
@@ -426,14 +427,14 @@ export class CommitView implements vscode.WebviewViewProvider {
         { location: 'window' },
       );
     } catch (e) {
-      showError(e, vscode.l10n.t('Commit failed'));
+      showError(e, translate('Commit failed'));
       return { ok: false };
     }
     await this.rememberMessage(message);
     await this.ctx.extension.workspaceState.update(DRAFT_KEY, '');
     const n = included.length;
     const subject = message.split('\n')[0];
-    void notifySuccess(n === 0 ? vscode.l10n.t('No files committed') : n === 1 ? vscode.l10n.t('1 file committed') : vscode.l10n.t('{0} files committed', n), subject);
+    void notifySuccess(n === 0 ? translate('No files committed') : n === 1 ? translate('1 file committed') : translate('{0} files committed', n), subject);
     if (p.push) {
       for (const repo of committed) await vscode.commands.executeCommand('ideagittool.push', { root: repo.root });
     }
@@ -451,13 +452,13 @@ export class CommitView implements vscode.WebviewViewProvider {
     const files = [...st.changelists.flatMap(l => l.changes), ...st.conflicts];
     const selected = all || !keys.length ? files.map(changeKey) : keys.filter(k => files.some(f => changeKey(f) === k));
     if (!files.length) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('No changes to roll back'));
+      void vscode.window.showInformationMessage(translate('No changes to roll back'));
       return;
     }
     const res = await showDialog<{ keys: string[]; deleteAdded: boolean }>(
       'commit.rollback',
       { files, selected, groupByDirectory: this.settings.groupByDirectory },
-      { title: vscode.l10n.t('Rollback Changes') },
+      { title: translate('Rollback Changes') },
     );
     if (!res || !res.keys.length) return;
     for (const [repo, list] of this.byRepo(this.changes(res.keys))) {
@@ -469,9 +470,9 @@ export class CommitView implements vscode.WebviewViewProvider {
     const changes = this.changes(keys).filter(c => c.status !== 'D');
     if (!changes.length) return;
     const a = await ask(
-      changes.length === 1 ? vscode.l10n.t('Delete "{0}"?', path.basename(changes[0].path)) : vscode.l10n.t('Delete {0} files?', changes.length),
+      changes.length === 1 ? translate('Delete "{0}"?', path.basename(changes[0].path)) : translate('Delete {0} files?', changes.length),
       undefined,
-      vscode.l10n.t('Delete'),
+      translate('Delete'),
     );
     if (!a) return;
     for (const c of changes) await vscode.workspace.fs.delete(vscode.Uri.file(path.join(c.root, c.path)), { useTrash: true, recursive: true });
@@ -485,11 +486,11 @@ export class CommitView implements vscode.WebviewViewProvider {
     if (!listId) {
       const items: (vscode.QuickPickItem & { id?: string })[] = this.changelists.all().map(l => ({
         label: changelistDisplayName(l.name, l.id),
-        description: l.id === this.changelists.active.id ? vscode.l10n.t('active') : undefined,
+        description: l.id === this.changelists.active.id ? translate('active') : undefined,
         id: l.id,
       }));
-      items.push({ label: `$(add) ${vscode.l10n.t('New Changelist…')}` });
-      const pick = await vscode.window.showQuickPick(items, { title: vscode.l10n.t('Move to Another Changelist'), placeHolder: vscode.l10n.t('Choose changelist') });
+      items.push({ label: `$(add) ${translate('New Changelist…')}` });
+      const pick = await vscode.window.showQuickPick(items, { title: translate('Move to Another Changelist'), placeHolder: translate('Choose changelist') });
       if (!pick) return;
       listId = pick.id ?? (await this.newChangelist());
       if (!listId) return;
@@ -501,7 +502,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     const res = await showDialog<{ name: string; comment: string; makeActive: boolean }>(
       'commit.changelist',
       { mode: 'new', name: '', comment: '', makeActive: false, existing: this.changelists.all().flatMap(l => [l.name, changelistDisplayName(l.name, l.id)]) },
-      { title: vscode.l10n.t('New Changelist') },
+      { title: translate('New Changelist') },
     );
     if (!res) return undefined;
     const id = this.changelists.add(res.name, res.comment, res.makeActive);
@@ -522,7 +523,7 @@ export class CommitView implements vscode.WebviewViewProvider {
         makeActive: this.changelists.active.id === id,
         existing: this.changelists.all().filter(x => x.id !== id).flatMap(x => [x.name, changelistDisplayName(x.name, x.id)]),
       },
-      { title: vscode.l10n.t('Edit Changelist') },
+      { title: translate('Edit Changelist') },
     );
     if (!res) return;
     // The default name stays stored in English when it was not changed.
@@ -536,9 +537,9 @@ export class CommitView implements vscode.WebviewViewProvider {
     const hasFiles = this.lastState?.changelists.find(x => x.id === id)?.changes.length;
     if (hasFiles) {
       const a = await ask(
-        vscode.l10n.t('Delete changelist "{0}"?', changelistDisplayName(l.name, l.id)),
-        vscode.l10n.t('Its changes will be moved to the active changelist.'),
-        vscode.l10n.t('Delete'),
+        translate('Delete changelist "{0}"?', changelistDisplayName(l.name, l.id)),
+        translate('Its changes will be moved to the active changelist.'),
+        translate('Delete'),
       );
       if (!a) return;
     }
@@ -549,7 +550,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     const st = this.lastState ?? this.buildState();
     const files = [...st.changelists.flatMap(l => l.changes), ...st.unversioned];
     if (!files.length) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('No changes to shelve'));
+      void vscode.window.showInformationMessage(translate('No changes to shelve'));
       return;
     }
     const selected = keys.length ? keys : st.included;
@@ -557,7 +558,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     const res = await showDialog<{ keys: string[]; name: string }>(
       'commit.shelve',
       { files, selected, name: active && active.name !== changelistDisplayName(DEFAULT_CHANGELIST_NAME) ? active.name : '', groupByDirectory: this.settings.groupByDirectory },
-      { title: vscode.l10n.t('Shelve Changes'), validate: v => (v.keys.length ? undefined : vscode.l10n.t('Select files to shelve')) },
+      { title: translate('Shelve Changes'), validate: v => (v.keys.length ? undefined : translate('Select files to shelve')) },
     );
     if (!res) return;
     await this.doShelve(this.changes(res.keys), res.name);
@@ -575,13 +576,13 @@ export class CommitView implements vscode.WebviewViewProvider {
 
   private async doShelve(changes: Change[], name: string) {
     await withProgress(
-      vscode.l10n.t('Shelving changes…'),
+      translate('Shelving changes…'),
       async () => {
-        for (const [repo, list] of this.byRepo(changes)) await this.shelf.shelve(repo, list, name || vscode.l10n.t('Shelved changes'));
+        for (const [repo, list] of this.byRepo(changes)) await this.shelf.shelve(repo, list, name || translate('Shelved changes'));
       },
       { location: 'window' },
     );
-    void notifySuccess(vscode.l10n.t('Changes shelved successfully'), undefined, { label: vscode.l10n.t('Show Shelf'), run: () => this.reveal('shelf') });
+    void notifySuccess(translate('Changes shelved successfully'), undefined, { label: translate('Show Shelf'), run: () => this.reveal('shelf') });
   }
 
   async unshelveDialog(id: string, paths?: string[]) {
@@ -590,7 +591,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     const res = await showDialog<{ paths: string[]; changelist: string; removeApplied: boolean }>(
       'commit.unshelve',
       { shelf: s, selected: paths ?? s.files.map(f => f.path), changelists: this.changelists.all().map(l => changelistDisplayName(l.name, l.id)), changelist: changelistDisplayName(s.name) },
-      { title: vscode.l10n.t('Unshelve Changes') },
+      { title: translate('Unshelve Changes') },
     );
     if (!res || !res.paths.length) return;
     await this.doUnshelve(id, res.paths, res.removeApplied, res.changelist);
@@ -604,9 +605,9 @@ export class CommitView implements vscode.WebviewViewProvider {
     const s = this.shelf.get(id);
     if (!s) return;
     const repo = this.ctx.repos.get(s.root) ?? (await this.ctx.repos.open(s.root));
-    if (!repo) throw new Error(vscode.l10n.t('Repository {0} is not available', s.root));
+    if (!repo) throw new Error(translate('Repository {0} is not available', s.root));
     const files = s.files.filter(f => !paths || paths.includes(f.path));
-    const { conflicts } = await withProgress(vscode.l10n.t('Unshelving changes…'), () => this.shelf.unshelve(repo, id, paths, removeApplied), { location: 'window' });
+    const { conflicts } = await withProgress(translate('Unshelving changes…'), () => this.shelf.unshelve(repo, id, paths, removeApplied), { location: 'window' });
     // By stored or displayed name (the dialog shows the default changelist translated).
     const target = changelist ? this.changelists.findByName(changelist) : undefined;
     if (changelist && target?.id !== this.changelists.active.id) {
@@ -618,11 +619,11 @@ export class CommitView implements vscode.WebviewViewProvider {
     }
     if (conflicts) {
       void this.resolveRestoreConflicts(repo.root, {
-        description: vscode.l10n.t('Conflicts during unshelving {0}', s.name),
-        left: [{ text: vscode.l10n.t('Local changes') }],
-        right: [{ text: vscode.l10n.t('Changes from shelf') }],
+        description: translate('Conflicts during unshelving {0}', s.name),
+        left: [{ text: translate('Local changes') }],
+        right: [{ text: translate('Changes from shelf') }],
         reverse: false,
-      }, vscode.l10n.t('Conflicts were not resolved during unshelve'), vscode.l10n.t('Unshelve is not complete, you have unresolved merges in your working tree.'));
+      }, translate('Conflicts were not resolved during unshelve'), translate('Unshelve is not complete, you have unresolved merges in your working tree.'));
     }
   }
 
@@ -632,9 +633,9 @@ export class CommitView implements vscode.WebviewViewProvider {
     const permanent = items.every(s => s!.deleted);
     if (permanent) {
       const a = await ask(
-        items.length === 1 ? vscode.l10n.t("Delete the '{0}' changelist permanently?", items[0]!.name) : vscode.l10n.t('Delete {0} changelists permanently?', items.length),
+        items.length === 1 ? translate("Delete the '{0}' changelist permanently?", items[0]!.name) : translate('Delete {0} changelists permanently?', items.length),
         undefined,
-        vscode.l10n.t('Delete'),
+        translate('Delete'),
       );
       if (!a) return;
     }
@@ -642,10 +643,10 @@ export class CommitView implements vscode.WebviewViewProvider {
     if (!permanent) {
       const text =
         items.length === 1
-          ? vscode.l10n.t("the '{0}' changelist deleted from shelf successfully", items[0]!.name)
-          : vscode.l10n.t('{0} changelists deleted from shelf successfully', items.length);
+          ? translate("the '{0}' changelist deleted from shelf successfully", items[0]!.name)
+          : translate('{0} changelists deleted from shelf successfully', items.length);
       void notifySuccess(text, undefined, {
-        label: vscode.l10n.t('Undo Shelf Deletion'),
+        label: translate('Undo Shelf Deletion'),
         run: () => this.shelf.restore(ids),
       });
     }
@@ -666,11 +667,11 @@ export class CommitView implements vscode.WebviewViewProvider {
     }
     const shelved = f.newBlob ? toGitUri(s.root, f.path, `blob:${f.newBlob}`) : toGitUri(s.root, f.path, REV_EMPTY);
     if (withLocal) {
-      await vscode.commands.executeCommand('vscode.diff', shelved, vscode.Uri.file(path.join(s.root, f.path)), vscode.l10n.t('{0} (Shelved version ↔ Local)', name));
+      await vscode.commands.executeCommand('vscode.diff', shelved, vscode.Uri.file(path.join(s.root, f.path)), translate('{0} (Shelved version ↔ Local)', name));
       return;
     }
     const base = f.oldBlob ? toGitUri(s.root, f.oldPath ?? f.path, `blob:${f.oldBlob}`) : toGitUri(s.root, f.path, REV_EMPTY);
-    await vscode.commands.executeCommand('vscode.diff', base, shelved, vscode.l10n.t('Shelved: {0} — {1}', s.name, name), { preview: true });
+    await vscode.commands.executeCommand('vscode.diff', base, shelved, translate('Shelved: {0} — {1}', s.name, name), { preview: true });
   }
 
   async stashDiff(f: StashFile, withLocal?: 'after' | 'before') {
@@ -678,41 +679,41 @@ export class CommitView implements vscode.WebviewViewProvider {
     const right = f.status === 'D' ? toGitUri(f.root, f.path, REV_EMPTY) : toGitUri(f.root, f.path, f.right);
     const left = !f.left || f.status === 'A' ? toGitUri(f.root, f.path, REV_EMPTY) : toGitUri(f.root, f.oldPath ?? f.path, f.left);
     const local = vscode.Uri.file(path.join(f.root, f.path));
-    if (withLocal === 'after') await vscode.commands.executeCommand('vscode.diff', right, local, vscode.l10n.t('{0} (Stash ↔ Local)', name));
-    else if (withLocal === 'before') await vscode.commands.executeCommand('vscode.diff', left, local, vscode.l10n.t('{0} (Before stash ↔ Local)', name));
-    else await vscode.commands.executeCommand('vscode.diff', left, right, vscode.l10n.t('{0} ({1} ↔ stash)', name, shortHash(f.left.replace(/\^\d$/, ''))), { preview: true });
+    if (withLocal === 'after') await vscode.commands.executeCommand('vscode.diff', right, local, translate('{0} (Stash ↔ Local)', name));
+    else if (withLocal === 'before') await vscode.commands.executeCommand('vscode.diff', left, local, translate('{0} (Before stash ↔ Local)', name));
+    else await vscode.commands.executeCommand('vscode.diff', left, right, translate('{0} ({1} ↔ stash)', name, shortHash(f.left.replace(/\^\d$/, ''))), { preview: true });
   }
 
   async stashApply(root: string, ref: string, pop: boolean, index: boolean) {
     const repo = this.ctx.repos.get(root);
     if (!repo) return;
     const args = ['stash', pop ? 'pop' : 'apply', ...(index ? ['--index'] : []), ref];
-    const r = await withProgress(vscode.l10n.t('Unstashing…'), () => repo.batch(() => repo.exec(args, { allowFailure: true })), { location: 'window' });
+    const r = await withProgress(translate('Unstashing…'), () => repo.batch(() => repo.exec(args, { allowFailure: true })), { location: 'window' });
     if (r.exitCode !== 0) {
       if (/conflict/i.test(r.stdout + r.stderr)) {
         // UnstashConflictResolver: the Conflicts dialog right away, a notification only when conflicts are left.
         void this.resolveRestoreConflicts(root, {
-          description: vscode.l10n.t('Conflicts during unstashing {0}', ref),
-          left: [{ text: vscode.l10n.t('Local changes') }],
-          right: [{ text: vscode.l10n.t('Changes from stash') }],
+          description: translate('Conflicts during unstashing {0}', ref),
+          left: [{ text: translate('Local changes') }],
+          right: [{ text: translate('Changes from stash') }],
           reverse: false,
-        }, vscode.l10n.t('Conflicts were not resolved during unstash'), vscode.l10n.t('Unstash is not complete, you have unresolved merges in your working tree.'));
-      } else showError(new Error(r.stderr.trim() || r.stdout.trim()), vscode.l10n.t('Unstash failed'));
+        }, translate('Conflicts were not resolved during unstash'), translate('Unstash is not complete, you have unresolved merges in your working tree.'));
+      } else showError(new Error(r.stderr.trim() || r.stdout.trim()), translate('Unstash failed'));
       return;
     }
-    void notifySuccess(vscode.l10n.t('Stash successfully applied'));
+    void notifySuccess(translate('Stash successfully applied'));
   }
 
   /** Shows the Conflicts dialog for conflicts of unstashed / unshelved changes, then notifies about the ones left. */
   private async resolveRestoreConflicts(root: string, context: ConflictContext, title: string, message: string) {
     const { remaining } = await this.conflicts.show(root, undefined, context);
-    if (remaining) void notifyWarning(title, message, { label: vscode.l10n.t('Resolve conflicts…'), run: () => this.conflicts.show(root) });
+    if (remaining) void notifyWarning(title, message, { label: translate('Resolve conflicts…'), run: () => this.conflicts.show(root) });
   }
 
   async stashDrop(root: string, ref: string, message: string) {
     const repo = this.ctx.repos.get(root);
     if (!repo) return;
-    const a = await ask(vscode.l10n.t('Remove Stash {0}?', ref), vscode.l10n.t('Do you want to remove {0}?\n"{1}"', ref, message), vscode.l10n.t('Remove'));
+    const a = await ask(translate('Remove Stash {0}?', ref), translate('Do you want to remove {0}?\n"{1}"', ref, message), translate('Remove'));
     if (!a) return;
     await repo.batch(() => repo.exec(['stash', 'drop', ref]));
   }
@@ -720,7 +721,7 @@ export class CommitView implements vscode.WebviewViewProvider {
   async stashClear(root: string) {
     const repo = this.ctx.repos.get(root);
     if (!repo) return;
-    const a = await ask(vscode.l10n.t('Remove All Stashes?'), vscode.l10n.t('Remove all stashes? This cannot be undone.'), vscode.l10n.t('Remove'));
+    const a = await ask(translate('Remove All Stashes?'), translate('Remove all stashes? This cannot be undone.'), translate('Remove'));
     if (!a) return;
     await repo.batch(() => repo.exec(['stash', 'clear']));
   }
@@ -739,7 +740,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     let text = '';
     for (const [repo, list] of this.byRepo(changes)) text += (await createPatch(repo, list)).patch;
     await vscode.env.clipboard.writeText(text);
-    void notifySuccess(vscode.l10n.t('Patch copied to clipboard'));
+    void notifySuccess(translate('Patch copied to clipboard'));
   }
 
   /**
@@ -749,7 +750,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     const st = this.lastState ?? this.buildState();
     const all = [...st.changelists.flatMap(l => l.changes), ...st.unversioned];
     if (!all.length) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('No changes to create a patch from'));
+      void vscode.window.showInformationMessage(translate('No changes to create a patch from'));
       return;
     }
     const basePath = this.ctx.repos.repositories.length === 1 ? this.ctx.repos.repositories[0].root : (vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? all[0].root);
@@ -785,7 +786,7 @@ export class CommitView implements vscode.WebviewViewProvider {
   }
 
   async importPatches() {
-    const uris = await vscode.window.showOpenDialog({ canSelectMany: true, title: vscode.l10n.t('Import Patches'), filters: { [vscode.l10n.t('Patch')]: ['patch', 'diff'] } });
+    const uris = await vscode.window.showOpenDialog({ canSelectMany: true, title: translate('Import Patches'), filters: { [translate('Patch')]: ['patch', 'diff'] } });
     if (!uris?.length) return;
     const repo = await this.ctx.repos.pick();
     if (!repo) return;
@@ -809,9 +810,9 @@ export class CommitView implements vscode.WebviewViewProvider {
     if (!changes.length) return;
     const question =
       changes.length === 1
-        ? vscode.l10n.t("Remove '{0}' from version control?", path.posix.basename(changes[0].path))
-        : vscode.l10n.t('Remove {0} files from version control?', changes.length);
-    const a = await ask(question, vscode.l10n.t('The files are kept on disk and become unversioned.'), vscode.l10n.t('Remove'));
+        ? translate("Remove '{0}' from version control?", path.posix.basename(changes[0].path))
+        : translate('Remove {0} files from version control?', changes.length);
+    const a = await ask(question, translate('The files are kept on disk and become unversioned.'), translate('Remove'));
     if (!a) return;
     for (const [repo, list] of this.byRepo(changes)) {
       await repo.batch(() => repo.exec(['rm', '--cached', '-r', '-q', '--ignore-unmatch', '--', ...list.map(c => c.path)]));
@@ -833,13 +834,13 @@ export class CommitView implements vscode.WebviewViewProvider {
       await repo.batch(() => repo.exec(['checkout', '-m', '--', ...paths]));
       done += paths.length;
     }
-    if (!done) void vscode.window.showInformationMessage(vscode.l10n.t('There are no resolved files to revert'));
+    if (!done) void vscode.window.showInformationMessage(translate('There are no resolved files to revert'));
   }
 
   /** Shelves all local changes of one repository (Update Project with "Shelve"). Returns the shelf id. */
   async shelveAll(root: string, name: string): Promise<string | undefined> {
     const repo = this.ctx.repos.get(root);
-    if (!repo) throw new Error(vscode.l10n.t('Repository {0} is not available', root));
+    if (!repo) throw new Error(translate('Repository {0} is not available', root));
     await repo.refresh();
     // Like IntelliJ's VcsShelveChangesSaver: only tracked changes are shelved, unversioned files stay in place.
     const changes = repo.status.changes.filter(c => c.status !== 'U');
@@ -892,7 +893,7 @@ export async function copyPaths(files: string[], kind: CopyPathKind, ctx: Ctx, l
     })
     .join('\n');
   await vscode.env.clipboard.writeText(text);
-  void vscode.window.setStatusBarMessage(vscode.l10n.t('Copied: {0}', `${text.split('\n')[0]}${files.length > 1 ? ` (+${files.length - 1})` : ''}`), 3000);
+  void vscode.window.setStatusBarMessage(translate('Copied: {0}', `${text.split('\n')[0]}${files.length > 1 ? ` (+${files.length - 1})` : ''}`), 3000);
 }
 
 /** Files resolved during the ongoing operation that still have resolve-undo information. */

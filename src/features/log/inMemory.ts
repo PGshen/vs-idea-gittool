@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { splitNul } from '../../git/exec';
 import { Repository } from '../../git/repository';
 
@@ -18,7 +19,7 @@ export class InMemoryError extends Error {}
 
 export class MergeConflictError extends InMemoryError {
   constructor(readonly files: string[]) {
-    super(vscode.l10n.t('Merge conflict in {0}', files.join(', ')));
+    super(translate('Merge conflict in {0}', files.join(', ')));
   }
 }
 
@@ -61,7 +62,7 @@ export async function treeOf(repo: Repository, rev: string): Promise<string> {
  * Returns the new commit, or null when the changes are already present (empty result).
  */
 export async function cherryPickInMemory(repo: Repository, commit: CommitInfo, onto: string): Promise<string | null> {
-  if (commit.parents.length > 1) throw new InMemoryError(vscode.l10n.t('Commit {0} is a merge commit', commit.hash.slice(0, 8)));
+  if (commit.parents.length > 1) throw new InMemoryError(translate('Commit {0} is a merge commit', commit.hash.slice(0, 8)));
   const ontoTree = await treeOf(repo, onto);
   let tree: string;
   if (!commit.parents.length) {
@@ -88,16 +89,16 @@ export async function cherryPickInMemory(repo: Repository, commit: CommitInfo, o
  */
 export async function rangeToHead(repo: Repository, base: string): Promise<CommitInfo[]> {
   const head = repo.info.headHash;
-  if (!head) throw new InMemoryError(vscode.l10n.t('The repository has no commits'));
+  if (!head) throw new InMemoryError(translate('The repository has no commits'));
   const isAncestor = (await repo.exec(['merge-base', '--is-ancestor', base, 'HEAD'], { allowFailure: true, quiet: true })).exitCode === 0;
-  if (!isAncestor) throw new InMemoryError(vscode.l10n.t('Commit {0} is not in the current branch', base.slice(0, 8)));
+  if (!isAncestor) throw new InMemoryError(translate('Commit {0} is not in the current branch', base.slice(0, 8)));
   const info = await commitInfo(repo, base);
   const rest = (await repo.execText(['rev-list', '--reverse', '--parents', `${base}..HEAD`], { quiet: true })).split('\n').filter(Boolean);
   const out = [info];
   let prev = info.hash;
   for (const line of rest) {
     const [h, ...parents] = line.split(' ');
-    if (parents.length !== 1 || parents[0] !== prev) throw new InMemoryError(vscode.l10n.t('Commits after the selected one contain merges, so they can not be rewritten in memory'));
+    if (parents.length !== 1 || parents[0] !== prev) throw new InMemoryError(translate('Commits after the selected one contain merges, so they can not be rewritten in memory'));
     out.push(await commitInfo(repo, h));
     prev = h;
   }
@@ -149,7 +150,7 @@ export async function chainCommits(repo: Repository, base: string, commits: Comm
  */
 export async function moveHead(repo: Repository, oldHead: string, newHead: string, operation: string, workingTree: boolean) {
   const current = (await repo.execText(['rev-parse', 'HEAD'], { quiet: true })).trim();
-  if (current !== oldHead) throw new InMemoryError(vscode.l10n.t('HEAD moved during the commit editing operation'));
+  if (current !== oldHead) throw new InMemoryError(translate('HEAD moved during the commit editing operation'));
   const reflog = `${operation} ${REFLOG_SUFFIX}`;
   if (!workingTree) {
     await repo.exec(['update-ref', '-m', reflog, 'HEAD', newHead, oldHead]);
@@ -162,7 +163,7 @@ export async function moveHead(repo: Repository, oldHead: string, newHead: strin
   if (stash.exitCode !== 0) throw new InMemoryError(r.stderr.trim() || stash.stderr.trim());
   await repo.exec(['reset', '--hard', newHead], { env: { GIT_REFLOG_ACTION: reflog } });
   const pop = await repo.exec(['stash', 'pop', '--index'], { allowFailure: true });
-  if (pop.exitCode !== 0) throw new InMemoryError(vscode.l10n.t('Local changes were stashed but could not be restored automatically: {0}', pop.stderr.trim()));
+  if (pop.exitCode !== 0) throw new InMemoryError(translate('Local changes were stashed but could not be restored automatically: {0}', pop.stderr.trim()));
 }
 
 function pathsOf(changes: { path: string; oldPath?: string }[]): string[] {
@@ -181,7 +182,7 @@ export interface EditResult {
 export async function dropSelectedChanges(repo: Repository, hash: string, changes: { path: string; oldPath?: string }[]): Promise<EditResult> {
   const oldHead = repo.info.headHash!;
   const [target, ...rest] = await rangeToHead(repo, hash);
-  if (target.parents.length > 1) throw new InMemoryError(vscode.l10n.t('Changes of a merge commit can not be dropped'));
+  if (target.parents.length > 1) throw new InMemoryError(translate('Changes of a merge commit can not be dropped'));
   const tree = await treeWithPathsFrom(repo, target.tree, target.parents[0], pathsOf(changes));
   const rewritten = await commitTree(repo, tree, target.parents, target.message, target);
   const { head } = await chainCommits(repo, rewritten, rest);
@@ -196,7 +197,7 @@ export async function dropSelectedChanges(repo: Repository, hash: string, change
 export async function extractSelectedChanges(repo: Repository, hash: string, changes: { path: string; oldPath?: string }[], message: string): Promise<EditResult> {
   const oldHead = repo.info.headHash!;
   const [target, ...rest] = await rangeToHead(repo, hash);
-  if (target.parents.length > 1) throw new InMemoryError(vscode.l10n.t('Changes of a merge commit can not be extracted'));
+  if (target.parents.length > 1) throw new InMemoryError(translate('Changes of a merge commit can not be extracted'));
   const remaining = await treeWithPathsFrom(repo, target.tree, target.parents[0], pathsOf(changes));
   const first = await commitTree(repo, remaining, target.parents, target.message, target);
   const second = await commitTree(repo, target.tree, [first], message, target);
@@ -216,10 +217,10 @@ export async function undoEdit(repo: Repository, r: EditResult, operation: strin
  * memory and returns the new tip, or null when all commits are already present.
  */
 export async function addCommitsToRemoteBranch(repo: Repository, hashes: string[], remote: string, branch: string, progress?: (text: string) => void): Promise<string | null> {
-  progress?.(vscode.l10n.t('Fetching remote branch…'));
+  progress?.(translate('Fetching remote branch…'));
   await repo.exec(['fetch', remote, `refs/heads/${branch}:refs/remotes/${remote}/${branch}`]);
   const tip = (await repo.execText(['rev-parse', '--verify', `refs/remotes/${remote}/${branch}^{commit}`], { quiet: true })).trim();
-  progress?.(vscode.l10n.t('Cherry-picking commits in memory…'));
+  progress?.(translate('Cherry-picking commits in memory…'));
   let base = tip;
   for (const h of hashes) {
     const n = await cherryPickInMemory(repo, await commitInfo(repo, h), base);

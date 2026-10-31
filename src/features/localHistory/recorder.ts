@@ -2,6 +2,7 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { FileState, LhEvent, LocalHistoryStore, normPath } from './store';
@@ -330,7 +331,7 @@ export class LocalHistoryRecorder implements vscode.Disposable {
         fs.rmSync(p, { force: true });
       } else {
         const data = this.store.getContent(state);
-        if (!data) throw new Error(vscode.l10n.t('Content of {0} is not available', p));
+        if (!data) throw new Error(translate('Content of {0} is not available', p));
         fs.mkdirSync(path.dirname(p), { recursive: true });
         fs.writeFileSync(p, data);
       }

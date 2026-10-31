@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { showDialog } from '../../host/dialog';
@@ -83,18 +84,18 @@ export class WorktreesView implements vscode.TreeDataProvider<Node>, vscode.Disp
     const { wt, repo } = node;
     const current = samePath(wt.path, repo.root);
     const item = new vscode.TreeItem(path.basename(wt.path));
-    item.description = wt.branch ?? (wt.bare ? vscode.l10n.t('bare') : vscode.l10n.t('<detached>'));
+    item.description = wt.branch ?? (wt.bare ? translate('bare') : translate('<detached>'));
     item.iconPath = current ? ijIcon('actions/checked') : wt.locked ? ijIcon('nodes/locked') : ijIcon('general/vcs');
     const tip = new vscode.MarkdownString();
-    tip.appendMarkdown(`**${path.basename(wt.path)}** — ${wt.main ? vscode.l10n.t('Main worktree') : vscode.l10n.t('Linked worktree')}\n\n`);
+    tip.appendMarkdown(`**${path.basename(wt.path)}** — ${wt.main ? translate('Main worktree') : translate('Linked worktree')}\n\n`);
     tip.appendText(`${wt.path}\n`);
-    tip.appendMarkdown(`\n$(git-branch) ${wt.branch ?? vscode.l10n.t('<detached>')}`);
-    if (wt.locked) tip.appendMarkdown(`\n\n${wt.lockReason ? vscode.l10n.t('Locked: {0}', wt.lockReason) : vscode.l10n.t('Locked')}`);
-    if (wt.prunable) tip.appendMarkdown(`\n\n${wt.prunableReason ? vscode.l10n.t('Prunable: {0}', wt.prunableReason) : vscode.l10n.t('Prunable')}`);
+    tip.appendMarkdown(`\n$(git-branch) ${wt.branch ?? translate('<detached>')}`);
+    if (wt.locked) tip.appendMarkdown(`\n\n${wt.lockReason ? translate('Locked: {0}', wt.lockReason) : translate('Locked')}`);
+    if (wt.prunable) tip.appendMarkdown(`\n\n${wt.prunableReason ? translate('Prunable: {0}', wt.prunableReason) : translate('Prunable')}`);
     tip.supportThemeIcons = true;
     item.tooltip = tip;
     item.contextValue = ['worktree', wt.main ? 'main' : 'linked', wt.locked ? 'locked' : 'unlocked', current ? 'current' : ''].join(' ');
-    item.command = { command: 'ideagittool.worktrees.open', title: vscode.l10n.t('Open Worktree'), arguments: [{ root: repo.root, path: wt.path }] };
+    item.command = { command: 'ideagittool.worktrees.open', title: translate('Open Worktree'), arguments: [{ root: repo.root, path: wt.path }] };
     if (wt.prunable) item.label = { label: path.basename(wt.path), highlights: [] };
     return item;
   }
@@ -112,7 +113,7 @@ function suggestName(repo: Repository, branch: string) {
 export async function createWorktreeCommand(ctx: Ctx, arg?: RootArg & { ref?: string }, view?: WorktreesView) {
   await ctx.repos.ready();
   const repos = arg?.root ? [await repoFor(ctx, arg)] : ctx.repos.repositories;
-  if (!repos.length) throw new Error(vscode.l10n.t('No Git repository found in the workspace.'));
+  if (!repos.length) throw new Error(translate('No Git repository found in the workspace.'));
   const data = await Promise.all(
     repos.map(async repo => {
       const wts = await listWorktrees(repo);
@@ -135,10 +136,10 @@ export async function createWorktreeCommand(ctx: Ctx, arg?: RootArg & { ref?: st
     'ops.newWorktree',
     { repos: data, root: initialRepo.root, ref, parent: path.dirname(initialRepo.root), suggestions: Object.fromEntries(repos.map(r => [r.root, r.name])) },
     {
-      title: vscode.l10n.t('New Worktree'),
+      title: translate('New Worktree'),
       handlers: {
         browse: async (p: { current: string }) => {
-          const r = await vscode.window.showOpenDialog({ canSelectFiles: false, canSelectFolders: true, defaultUri: p.current ? vscode.Uri.file(p.current) : undefined, title: vscode.l10n.t('Worktree Location') });
+          const r = await vscode.window.showOpenDialog({ canSelectFiles: false, canSelectFolders: true, defaultUri: p.current ? vscode.Uri.file(p.current) : undefined, title: translate('Worktree Location') });
           return r?.[0]?.fsPath ?? null;
         },
         suggestName: (p: { root: string; ref: string }) => suggestName(ctx.repos.get(p.root)!, p.ref),
@@ -149,11 +150,11 @@ export async function createWorktreeCommand(ctx: Ctx, arg?: RootArg & { ref?: st
   if (!res) return;
   const repo = ctx.repos.get(res.root)!;
   const target = path.join(res.parent, res.name);
-  const outcome = await withProgress(vscode.l10n.t('Creating worktree'), progress => createWorktree(repo, { path: target, ref: res.ref, newBranch: res.newBranch || undefined, force: res.force }, { progress }));
+  const outcome = await withProgress(translate('Creating worktree'), progress => createWorktree(repo, { path: target, ref: res.ref, newBranch: res.newBranch || undefined, force: res.force }, { progress }));
   await repo.refresh();
   view?.refresh();
   if (outcome.kind !== 'success') {
-    showError(outcome.kind === 'error' ? outcome.error : outcome.output, vscode.l10n.t('Worktree creation failed'));
+    showError(outcome.kind === 'error' ? outcome.error : outcome.output, translate('Worktree creation failed'));
     return;
   }
   await openWorktree(target);
@@ -161,33 +162,33 @@ export async function createWorktreeCommand(ctx: Ctx, arg?: RootArg & { ref?: st
 
 function validateWorktree(ctx: Ctx, v: { root: string; ref: string; newBranch?: string; name: string; parent: string; force?: boolean }): string | true {
   const repo = ctx.repos.get(v.root);
-  if (!repo) return vscode.l10n.t('Select a repository');
-  if (!v.ref) return vscode.l10n.t('Select a branch to create the worktree');
+  if (!repo) return translate('Select a repository');
+  if (!v.ref) return translate('Select a branch to create the worktree');
   if (v.newBranch !== undefined) {
-    if (!v.newBranch.trim()) return vscode.l10n.t('A name for the branch in the worktree must be provided explicitly');
-    if (repo.refs.some(r => r.type === 'local' && r.name === v.newBranch)) return vscode.l10n.t('Local branch {0} already exists', v.newBranch);
+    if (!v.newBranch.trim()) return translate('A name for the branch in the worktree must be provided explicitly');
+    if (repo.refs.some(r => r.type === 'local' && r.name === v.newBranch)) return translate('Local branch {0} already exists', v.newBranch);
   } else {
     const remote = repo.refs.find(r => r.type === 'remote' && r.name === v.ref);
     if (remote && !repo.refs.some(r => r.type === 'local' && r.name === v.ref)) {
       const local = v.ref.slice((remote.remote?.length ?? 0) + 1);
-      if (local === v.ref) return vscode.l10n.t('A name for the branch in the worktree must be provided explicitly');
-      if (repo.refs.some(r => r.type === 'local' && r.name === local)) return vscode.l10n.t('Local branch {0} already exists, provide explicit name for the branch in the worktree', v.ref);
+      if (local === v.ref) return translate('A name for the branch in the worktree must be provided explicitly');
+      if (repo.refs.some(r => r.type === 'local' && r.name === local)) return translate('Local branch {0} already exists, provide explicit name for the branch in the worktree', v.ref);
     }
   }
-  if (!/^[A-Za-z0-9 _.-]+$/.test(v.name)) return vscode.l10n.t("Name should contain only letters, digits, spaces, '_', '-', '.' characters");
-  if (!v.parent.trim()) return vscode.l10n.t('Provide a location for the worktree');
-  if (fs.existsSync(v.parent) && !fs.statSync(v.parent).isDirectory()) return vscode.l10n.t("'{0}' is not a directory", v.parent);
+  if (!/^[A-Za-z0-9 _.-]+$/.test(v.name)) return translate("Name should contain only letters, digits, spaces, '_', '-', '.' characters");
+  if (!v.parent.trim()) return translate('Provide a location for the worktree');
+  if (fs.existsSync(v.parent) && !fs.statSync(v.parent).isDirectory()) return translate("'{0}' is not a directory", v.parent);
   const target = path.join(v.parent, v.name);
   if (fs.existsSync(target)) {
-    if (!fs.statSync(target).isDirectory()) return vscode.l10n.t("'{0}' is a file", target);
-    if (fs.readdirSync(target).length) return vscode.l10n.t("'{0}' is not empty", target);
+    if (!fs.statSync(target).isDirectory()) return translate("'{0}' is a file", target);
+    if (fs.readdirSync(target).length) return translate("'{0}' is not empty", target);
   }
   return true;
 }
 
 export async function openWorktree(wtPath: string) {
   if (!fs.existsSync(wtPath)) {
-    void vscode.window.showErrorMessage(vscode.l10n.t('Worktree directory `{0}` no longer exists', wtPath));
+    void vscode.window.showErrorMessage(translate('Worktree directory `{0}` no longer exists', wtPath));
     return;
   }
   await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(wtPath), { forceNewWindow: true });
@@ -205,15 +206,15 @@ async function resolve(ctx: Ctx, view: WorktreesView, arg?: WorktreeArg): Promis
   return view.selected() ?? (await pickWorktree(ctx));
 }
 
-async function pickWorktree(ctx: Ctx, title = vscode.l10n.t('Choose Worktree to Open'), filter?: (w: Worktree) => boolean) {
+async function pickWorktree(ctx: Ctx, title = translate('Choose Worktree to Open'), filter?: (w: Worktree) => boolean) {
   const repo = await repoFor(ctx);
   const list = (await listWorktrees(repo)).filter(w => !w.main && (!filter || filter(w)));
   if (!list.length) {
-    void vscode.window.showInformationMessage(vscode.l10n.t('No linked worktrees'));
+    void vscode.window.showInformationMessage(translate('No linked worktrees'));
     return undefined;
   }
   const p = await vscode.window.showQuickPick(
-    list.map(wt => ({ label: path.basename(wt.path), description: wt.branch ?? vscode.l10n.t('<detached>'), detail: wt.path, wt })),
+    list.map(wt => ({ label: path.basename(wt.path), description: wt.branch ?? translate('<detached>'), detail: wt.path, wt })),
     { title },
   );
   return p ? { repo, wt: p.wt } : undefined;
@@ -223,48 +224,48 @@ export async function deleteWorktreeCommand(ctx: Ctx, view: WorktreesView, arg?:
   const sel = await resolve(ctx, view, arg);
   if (!sel) return;
   const { repo, wt } = sel;
-  if (wt.main) throw new Error(vscode.l10n.t('The main worktree cannot be deleted'));
+  if (wt.main) throw new Error(translate('The main worktree cannot be deleted'));
   const current = vscode.workspace.workspaceFolders?.some(f => samePath(f.uri.fsPath, wt.path));
   const a = await vscode.window.showWarningMessage(
-    vscode.l10n.t('Delete Worktree'),
-    { modal: true, detail: current ? vscode.l10n.t('Delete worktree {0}?\nThe project will be closed.', wt.path) : vscode.l10n.t('Delete worktree at `{0}`?', wt.path) },
-    current ? vscode.l10n.t('Close and Delete') : vscode.l10n.t('Delete Worktree'),
+    translate('Delete Worktree'),
+    { modal: true, detail: current ? translate('Delete worktree {0}?\nThe project will be closed.', wt.path) : translate('Delete worktree at `{0}`?', wt.path) },
+    current ? translate('Close and Delete') : translate('Delete Worktree'),
   );
   if (!a) return;
-  let outcome = await withProgress(vscode.l10n.t('Deleting worktree…'), () => removeWorktree(repo, wt.path), { location: 'window' });
+  let outcome = await withProgress(translate('Deleting worktree…'), () => removeWorktree(repo, wt.path), { location: 'window' });
   if (outcome.kind !== 'success' && /contains modified or untracked files|is locked/.test(outcome.output)) {
     const force = await vscode.window.showWarningMessage(
-      vscode.l10n.t('Worktree deletion failed'),
-      { modal: true, detail: `${outcome.output}\n\n${vscode.l10n.t('Delete the worktree anyway? Local changes in it will be lost.')}` },
-      vscode.l10n.t('Delete Worktree'),
+      translate('Worktree deletion failed'),
+      { modal: true, detail: `${outcome.output}\n\n${translate('Delete the worktree anyway? Local changes in it will be lost.')}` },
+      translate('Delete Worktree'),
     );
-    if (force) outcome = await withProgress(vscode.l10n.t('Deleting worktree…'), () => removeWorktree(repo, wt.path, true), { location: 'window' });
+    if (force) outcome = await withProgress(translate('Deleting worktree…'), () => removeWorktree(repo, wt.path, true), { location: 'window' });
   }
   await repo.refresh();
   view.refresh();
   if (outcome.kind === 'success') {
-    void vscode.window.showInformationMessage(vscode.l10n.t('Successfully deleted worktree `{0}`', wt.path));
+    void vscode.window.showInformationMessage(translate('Successfully deleted worktree `{0}`', wt.path));
     if (current) await vscode.commands.executeCommand('workbench.action.closeFolder');
-  } else showError(outcome.kind === 'error' ? outcome.error : outcome.output, vscode.l10n.t('Worktree deletion failed'));
+  } else showError(outcome.kind === 'error' ? outcome.error : outcome.output, translate('Worktree deletion failed'));
 }
 
 export async function pruneWorktreesCommand(ctx: Ctx, view: WorktreesView, arg?: RootArg) {
   const repo = await repoFor(ctx, arg);
-  const prunable = await withProgress(vscode.l10n.t('Getting prunable worktrees…'), () => listWorktrees(repo), { location: 'window' }).then(l => l.filter(w => w.prunable));
+  const prunable = await withProgress(translate('Getting prunable worktrees…'), () => listWorktrees(repo), { location: 'window' }).then(l => l.filter(w => w.prunable));
   if (!prunable.length) {
-    void vscode.window.showInformationMessage(vscode.l10n.t('No worktrees to prune'));
+    void vscode.window.showInformationMessage(translate('No worktrees to prune'));
     return;
   }
   const a = await vscode.window.showWarningMessage(
-    vscode.l10n.t('Prune Worktrees'),
-    { modal: true, detail: vscode.l10n.t('Remove Git records for missing worktrees: {0}?', `\`${prunable.map(w => w.path).join('`, `')}\``) },
-    vscode.l10n.t('Prune Worktrees'),
+    translate('Prune Worktrees'),
+    { modal: true, detail: translate('Remove Git records for missing worktrees: {0}?', `\`${prunable.map(w => w.path).join('`, `')}\``) },
+    translate('Prune Worktrees'),
   );
   if (!a) return;
-  const r = await withProgress(vscode.l10n.t('Pruning worktrees…'), () => repo.exec(['worktree', 'prune'], { allowFailure: true }), { location: 'window' });
+  const r = await withProgress(translate('Pruning worktrees…'), () => repo.exec(['worktree', 'prune'], { allowFailure: true }), { location: 'window' });
   view.refresh();
-  if (r.exitCode === 0) void vscode.window.showInformationMessage(vscode.l10n.t('Successfully pruned worktrees'));
-  else showError(r.stderr, vscode.l10n.t('Failed to prune worktrees'));
+  if (r.exitCode === 0) void vscode.window.showInformationMessage(translate('Successfully pruned worktrees'));
+  else showError(r.stderr, translate('Failed to prune worktrees'));
 }
 
 export async function toggleLockCommand(ctx: Ctx, view: WorktreesView, arg?: WorktreeArg, lock?: boolean) {
@@ -272,12 +273,12 @@ export async function toggleLockCommand(ctx: Ctx, view: WorktreesView, arg?: Wor
   if (!sel) return;
   const { repo, wt } = sel;
   const doLock = lock ?? !wt.locked;
-  const r = await withProgress(doLock ? vscode.l10n.t('Locking worktree…') : vscode.l10n.t('Unlocking worktree…'), () => repo.exec(['worktree', doLock ? 'lock' : 'unlock', wt.path], { allowFailure: true }), {
+  const r = await withProgress(doLock ? translate('Locking worktree…') : translate('Unlocking worktree…'), () => repo.exec(['worktree', doLock ? 'lock' : 'unlock', wt.path], { allowFailure: true }), {
     location: 'window',
   });
   view.refresh();
-  if (r.exitCode === 0) void vscode.window.showInformationMessage(doLock ? vscode.l10n.t('Successfully locked worktree `{0}`', wt.path) : vscode.l10n.t('Successfully unlocked worktree `{0}`', wt.path));
-  else showError(r.stderr, doLock ? vscode.l10n.t('Failed to lock worktree') : vscode.l10n.t('Failed to unlock worktree'));
+  if (r.exitCode === 0) void vscode.window.showInformationMessage(doLock ? translate('Successfully locked worktree `{0}`', wt.path) : translate('Successfully unlocked worktree `{0}`', wt.path));
+  else showError(r.stderr, doLock ? translate('Failed to lock worktree') : translate('Failed to unlock worktree'));
 }
 
 export async function openWorktreeCommand(ctx: Ctx, view: WorktreesView, arg?: WorktreeArg & { branch?: string }) {
@@ -299,11 +300,11 @@ export async function checkWorktreeConflict(repo: Repository, branch: string): P
   const list = await listWorktrees(repo);
   const wt = list.find(w => w.branch === branch && !samePath(w.path, repo.root));
   if (!wt) return 'none';
-  const checkoutAnyway = vscode.l10n.t('Checkout Anyway');
-  const openExisting = vscode.l10n.t('Open Existing Worktree');
+  const checkoutAnyway = translate('Checkout Anyway');
+  const openExisting = translate('Open Existing Worktree');
   const a = await vscode.window.showInformationMessage(
-    vscode.l10n.t('Worktree Conflict'),
-    { modal: true, detail: vscode.l10n.t("Branch '{0}' is already checked out in a worktree at:\n{1}", branch, wt.path.replace(os.homedir(), '~')) },
+    translate('Worktree Conflict'),
+    { modal: true, detail: translate("Branch '{0}' is already checked out in a worktree at:\n{1}", branch, wt.path.replace(os.homedir(), '~')) },
     checkoutAnyway,
     openExisting,
   );

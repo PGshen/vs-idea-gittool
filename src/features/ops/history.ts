@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { showDialog } from '../../host/dialog';
@@ -45,28 +46,28 @@ async function full(repo: Repository, hash: string) {
 /** Shows a success notification with an "Undo" action that resets back to `oldHead` (like IntelliJ's log edits). */
 async function notifyWithUndo(repo: Repository, title: string, oldHead: string | undefined) {
   const newHead = await revParse(repo, 'HEAD');
-  const undo = vscode.l10n.t('Undo');
+  const undo = translate('Undo');
   const a = await vscode.window.showInformationMessage(title, ...(oldHead ? [undo] : []));
   if (a !== undo || !oldHead) return;
   if ((await revParse(repo, 'HEAD')) !== newHead) {
-    void vscode.window.showErrorMessage(vscode.l10n.t('Cannot undo: the repository has changed since "{0}"', title));
+    void vscode.window.showErrorMessage(translate('Cannot undo: the repository has changed since "{0}"', title));
     return;
   }
   const r = await repo.exec(['reset', '--keep', oldHead], { allowFailure: true });
   await repo.refresh();
-  if (r.exitCode !== 0) showError(r.stderr, vscode.l10n.t('Undo failed'));
+  if (r.exitCode !== 0) showError(r.stderr, translate('Undo failed'));
 }
 
 /** Commits in the current branch only can be edited; checks it like GitCommitEditingActionBase. `action` is translated. */
 async function ensureInCurrentBranch(repo: Repository, hashes: string[], action: string) {
-  if (repo.detectOperation() !== 'none') throw new Error(vscode.l10n.t('Cannot {0}: {1} is in progress', action, operationName(repo.detectOperation())));
-  if (!repo.info.branch) throw new Error(vscode.l10n.t('Cannot {0} in detached HEAD state', action));
-  for (const h of hashes) if (!(await isAncestor(repo, h, 'HEAD'))) throw new Error(vscode.l10n.t('The commit {0} is not in the current branch', h.slice(0, 8)));
+  if (repo.detectOperation() !== 'none') throw new Error(translate('Cannot {0}: {1} is in progress', action, operationName(repo.detectOperation())));
+  if (!repo.info.branch) throw new Error(translate('Cannot {0} in detached HEAD state', action));
+  for (const h of hashes) if (!(await isAncestor(repo, h, 'HEAD'))) throw new Error(translate('The commit {0} is not in the current branch', h.slice(0, 8)));
   // Warn when the commits are already pushed (rewriting published history).
   const pushed = await repo.exec(['branch', '-r', '--contains', hashes[0]], { allowFailure: true, quiet: true });
   if (pushed.stdout.trim()) {
     const a = await vscode.window.showWarningMessage(
-      vscode.l10n.t('The commit {0} is already pushed to {1}. Rewriting it changes published history.', hashes[0].slice(0, 8), pushed.stdout.trim().split('\n')[0].trim()),
+      translate('The commit {0} is already pushed to {1}. Rewriting it changes published history.', hashes[0].slice(0, 8), pushed.stdout.trim().split('\n')[0].trim()),
       { modal: true },
       capitalize(action),
     );
@@ -79,76 +80,76 @@ async function ensureInCurrentBranch(repo: Repository, hashes: string[], action:
 export async function rewordCommand(ctx: Ctx, arg: CommitArg) {
   const repo = await repoFor(ctx, arg);
   const hash = await full(repo, arg.hash);
-  await ensureInCurrentBranch(repo, [hash], vscode.l10n.t('edit commit message'));
+  await ensureInCurrentBranch(repo, [hash], translate('edit commit message'));
   const [c] = await commitMessages(repo, [hash]);
   const res = await showDialog<{ message: string }>(
     'ops.commitMessage',
-    { title: vscode.l10n.t('Edit Commit Message'), message: c.body, okLabel: vscode.l10n.t('OK'), hint: vscode.l10n.t('Edit message for commit {0} by {1}', hash.slice(0, 8), c.author) },
-    { title: vscode.l10n.t('Edit Commit Message') },
+    { title: translate('Edit Commit Message'), message: c.body, okLabel: translate('OK'), hint: translate('Edit message for commit {0} by {1}', hash.slice(0, 8), c.author) },
+    { title: translate('Edit Commit Message') },
   );
   if (!res || res.message === c.body) return;
   const old = repo.info.headHash;
-  const outcome = await withProgress(vscode.l10n.t('Editing commit message…'), () => repo.batch(() => rewordCommit(repo, hash, res.message)), { location: 'window' });
-  if (await reportOutcome(repo, outcome, { operation: 'reword', failedTitle: vscode.l10n.t("Couldn't edit commit message") })) await notifyWithUndo(repo, vscode.l10n.t('Commit message changed'), old);
+  const outcome = await withProgress(translate('Editing commit message…'), () => repo.batch(() => rewordCommit(repo, hash, res.message)), { location: 'window' });
+  if (await reportOutcome(repo, outcome, { operation: 'reword', failedTitle: translate("Couldn't edit commit message") })) await notifyWithUndo(repo, translate('Commit message changed'), old);
 }
 
 export async function fixupCommand(ctx: Ctx, arg: CommitArg & { squash?: boolean }) {
   const repo = await repoFor(ctx, arg);
   const hash = await full(repo, arg.hash);
-  await ensureInCurrentBranch(repo, [hash], arg.squash ? vscode.l10n.t('squash') : vscode.l10n.t('fixup'));
+  await ensureInCurrentBranch(repo, [hash], arg.squash ? translate('squash') : translate('fixup'));
   const staged = await repo.exec(['diff', '--cached', '--quiet'], { allowFailure: true, quiet: true });
   if (staged.exitCode === 0) {
     // IntelliJ opens the commit dialog with "fixup! subject"; here the staged area is used. Offer to stage tracked changes.
     const a = await vscode.window.showWarningMessage(
       arg.squash
-        ? vscode.l10n.t('Squash Into: there are no staged changes. Stage all tracked changes and create the squash! commit?')
-        : vscode.l10n.t('Fixup: there are no staged changes. Stage all tracked changes and create the fixup! commit?'),
+        ? translate('Squash Into: there are no staged changes. Stage all tracked changes and create the squash! commit?')
+        : translate('Fixup: there are no staged changes. Stage all tracked changes and create the fixup! commit?'),
       { modal: true },
-      vscode.l10n.t('Stage All and Continue'),
+      translate('Stage All and Continue'),
     );
     if (!a) return;
     await repo.exec(['add', '-u']);
   }
   const old = repo.info.headHash;
-  const outcome = await withProgress(vscode.l10n.t('Rebasing…'), () => repo.batch(() => fixupInto(repo, hash, !!arg.squash)), { location: 'window' });
-  if (await reportOutcome(repo, outcome, { operation: 'rebase', failedTitle: vscode.l10n.t('Rebase failed') })) await notifyWithUndo(repo, arg.squash ? vscode.l10n.t('Commits Squashed') : vscode.l10n.t('Rebase successful'), old);
+  const outcome = await withProgress(translate('Rebasing…'), () => repo.batch(() => fixupInto(repo, hash, !!arg.squash)), { location: 'window' });
+  if (await reportOutcome(repo, outcome, { operation: 'rebase', failedTitle: translate('Rebase failed') })) await notifyWithUndo(repo, arg.squash ? translate('Commits Squashed') : translate('Rebase successful'), old);
 }
 
 export async function dropCommand(ctx: Ctx, arg: CommitsArg) {
   const repo = await repoFor(ctx, arg);
   const hashes = await Promise.all(arg.hashes.map(h => full(repo, h)));
-  await ensureInCurrentBranch(repo, hashes, vscode.l10n.t('drop commits'));
+  await ensureInCurrentBranch(repo, hashes, translate('drop commits'));
   const n = hashes.length;
-  const drop = vscode.l10n.t('Drop');
+  const drop = translate('Drop');
   const a = await vscode.window.showWarningMessage(
-    n === 1 ? vscode.l10n.t('Drop Commit') : vscode.l10n.t('Drop Commits'),
+    n === 1 ? translate('Drop Commit') : translate('Drop Commits'),
     {
       modal: true,
-      detail: n === 1 ? vscode.l10n.t('Do you want to drop {0} commit from the {1} branch?', n, repo.info.branch ?? '') : vscode.l10n.t('Do you want to drop {0} commits from the {1} branch?', n, repo.info.branch ?? ''),
+      detail: n === 1 ? translate('Do you want to drop {0} commit from the {1} branch?', n, repo.info.branch ?? '') : translate('Do you want to drop {0} commits from the {1} branch?', n, repo.info.branch ?? ''),
     },
     drop,
   );
   if (a !== drop) return;
   const old = repo.info.headHash;
-  const outcome = await withProgress(vscode.l10n.t('Dropping commits…'), () => repo.batch(() => dropCommits(repo, hashes)), { location: 'window' });
-  if (await reportOutcome(repo, outcome, { operation: 'rebase', failedTitle: vscode.l10n.t("Couldn't drop commits") })) await notifyWithUndo(repo, n === 1 ? vscode.l10n.t('Dropped {0} commit', n) : vscode.l10n.t('Dropped {0} commits', n), old);
+  const outcome = await withProgress(translate('Dropping commits…'), () => repo.batch(() => dropCommits(repo, hashes)), { location: 'window' });
+  if (await reportOutcome(repo, outcome, { operation: 'rebase', failedTitle: translate("Couldn't drop commits") })) await notifyWithUndo(repo, n === 1 ? translate('Dropped {0} commit', n) : translate('Dropped {0} commits', n), old);
 }
 
 export async function squashCommand(ctx: Ctx, arg: CommitsArg) {
   const repo = await repoFor(ctx, arg);
   const hashes = await Promise.all(arg.hashes.map(h => full(repo, h)));
-  if (hashes.length < 2) throw new Error(vscode.l10n.t('Select at least two commits to squash'));
-  await ensureInCurrentBranch(repo, hashes, vscode.l10n.t('squash commits'));
+  if (hashes.length < 2) throw new Error(translate('Select at least two commits to squash'));
+  await ensureInCurrentBranch(repo, hashes, translate('squash commits'));
   const msgs = await commitMessages(repo, hashes);
   const res = await showDialog<{ message: string }>(
     'ops.commitMessage',
-    { title: vscode.l10n.t('Squashed Commit Message'), message: prettySquash(msgs.map(m => m.body)), okLabel: vscode.l10n.t('OK'), commits: msgs, hint: vscode.l10n.t('Edit message for squashed commit') },
-    { title: vscode.l10n.t('Squashed Commit Message') },
+    { title: translate('Squashed Commit Message'), message: prettySquash(msgs.map(m => m.body)), okLabel: translate('OK'), commits: msgs, hint: translate('Edit message for squashed commit') },
+    { title: translate('Squashed Commit Message') },
   );
   if (!res) return;
   const old = repo.info.headHash;
-  const outcome = await withProgress(vscode.l10n.t('Squashing commits…'), () => repo.batch(() => squashCommits(repo, hashes, res.message)), { location: 'window' });
-  if (await reportOutcome(repo, outcome, { operation: 'rebase', failedTitle: vscode.l10n.t("Couldn't squash commits") })) await notifyWithUndo(repo, vscode.l10n.t('Commits Squashed'), old);
+  const outcome = await withProgress(translate('Squashing commits…'), () => repo.batch(() => squashCommits(repo, hashes, res.message)), { location: 'window' });
+  if (await reportOutcome(repo, outcome, { operation: 'rebase', failedTitle: translate("Couldn't squash commits") })) await notifyWithUndo(repo, translate('Commits Squashed'), old);
 }
 
 /** Opens the Rebasing Commits dialog for base..HEAD and runs the rebase. */
@@ -156,7 +157,7 @@ async function runInteractiveDialog(ctx: Ctx, repo: Repository, base: string | u
   const commits = await loadRebaseCommits(repo, base);
   if (commits.length === 0) {
     void vscode.window.showInformationMessage(
-      vscode.l10n.t("Git Rebase: There are no commits to rebase because the current branch is directly below the base branch, or they point to the same commit (the 'noop' situation)."),
+      translate("Git Rebase: There are no commits to rebase because the current branch is directly below the base branch, or they point to the same commit (the 'noop' situation)."),
     );
     return;
   }
@@ -165,7 +166,7 @@ async function runInteractiveDialog(ctx: Ctx, repo: Repository, base: string | u
     'ops.interactiveRebase',
     { root: repo.root, commits: commits.filter(c => c.parents.length <= 1), base },
     {
-      title: vscode.l10n.t('Rebasing Commits'),
+      title: translate('Rebasing Commits'),
       handlers: {
         commitChanges: (p: { hashes: string[] }) => commitChanges(repo, p.hashes),
         showDiff: (p: { change: Change; hash: string }) => openChangeDiff(p.change, `${p.hash}^`, p.hash),
@@ -174,40 +175,40 @@ async function runInteractiveDialog(ctx: Ctx, repo: Repository, base: string | u
   );
   if (!res) return;
   const old = repo.info.headHash;
-  const outcome = await withProgress(vscode.l10n.t('Rebasing…'), () => repo.batch(() => interactiveRebase(repo, base, res.entries, { rebaseMerges: hasMerges, ...opts })), { location: 'window' });
-  if (await reportOutcome(repo, outcome, { operation: 'rebase', failedTitle: vscode.l10n.t('Rebase failed') })) await notifyWithUndo(repo, vscode.l10n.t('Rebase successful: Rebased {0}', currentName(repo)), old);
+  const outcome = await withProgress(translate('Rebasing…'), () => repo.batch(() => interactiveRebase(repo, base, res.entries, { rebaseMerges: hasMerges, ...opts })), { location: 'window' });
+  if (await reportOutcome(repo, outcome, { operation: 'rebase', failedTitle: translate('Rebase failed') })) await notifyWithUndo(repo, translate('Rebase successful: Rebased {0}', currentName(repo)), old);
 }
 
 export async function interactiveRebaseCommand(ctx: Ctx, arg: CommitArg) {
   const repo = await repoFor(ctx, arg);
   const hash = await full(repo, arg.hash);
-  await ensureInCurrentBranch(repo, [hash], vscode.l10n.t('rebase'));
+  await ensureInCurrentBranch(repo, [hash], translate('rebase'));
   await runInteractiveDialog(ctx, repo, await rebaseBaseFor(repo, hash));
 }
 
 export async function undoCommitCommand(ctx: Ctx, arg: CommitArg) {
   const repo = await repoFor(ctx, arg);
   const hash = await full(repo, arg.hash);
-  if (hash !== repo.info.headHash) throw new Error(vscode.l10n.t('Cannot Undo Commit: The selected commit is not the last in the current branch'));
+  if (hash !== repo.info.headHash) throw new Error(translate('Cannot Undo Commit: The selected commit is not the last in the current branch'));
   const parents = (await repo.execText(['rev-list', '--parents', '-n', '1', hash], { quiet: true })).trim().split(' ').slice(1);
-  if (parents.length > 1) throw new Error(vscode.l10n.t('Cannot Undo Commit: Selected commit is a merge commit'));
+  if (parents.length > 1) throw new Error(translate('Cannot Undo Commit: Selected commit is a merge commit'));
   const pushed = await repo.exec(['branch', '-r', '--contains', hash], { allowFailure: true, quiet: true });
   if (pushed.stdout.trim()) {
     const a = await vscode.window.showWarningMessage(
-      vscode.l10n.t('Undo Commit'),
-      { modal: true, detail: vscode.l10n.t('The commit is already pushed to {0}. Undo it anyway?', pushed.stdout.trim().split('\n')[0].trim()) },
-      vscode.l10n.t('Undo Commit'),
+      translate('Undo Commit'),
+      { modal: true, detail: translate('The commit is already pushed to {0}. Undo it anyway?', pushed.stdout.trim().split('\n')[0].trim()) },
+      translate('Undo Commit'),
     );
     if (!a) return;
   }
   const r = parents.length
-    ? await withProgress(vscode.l10n.t('Undoing Last Commit…'), () => repo.batch(() => repo.exec(['reset', '--soft', 'HEAD~1'])), { location: 'window' })
+    ? await withProgress(translate('Undoing Last Commit…'), () => repo.batch(() => repo.exec(['reset', '--soft', 'HEAD~1'])), { location: 'window' })
     : await repo.batch(() => repo.exec(['update-ref', '-d', 'HEAD']));
   void r;
   // Restore the message as a draft for the next commit (IntelliJ keeps it in the commit message field).
   const [c] = await commitMessages(repo, [hash]).catch(() => []);
   if (c) void vscode.commands.executeCommand('ideagittool.setCommitMessage', { root: repo.root, message: c.body }).then(undefined, () => undefined);
-  void vscode.window.showInformationMessage(vscode.l10n.t('Undo commit successful'));
+  void vscode.window.showInformationMessage(translate('Undo commit successful'));
 }
 
 export async function resetCommand(ctx: Ctx, arg?: RootArg & { hash?: string }) {
@@ -221,20 +222,20 @@ export async function resetCommand(ctx: Ctx, arg?: RootArg & { hash?: string }) 
     'ops.reset',
     { commits: commits.length ? commits : [{ hash: 'HEAD', subject: '', author: '', repo: repo.name }], branch: currentName(repo), editable: !arg?.hash },
     {
-      title: arg?.hash ? vscode.l10n.t('Git Reset') : vscode.l10n.t('Reset Head'),
-      validate: async (v: { target: string }) => ((await revParse(repo, v.target || 'HEAD')) ? true : vscode.l10n.t('The specified commit expression did not pass validation.')),
+      title: arg?.hash ? translate('Git Reset') : translate('Reset Head'),
+      validate: async (v: { target: string }) => ((await revParse(repo, v.target || 'HEAD')) ? true : translate('The specified commit expression did not pass validation.')),
     },
   );
   if (!res) return;
   const target = arg?.hash ? commits[0].hash : res.target || 'HEAD';
   if (res.mode === 'hard' && (repo.status.changes.length > 0)) {
-    const a = await vscode.window.showWarningMessage(vscode.l10n.t('Hard Reset'), { modal: true, detail: vscode.l10n.t('Any local changes will be lost. Continue?') }, vscode.l10n.t('Hard Reset'));
+    const a = await vscode.window.showWarningMessage(translate('Hard Reset'), { modal: true, detail: translate('Any local changes will be lost. Continue?') }, translate('Hard Reset'));
     if (!a) return;
   }
-  await putLocalHistoryLabel(repo, vscode.l10n.t('Before Reset'));
-  const outcome = await withProgress(vscode.l10n.t('Git Reset'), () => repo.batch(() => runConflictAware(repo, ['reset', `--${res.mode}`, target])), { location: 'window' });
-  if (outcome.kind === 'success') void vscode.window.showInformationMessage(vscode.l10n.t('Reset successful'));
-  else await reportOutcome(repo, outcome, { operation: 'reset', failedTitle: vscode.l10n.t('Reset failed') });
+  await putLocalHistoryLabel(repo, translate('Before Reset'));
+  const outcome = await withProgress(translate('Git Reset'), () => repo.batch(() => runConflictAware(repo, ['reset', `--${res.mode}`, target])), { location: 'window' });
+  if (outcome.kind === 'success') void vscode.window.showInformationMessage(translate('Reset successful'));
+  else await reportOutcome(repo, outcome, { operation: 'reset', failedTitle: translate('Reset failed') });
 }
 
 // ------------------------------------------------------------------ cherry-pick / revert
@@ -249,8 +250,8 @@ export async function cherryPickCommand(ctx: Ctx, arg: CommitsArg) {
   if (!outcome) return;
   const msgs = await commitMessages(repo, hashes).catch(() => []);
   const desc = msgs.map(m => `${m.hash.slice(0, 8)} ${m.subject}`).join(', ');
-  if (outcome.kind === 'success') void vscode.window.showInformationMessage(vscode.l10n.t('Cherry-pick successful: {0}', desc));
-  else await reportOutcome(repo, outcome, { operation: 'cherry-pick', failedTitle: vscode.l10n.t('Cherry-pick failed') });
+  if (outcome.kind === 'success') void vscode.window.showInformationMessage(translate('Cherry-pick successful: {0}', desc));
+  else await reportOutcome(repo, outcome, { operation: 'cherry-pick', failedTitle: translate('Cherry-pick failed') });
 }
 
 export async function revertCommand(ctx: Ctx, arg: CommitsArg) {
@@ -269,8 +270,8 @@ export async function revertCommand(ctx: Ctx, arg: CommitsArg) {
   }, { destination: hashes.map(h => h.slice(0, 8)).join(', ') });
   if (!outcome) return;
   const msgs = await commitMessages(repo, hashes).catch(() => []);
-  if (outcome.kind === 'success') void vscode.window.showInformationMessage(vscode.l10n.t('Revert successful: {0}', msgs.map(m => `${m.hash.slice(0, 8)} ${m.subject}`).join(', ')));
-  else await reportOutcome(repo, outcome, { operation: 'revert', failedTitle: vscode.l10n.t('Revert failed') });
+  if (outcome.kind === 'success') void vscode.window.showInformationMessage(translate('Revert successful: {0}', msgs.map(m => `${m.hash.slice(0, 8)} ${m.subject}`).join(', ')));
+  else await reportOutcome(repo, outcome, { operation: 'revert', failedTitle: translate('Revert failed') });
 }
 
 // ------------------------------------------------------------------ ongoing operations
@@ -279,70 +280,70 @@ export async function abortCommand(ctx: Ctx, arg?: RootArg) {
   const repo = await repoFor(ctx, arg);
   const op = repo.detectOperation();
   if (op === 'none') {
-    void vscode.window.showInformationMessage(vscode.l10n.t('There is no operation in progress'));
+    void vscode.window.showInformationMessage(translate('There is no operation in progress'));
     return;
   }
   const names: Record<string, string> = {
-    rebase: vscode.l10n.t('Rebase'),
-    merge: vscode.l10n.t('Merge'),
-    'cherry-pick': vscode.l10n.t('Cherry-Pick'),
-    revert: vscode.l10n.t('Revert'),
-    am: vscode.l10n.t('Apply Patch'),
-    bisect: vscode.l10n.t('Bisect'),
+    rebase: translate('Rebase'),
+    merge: translate('Merge'),
+    'cherry-pick': translate('Cherry-Pick'),
+    revert: translate('Revert'),
+    am: translate('Apply Patch'),
+    bisect: translate('Bisect'),
   };
-  const abort = vscode.l10n.t('Abort');
+  const abort = translate('Abort');
   const a = await vscode.window.showWarningMessage(
     abortLabel(op),
-    { modal: true, detail: vscode.l10n.t('Abort {0} in {1}?', operationName(op), repo.name) },
+    { modal: true, detail: translate('Abort {0} in {1}?', operationName(op), repo.name) },
     abort,
   );
   if (a !== abort) return;
   const args = op === 'bisect' ? ['bisect', 'reset'] : [op, '--abort'];
   const r = await repo.batch(() => repo.exec(args, { allowFailure: true }));
-  if (r.exitCode === 0) void vscode.window.showInformationMessage(op === 'rebase' ? vscode.l10n.t('Abort rebase succeeded') : vscode.l10n.t('{0} aborted', names[op]));
-  else showError(r.stderr, op === 'rebase' ? vscode.l10n.t('Abort rebase failed') : vscode.l10n.t('Abort {0} failed', operationName(op)));
+  if (r.exitCode === 0) void vscode.window.showInformationMessage(op === 'rebase' ? translate('Abort rebase succeeded') : translate('{0} aborted', names[op]));
+  else showError(r.stderr, op === 'rebase' ? translate('Abort rebase failed') : translate('Abort {0} failed', operationName(op)));
 }
 
 export async function continueCommand(ctx: Ctx, arg?: RootArg) {
   const repo = await repoFor(ctx, arg);
   const op = repo.detectOperation();
   if (op === 'none') {
-    void vscode.window.showInformationMessage(vscode.l10n.t('There is no operation in progress'));
+    void vscode.window.showInformationMessage(translate('There is no operation in progress'));
     return;
   }
   const opName = operationName(op);
   if (repo.status.conflicts.length) {
-    const a = await vscode.window.showWarningMessage(vscode.l10n.t('Cannot continue {0}: there are unresolved conflicts', opName), vscode.l10n.t('Resolve conflicts…'));
+    const a = await vscode.window.showWarningMessage(translate('Cannot continue {0}: there are unresolved conflicts', opName), translate('Resolve conflicts…'));
     if (a) void vscode.commands.executeCommand('ideagittool.resolveConflicts', { root: repo.root });
     return;
   }
   const args = op === 'merge' ? ['commit', '--no-edit'] : op === 'am' ? ['am', '--continue'] : [op, '--continue'];
   let outcome = await withProgress(
-    op === 'rebase' ? vscode.l10n.t('Continue rebase…') : op === 'merge' ? vscode.l10n.t('Committing merge…') : vscode.l10n.t('Continuing {0}…', opName),
+    op === 'rebase' ? translate('Continue rebase…') : op === 'merge' ? translate('Committing merge…') : translate('Continuing {0}…', opName),
     () => repo.batch(() => runConflictAware(repo, args)),
     { location: 'window' },
   );
   if (outcome.kind === 'error' && /unstaged changes|You must edit all merge conflicts|needs merge|Changes not staged/.test(outcome.output)) {
-    const stageAndRetry = vscode.l10n.t('Stage and Retry');
-    const a = await vscode.window.showWarningMessage(vscode.l10n.t('Continue {0} failed: There are unstaged changes in tracked files preventing {0} from continuing', opName), stageAndRetry);
+    const stageAndRetry = translate('Stage and Retry');
+    const a = await vscode.window.showWarningMessage(translate('Continue {0} failed: There are unstaged changes in tracked files preventing {0} from continuing', opName), stageAndRetry);
     if (a !== stageAndRetry) return;
     await repo.exec(['add', '-u']);
     outcome = await repo.batch(() => runConflictAware(repo, args));
   }
   const done = repo.detectOperation() === 'none';
   if (outcome.kind === 'success' && done) {
-    void vscode.window.showInformationMessage(op === 'rebase' ? vscode.l10n.t('Rebase successful') : op === 'merge' ? vscode.l10n.t('Merge committed') : vscode.l10n.t('{0} successful', capitalize(opName)));
+    void vscode.window.showInformationMessage(op === 'rebase' ? translate('Rebase successful') : op === 'merge' ? translate('Merge committed') : translate('{0} successful', capitalize(opName)));
     return;
   }
-  await reportOutcome(repo, outcome, { operation: op, failedTitle: op === 'rebase' ? vscode.l10n.t('Continue rebase failed') : vscode.l10n.t('Continue {0} failed', opName) });
+  await reportOutcome(repo, outcome, { operation: op, failedTitle: op === 'rebase' ? translate('Continue rebase failed') : translate('Continue {0} failed', opName) });
 }
 
 export async function skipCommand(ctx: Ctx, arg?: RootArg) {
   const repo = await repoFor(ctx, arg);
   const op = repo.detectOperation();
-  if (op !== 'rebase' && op !== 'cherry-pick' && op !== 'revert') throw new Error(vscode.l10n.t('There is no rebase in progress'));
-  const outcome = await withProgress(vscode.l10n.t('Skip commit during rebase…'), () => repo.batch(() => runConflictAware(repo, [op, '--skip'])), { location: 'window' });
-  if (outcome.kind === 'success' && repo.detectOperation() === 'none') void vscode.window.showInformationMessage(vscode.l10n.t('{0} successful', capitalize(operationName(op))));
+  if (op !== 'rebase' && op !== 'cherry-pick' && op !== 'revert') throw new Error(translate('There is no rebase in progress'));
+  const outcome = await withProgress(translate('Skip commit during rebase…'), () => repo.batch(() => runConflictAware(repo, [op, '--skip'])), { location: 'window' });
+  if (outcome.kind === 'success' && repo.detectOperation() === 'none') void vscode.window.showInformationMessage(translate('{0} successful', capitalize(operationName(op))));
   else if (outcome.kind !== 'success') await reportOutcome(repo, outcome, { operation: op });
 }
 
@@ -353,11 +354,11 @@ function branchItems(repo: Repository, filter?: Set<string>) {
   for (const r of repo.refs) {
     if (r.current) continue;
     if (filter && !filter.has(r.fullName)) continue;
-    if (r.type === 'local') items.push({ value: r.name, icon: r.favorite ? 'nodes/star' : 'general/vcs', group: vscode.l10n.t('Local') });
+    if (r.type === 'local') items.push({ value: r.name, icon: r.favorite ? 'nodes/star' : 'general/vcs', group: translate('Local') });
   }
   for (const r of repo.refs) {
     if (filter && !filter.has(r.fullName)) continue;
-    if (r.type === 'remote') items.push({ value: r.name, icon: r.favorite ? 'nodes/star' : 'general/vcs', group: vscode.l10n.t('Remote') });
+    if (r.type === 'remote') items.push({ value: r.name, icon: r.favorite ? 'nodes/star' : 'general/vcs', group: translate('Remote') });
   }
   return items;
 }
@@ -378,7 +379,7 @@ export async function mergeCommand(ctx: Ctx, arg?: RootArg & { branch?: string }
   const res = await showDialog<{ root: string; branch: string; options: string[]; message: string }>(
     'ops.merge',
     { repos: repoChoices(ctx, repo, !arg?.root), root: repo.root, branches, initialBranch: arg?.branch },
-    { title: vscode.l10n.t('Merge into {0}', currentName(repo)) },
+    { title: translate('Merge into {0}', currentName(repo)) },
   );
   if (!res) return;
   const target = ctx.repos.get(res.root)!;
@@ -394,24 +395,24 @@ export async function merge(repo: Repository, branch: string, options: string[] 
   if (!options.includes('commit-msg')) args.push('--no-edit');
   args.push(branch);
   const before = repo.info.headHash;
-  await putLocalHistoryLabel(repo, vscode.l10n.t('Before Merge'));
+  await putLocalHistoryLabel(repo, translate('Before Merge'));
   const outcome = await withSmartOperation(repo, 'merge', async force => {
     if (force) await repo.exec(['reset', '--hard']);
-    return withProgress(vscode.l10n.t('Merging {0}…', branch), () => repo.batch(() => runConflictAware(repo, args)), { location: 'window' });
+    return withProgress(translate('Merging {0}…', branch), () => repo.batch(() => runConflictAware(repo, args)), { location: 'window' });
   }, { destination: branch, noCommit: options.includes('no-commit') });
   if (!outcome) return;
   if (outcome.kind === 'success') {
     await repo.refresh();
     if (before === repo.info.headHash && !options.includes('squash') && !options.includes('no-commit')) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('Already up to date'));
+      void vscode.window.showInformationMessage(translate('Already up to date'));
       return;
     }
     const isLocal = repo.refs.some(r => r.type === 'local' && r.name === branch);
-    const a = await vscode.window.showInformationMessage(vscode.l10n.t('Merged {0} to {1}', branch, currentName(repo)), ...(isLocal ? [vscode.l10n.t('Delete {0}', branch)] : []));
+    const a = await vscode.window.showInformationMessage(translate('Merged {0} to {1}', branch, currentName(repo)), ...(isLocal ? [translate('Delete {0}', branch)] : []));
     if (a) void vscode.commands.executeCommand('ideagittool.branch.delete', { root: repo.root, name: branch, type: 'local' });
     return;
   }
-  await reportOutcome(repo, outcome, { operation: 'merge', failedTitle: vscode.l10n.t('Could Not Merge {0}', branch), noCommit: options.includes('no-commit') });
+  await reportOutcome(repo, outcome, { operation: 'merge', failedTitle: translate('Could Not Merge {0}', branch), noCommit: options.includes('no-commit') });
 }
 
 export async function rebaseCommand(ctx: Ctx, arg?: RootArg & { upstream?: string }) {
@@ -421,9 +422,9 @@ export async function rebaseCommand(ctx: Ctx, arg?: RootArg & { upstream?: strin
   const locals: Record<string, unknown> = {};
   for (const r of repos) {
     refs[r.root] = [
-      ...r.refs.filter(x => x.type === 'local' && !x.current).map(x => ({ value: x.name, icon: 'general/vcs', group: vscode.l10n.t('Local') })),
-      ...r.refs.filter(x => x.type === 'remote').map(x => ({ value: x.name, icon: 'general/vcs', group: vscode.l10n.t('Remote') })),
-      ...r.refs.filter(x => x.type === 'tag').map(x => ({ value: x.name, icon: 'nodes/tag', group: vscode.l10n.t('Tags') })),
+      ...r.refs.filter(x => x.type === 'local' && !x.current).map(x => ({ value: x.name, icon: 'general/vcs', group: translate('Local') })),
+      ...r.refs.filter(x => x.type === 'remote').map(x => ({ value: x.name, icon: 'general/vcs', group: translate('Remote') })),
+      ...r.refs.filter(x => x.type === 'tag').map(x => ({ value: x.name, icon: 'nodes/tag', group: translate('Tags') })),
     ];
     locals[r.root] = r.refs.filter(x => x.type === 'local').map(x => ({ value: x.name, icon: 'general/vcs' }));
   }
@@ -431,11 +432,11 @@ export async function rebaseCommand(ctx: Ctx, arg?: RootArg & { upstream?: strin
     'ops.rebase',
     { repos: repoChoices(ctx, repo, !arg?.root), root: repo.root, refs, locals, initialUpstream: arg?.upstream ?? repo.info.upstream },
     {
-      title: vscode.l10n.t('Rebase'),
+      title: translate('Rebase'),
       validate: async (v: { root: string; upstream: string; onto: string; branch: string; options: string[] }) => {
         const r = ctx.repos.get(v.root)!;
-        if (r.detectOperation() === 'rebase') return vscode.l10n.t('Interactive rebase is already in progress for this Git root');
-        for (const ref of [v.upstream, v.onto, v.branch].filter(Boolean)) if (!(await revParse(r, ref))) return vscode.l10n.t('There is no such branch or tag: {0}', ref);
+        if (r.detectOperation() === 'rebase') return translate('Interactive rebase is already in progress for this Git root');
+        for (const ref of [v.upstream, v.onto, v.branch].filter(Boolean)) if (!(await revParse(r, ref))) return translate('There is no such branch or tag: {0}', ref);
         return true;
       },
     },
@@ -452,7 +453,7 @@ export async function rebaseCommand(ctx: Ctx, arg?: RootArg & { upstream?: strin
   if (res.options.includes('interactive')) {
     if (res.options.includes('switch') && res.branch) {
       const co = await target.exec(['checkout', res.branch], { allowFailure: true });
-      if (co.exitCode !== 0) return showError(co.stderr, vscode.l10n.t('Rebase failed'));
+      if (co.exitCode !== 0) return showError(co.stderr, translate('Rebase failed'));
       baseArgs.pop();
     }
     const base = res.options.includes('root') ? undefined : (await target.execText(['merge-base', 'HEAD', res.upstream], { quiet: true })).trim();
@@ -463,13 +464,13 @@ export async function rebaseCommand(ctx: Ctx, arg?: RootArg & { upstream?: strin
 }
 
 export async function rebase(repo: Repository, args: string[], branch: string, onto: string) {
-  await putLocalHistoryLabel(repo, vscode.l10n.t('Before Rebase'));
-  const outcome = await withProgress(vscode.l10n.t('Rebasing onto {0}…', onto), () => repo.batch(() => runConflictAware(repo, ['rebase', '--autostash', ...args], { env: nonInteractiveEnv() })), { location: 'window' });
+  await putLocalHistoryLabel(repo, translate('Before Rebase'));
+  const outcome = await withProgress(translate('Rebasing onto {0}…', onto), () => repo.batch(() => runConflictAware(repo, ['rebase', '--autostash', ...args], { env: nonInteractiveEnv() })), { location: 'window' });
   if (outcome.kind === 'success') {
-    void vscode.window.showInformationMessage(vscode.l10n.t('Rebase successful: Rebased {0} on {1}', branch, onto));
+    void vscode.window.showInformationMessage(translate('Rebase successful: Rebased {0} on {1}', branch, onto));
     return true;
   }
-  return reportOutcome(repo, outcome, { operation: 'rebase', failedTitle: vscode.l10n.t('Rebase failed') });
+  return reportOutcome(repo, outcome, { operation: 'rebase', failedTitle: translate('Rebase failed') });
 }
 
 // ------------------------------------------------------------------ tags
@@ -479,20 +480,20 @@ export async function createTagCommand(ctx: Ctx, arg?: RootArg & { hash?: string
   if (arg?.hash) {
     // From the log: simple input "Create New Tag On {0}".
     const name = await vscode.window.showInputBox({
-      title: vscode.l10n.t('Create New Tag On {0}', arg.hash.slice(0, 8)),
-      prompt: vscode.l10n.t('Enter the name of new tag'),
-      validateInput: v => (!v.trim() ? undefined : repo.refs.some(r => r.type === 'tag' && r.name === v.trim()) ? vscode.l10n.t('The tag with the same name exists.') : /[\s~^:?*[\\]|\.\.|@\{/.test(v) ? vscode.l10n.t('Tag name {0} is not valid', v) : undefined),
+      title: translate('Create New Tag On {0}', arg.hash.slice(0, 8)),
+      prompt: translate('Enter the name of new tag'),
+      validateInput: v => (!v.trim() ? undefined : repo.refs.some(r => r.type === 'tag' && r.name === v.trim()) ? translate('The tag with the same name exists.') : /[\s~^:?*[\\]|\.\.|@\{/.test(v) ? translate('Tag name {0} is not valid', v) : undefined),
     });
     if (!name?.trim()) return;
     await repo.exec(['tag', name.trim(), arg.hash]);
     await repo.refresh();
-    void vscode.window.showInformationMessage(vscode.l10n.t('Created tag {0} successfully.', name.trim()));
+    void vscode.window.showInformationMessage(translate('Created tag {0} successfully.', name.trim()));
     return;
   }
   await showDialog('ops.tag', { root: repo.root, repoName: repo.name, currentBranch: currentName(repo), tags: repo.refs.filter(r => r.type === 'tag').map(r => r.name) }, {
-    title: vscode.l10n.t('Tag'),
+    title: translate('Tag'),
     validate: async (v: { name: string; force: boolean; commit: string; message: string }) => {
-      if (v.commit && !(await revParse(repo, v.commit))) return vscode.l10n.t('The commit or object name is invalid.');
+      if (v.commit && !(await revParse(repo, v.commit))) return translate('The commit or object name is invalid.');
       const args = ['tag'];
       if (v.force) args.push('-f');
       if (v.message.trim()) {
@@ -505,7 +506,7 @@ export async function createTagCommand(ctx: Ctx, arg?: RootArg & { hash?: string
       const r = await repo.exec(args, { allowFailure: true });
       if (r.exitCode !== 0) return r.stderr.trim();
       await repo.refresh();
-      void vscode.window.showInformationMessage(vscode.l10n.t('Created tag {0} successfully.', v.name));
+      void vscode.window.showInformationMessage(translate('Created tag {0} successfully.', v.name));
       return true;
     },
   });
@@ -521,10 +522,10 @@ export async function createPatchCommand(ctx: Ctx, arg?: RootArg & { hashes?: st
     'ops.createPatch',
     { path: defaultPath, count },
     {
-      title: vscode.l10n.t('Create Patch'),
+      title: translate('Create Patch'),
       handlers: {
         browse: async (current: string) => {
-          const r = await vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(current), title: vscode.l10n.t('Save Patch to'), filters: { [vscode.l10n.t('Patch')]: ['patch', 'diff'] } });
+          const r = await vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(current), title: translate('Save Patch to'), filters: { [translate('Patch')]: ['patch', 'diff'] } });
           return r?.fsPath ?? null;
         },
       },
@@ -545,10 +546,10 @@ export async function createPatchCommand(ctx: Ctx, arg?: RootArg & { hashes?: st
   const patch = await repo.execText(args, { quiet: true });
   if (res.clipboard) {
     await vscode.env.clipboard.writeText(patch);
-    void vscode.window.showInformationMessage(vscode.l10n.t('Patch copied to clipboard'));
+    void vscode.window.showInformationMessage(translate('Patch copied to clipboard'));
   } else {
     fs.writeFileSync(res.path, patch);
-    const a = await vscode.window.showInformationMessage(vscode.l10n.t('Successfully created patch {0}', path.basename(res.path)), vscode.l10n.t('Open'));
+    const a = await vscode.window.showInformationMessage(translate('Successfully created patch {0}', path.basename(res.path)), translate('Open'));
     if (a) void vscode.window.showTextDocument(vscode.Uri.file(res.path));
   }
 }
@@ -558,19 +559,19 @@ export async function applyPatchCommand(ctx: Ctx, arg?: RootArg & { clipboard?: 
   let input: string;
   if (arg?.clipboard) input = await vscode.env.clipboard.readText();
   else {
-    const file = arg?.file ?? (await vscode.window.showOpenDialog({ title: vscode.l10n.t('Apply Patch'), canSelectMany: false, filters: { [vscode.l10n.t('Patch')]: ['patch', 'diff'], [vscode.l10n.t('All')]: ['*'] }, defaultUri: vscode.Uri.file(repo.root) }))?.[0]?.fsPath;
+    const file = arg?.file ?? (await vscode.window.showOpenDialog({ title: translate('Apply Patch'), canSelectMany: false, filters: { [translate('Patch')]: ['patch', 'diff'], [translate('All')]: ['*'] }, defaultUri: vscode.Uri.file(repo.root) }))?.[0]?.fsPath;
     if (!file) return;
     input = fs.readFileSync(file, 'utf8');
   }
-  if (!input.trim()) throw new Error(vscode.l10n.t('The patch is empty'));
+  if (!input.trim()) throw new Error(translate('The patch is empty'));
   const check = await repo.exec(['apply', '--check', '-'], { input, allowFailure: true });
   const args = check.exitCode === 0 ? ['apply', '-'] : ['apply', '--3way', '-'];
   const r = await repo.batch(() => repo.exec(args, { input, allowFailure: true }));
-  if (r.exitCode === 0) void vscode.window.showInformationMessage(vscode.l10n.t('Patch applied'));
+  if (r.exitCode === 0) void vscode.window.showInformationMessage(translate('Patch applied'));
   else if (/conflict/i.test(r.stderr)) {
     const res = await vscode.commands.executeCommand<{ remaining?: number } | undefined>('ideagittool.resolveConflicts', { root: repo.root }).then(undefined, () => undefined);
-    if (res?.remaining !== 0) void vscode.window.showWarningMessage(vscode.l10n.t('Patch applied with conflicts'));
-  } else showError(r.stderr, vscode.l10n.t('Patch was not applied'));
+    if (res?.remaining !== 0) void vscode.window.showWarningMessage(translate('Patch applied with conflicts'));
+  } else showError(r.stderr, translate('Patch was not applied'));
 }
 
 // ------------------------------------------------------------------ checkout revision
@@ -579,8 +580,8 @@ export async function checkoutRevisionCommand(ctx: Ctx, arg: CommitArg) {
   const repo = await repoFor(ctx, arg);
   const outcome = await withSmartOperation(repo, 'checkout', force => repo.batch(() => runConflictAware(repo, ['checkout', ...(force ? ['--force'] : []), arg.hash, '--'])), { destination: arg.hash.slice(0, 8) });
   if (!outcome) return;
-  if (outcome.kind === 'success') void vscode.window.showInformationMessage(vscode.l10n.t('Checked out {0}', arg.hash.slice(0, 8)));
-  else await reportOutcome(repo, outcome, { operation: 'checkout', failedTitle: vscode.l10n.t('Could not checkout {0}', arg.hash.slice(0, 8)) });
+  if (outcome.kind === 'success') void vscode.window.showInformationMessage(translate('Checked out {0}', arg.hash.slice(0, 8)));
+  else await reportOutcome(repo, outcome, { operation: 'checkout', failedTitle: translate('Could not checkout {0}', arg.hash.slice(0, 8)) });
 }
 
 export type { OperationOutcome };

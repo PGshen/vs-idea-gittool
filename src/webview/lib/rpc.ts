@@ -17,7 +17,7 @@ export interface BootData {
   themeClass: string;
   dark: boolean;
   initial: any;
-  /** Translations of the UI language (vscode.l10n.bundle), see l10n.ts. */
+  /** Translations of the selected IdeaGitTool language, see l10n.ts. */
   l10n?: Record<string, string>;
 }
 

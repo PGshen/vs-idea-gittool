@@ -1,4 +1,6 @@
 {
+  "Reload Window": "重载窗口",
+  "Reload the window to apply the IdeaGitTool language change.": "重载窗口以应用 IdeaGitTool 语言更改。",
   "Changes": "更改",
   "Use IdeaGitTool": "使用 IdeaGitTool",
   "Keep VS Code's": "保留 VS Code 的",

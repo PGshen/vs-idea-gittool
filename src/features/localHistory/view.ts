@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { translate } from '../../shared/l10n';
 import { getExtensionUri, WebviewConnection } from '../../host/webviewHost';
 import { LhDiff, LhDiffMode, LhFile, LhInit, LhItem, LhMode } from '../../shared/localHistoryProtocol';
 import { diffLines, mapRangeBack, splitLines, unifiedDiff } from '../../shared/lineDiff';
@@ -81,14 +82,14 @@ export class LocalHistoryView {
   }
 
   private displayName(): string {
-    if (this.target.mode === 'project') return (vscode.workspace.workspaceFolders ?? []).map(f => f.name).join(', ') || vscode.l10n.t('Project');
+    if (this.target.mode === 'project') return (vscode.workspace.workspaceFolders ?? []).map(f => f.name).join(', ') || translate('Project');
     return path.posix.basename(this.target.path ?? '');
   }
 
   private title(): string {
     const name = this.displayName();
-    if (this.target.selection) return vscode.l10n.t('Local History: {0} ({1}-{2})', name, this.target.selection[0] + 1, this.target.selection[1]);
-    return vscode.l10n.t('Local History: {0}', name);
+    if (this.target.selection) return translate('Local History: {0} ({1}-{2})', name, this.target.selection[0] + 1, this.target.selection[1]);
+    return translate('Local History: {0}', name);
   }
 
   private scope() {
@@ -135,21 +136,21 @@ export class LocalHistoryView {
     let title: string;
     if (list.length === 1) {
       const e = first;
-      if (e.kind === 'create') title = vscode.l10n.t('Create {0}', name(e.path));
-      else if (e.kind === 'delete') title = vscode.l10n.t('Delete {0}', name(e.path));
+      if (e.kind === 'create') title = translate('Create {0}', name(e.path));
+      else if (e.kind === 'delete') title = translate('Delete {0}', name(e.path));
       else if (e.kind === 'rename')
         title =
           path.posix.dirname(e.oldPath!) === path.posix.dirname(e.path!)
-            ? vscode.l10n.t('Rename {0} to {1}', name(e.oldPath), name(e.path))
-            : vscode.l10n.t('Move {0} to {1}', name(e.oldPath), this.rel(path.posix.dirname(e.path!)));
-      else title = e.external ? vscode.l10n.t('External change') : this.target.mode === 'file' || this.target.mode === 'selection' ? vscode.l10n.t('Change') : vscode.l10n.t('Change {0}', name(e.path));
+            ? translate('Rename {0} to {1}', name(e.oldPath), name(e.path))
+            : translate('Move {0} to {1}', name(e.oldPath), this.rel(path.posix.dirname(e.path!)));
+      else title = e.external ? translate('External change') : this.target.mode === 'file' || this.target.mode === 'selection' ? translate('Change') : translate('Change {0}', name(e.path));
     } else {
       const files = list.filter(e => e.path).map(e => name(e.path));
       title = list.every(e => e.external)
-        ? vscode.l10n.t('External change')
+        ? translate('External change')
         : files.length > 1
-          ? vscode.l10n.t('Change {0} + {1} more', files[0], files.length - 1)
-          : vscode.l10n.t('Change {0}', files[0] ?? '');
+          ? translate('Change {0} + {1} more', files[0], files.length - 1)
+          : translate('Change {0}', files[0] ?? '');
     }
     return { ...base, kind: list.every(e => e.external) ? 'external' : 'change', title, files: list.filter(e => e.path).length, paths: paths.map(p => this.rel(p)) };
   }
@@ -185,7 +186,7 @@ export class LocalHistoryView {
 
   private item(id: number): LhItem {
     const it = this.items.find(i => i.id === id);
-    if (!it) throw new Error(vscode.l10n.t('The revision is not available'));
+    if (!it) throw new Error(translate('The revision is not available'));
     return it;
   }
 
@@ -196,8 +197,8 @@ export class LocalHistoryView {
       const p = this.target.path!;
       const left = this.read(this.store.stateBefore(p, item.id), p);
       const right = this.read(this.rightState(p, item, mode), p);
-      const leftTitle = item.kind === 'label' || item.kind === 'system' ? vscode.l10n.t("Before '{0}'", item.title) : vscode.l10n.t('Before {0}', date);
-      const rightTitle = mode === 'local' ? vscode.l10n.t('Current') : vscode.l10n.t('After {0}', date);
+      const leftTitle = item.kind === 'label' || item.kind === 'system' ? translate("Before '{0}'", item.title) : translate('Before {0}', date);
+      const rightTitle = mode === 'local' ? translate('Current') : translate('After {0}', date);
       if (this.target.mode === 'selection') {
         const cur = splitLines(this.current(p).text ?? '');
         const [s, e] = this.target.selection!;
@@ -214,7 +215,7 @@ export class LocalHistoryView {
       return { kind: 'text', left: { title: leftTitle, ...left }, right: { title: rightTitle, ...right } };
     }
     const files = this.changedFiles(item, mode);
-    if (!files.length) return { kind: 'empty', text: vscode.l10n.t('No changes detected') };
+    if (!files.length) return { kind: 'empty', text: translate('No changes detected') };
     return { kind: 'files', files };
   }
 
@@ -253,7 +254,7 @@ export class LocalHistoryView {
     const rightState = this.rightState(p, item, mode);
     const right = rightState === undefined ? vscode.Uri.file(p) : lhUri(p, rightState);
     const date = dayFmt.format(new Date(item.ts));
-    const title = mode === 'local' ? vscode.l10n.t('{0} (Before {1} ↔ Current)', path.posix.basename(p), date) : vscode.l10n.t('{0} (Before {1} ↔ After)', path.posix.basename(p), date);
+    const title = mode === 'local' ? translate('{0} (Before {1} ↔ Current)', path.posix.basename(p), date) : translate('{0} (Before {1} ↔ After)', path.posix.basename(p), date);
     await vscode.commands.executeCommand('vscode.diff', left, right, title);
   }
 
@@ -268,26 +269,26 @@ export class LocalHistoryView {
       .map(p => ({ path: p, state: this.store.stateBefore(p, item.id) }))
       .filter(s => s.state !== undefined && s.state !== this.currentState(s.path));
     if (!states.length) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('Nothing to revert'));
+      void vscode.window.showInformationMessage(translate('Nothing to revert'));
       return;
     }
     const dirty = vscode.workspace.textDocuments.filter(d => d.isDirty && states.some(s => s.path === normPath(d.uri.fsPath)));
     if (dirty.length) {
       const a = await vscode.window.showWarningMessage(
         dirty.length === 1
-          ? vscode.l10n.t('Cannot revert because {0} has unsaved changes.', path.basename(dirty[0].uri.fsPath))
-          : vscode.l10n.t('Cannot revert because {0} files have unsaved changes.', dirty.length),
-        { modal: true, detail: vscode.l10n.t('Save or discard the changes first.') },
-        vscode.l10n.t('Save and Revert'),
+          ? translate('Cannot revert because {0} has unsaved changes.', path.basename(dirty[0].uri.fsPath))
+          : translate('Cannot revert because {0} files have unsaved changes.', dirty.length),
+        { modal: true, detail: translate('Save or discard the changes first.') },
+        translate('Save and Revert'),
       );
       if (!a) return;
       await Promise.all(dirty.map(d => d.save()));
     }
     const date = dayFmt.format(new Date(item.ts));
-    const label = item.kind === 'label' || item.kind === 'system' ? vscode.l10n.t("Revert to '{0}' at {1}", item.title, date) : vscode.l10n.t('Revert to {0}', date);
+    const label = item.kind === 'label' || item.kind === 'system' ? translate("Revert to '{0}' at {1}", item.title, date) : translate('Revert to {0}', date);
     await this.recorder.apply(states, label);
     void vscode.window.setStatusBarMessage(
-      states.length === 1 ? vscode.l10n.t('{0}: {1} file reverted', label, states.length) : vscode.l10n.t('{0}: {1} files reverted', label, states.length),
+      states.length === 1 ? translate('{0}: {1} file reverted', label, states.length) : translate('{0}: {1} files reverted', label, states.length),
       5000,
     );
   }
@@ -325,13 +326,13 @@ export class LocalHistoryView {
       files: entries,
       name: `Local_History_${new Date(item.ts).toISOString().slice(0, 16).replace(/[-:T]/g, '')}`,
       basePath,
-      rootLabel: vscode.l10n.t('Changes'),
+      rootLabel: translate('Changes'),
       produce: async (keys, opts) => {
         let out = '';
         for (const p of keys) {
           const before = this.read(this.store.stateBefore(p, item.id), p);
           const after = this.read(this.rightState(p, item, mode), p);
-          if (before.unavailable || after.unavailable) throw new Error(vscode.l10n.t('Cannot create patch because content of some\nof the selected files was not stored due to its big size.'));
+          if (before.unavailable || after.unavailable) throw new Error(translate('Cannot create patch because content of some\nof the selected files was not stored due to its big size.'));
           const rel = path.relative(opts.basePath, p).replace(/\\/g, '/');
           let [a, b] = [before, after];
           if (opts.reverse) [a, b] = [b, a];
