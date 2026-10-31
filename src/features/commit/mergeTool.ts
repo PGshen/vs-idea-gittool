@@ -125,6 +125,9 @@ export class MergeTool {
             viewColumn: vscode.ViewColumn.Beside,
           });
         },
+        // Cut / Copy / Paste go through the host clipboard (see MergeController.copyText).
+        readClipboard: () => vscode.env.clipboard.readText(),
+        writeClipboard: (p: { text: string }) => vscode.env.clipboard.writeText(p.text),
         saveSettings: (s: MergeSettings) => this.ctx.extension.globalState.update(SETTINGS_KEY, s),
       });
       panel.onDidDispose(() => {

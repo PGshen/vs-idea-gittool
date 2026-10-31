@@ -12,6 +12,7 @@ import { CompareMode, MergeFinish, MergeInit, MergeResult, MergeSettings, TitleP
 import { MergeController, Pane } from './controller';
 
 const init = boot.initial as MergeInit;
+const isMac = navigator.platform.startsWith('Mac');
 
 function Title({ parts }: { parts: TitleParts }) {
   return (
@@ -196,6 +197,15 @@ function App() {
     if (ok) c.revertAll();
   };
 
+  const copy = (pane: Pane) => send('writeClipboard', { text: c.copyText(pane) });
+  const cut = () => send('writeClipboard', { text: c.cut() });
+  const paste = async () => c.paste(await call<string>('readClipboard'));
+  const clipboardItems = (pane: Pane) => ({
+    cut: { label: t('Cut'), icon: 'general/cut', shortcut: isMac ? '⌘X' : 'Ctrl+X', action: cut },
+    copy: { label: t('Copy'), icon: 'general/copy', shortcut: isMac ? '⌘C' : 'Ctrl+C', action: () => copy(pane) },
+    paste: { label: t('Paste'), icon: 'general/paste', shortcut: isMac ? '⌘V' : 'Ctrl+V', action: () => void paste() },
+  });
+
   // Gutter operations, folded fragments and the editor context menus.
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -230,6 +240,7 @@ function App() {
       if (pos !== null && !v.state.selection.ranges.some(r => pos >= r.from && pos <= r.to)) v.dispatch({ selection: { anchor: pos } });
       showMenu(
         c.contextMenu(pane, {
+          clipboard: clipboardItems(pane),
           compareClipboard: () => send('compareClipboard', { text: c.selectionText(pane), fileName: init.fileName }),
           toggleCollapse,
           toggleSync,
@@ -249,6 +260,20 @@ function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (document.querySelector('.popup')) return;
+      // Cut / Copy / Paste in an editor: handled here and kept from VS Code's webview key forwarding
+      // (listening on the window), which would run them a second time.
+      const pane = ((e.target as Element).closest?.('[data-pane]') as HTMLElement | null)?.dataset.pane as Pane | undefined;
+      const mod = isMac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;
+      if (pane && mod && !e.altKey && !e.shiftKey && (e.keyCode === 67 || e.keyCode === 86 || e.keyCode === 88)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.keyCode === 67) copy(pane);
+        else if (pane === 'result') {
+          if (e.keyCode === 88) cut();
+          else void paste();
+        }
+        return;
+      }
       if (e.key === 'F7') {
         e.preventDefault();
         c.navigate(e.shiftKey ? -1 : 1);

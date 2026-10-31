@@ -112,8 +112,8 @@ export class MergeController {
       gutterClassField,
       operationsField,
       foldField,
+      // Side editors stay focusable (caret, selection, Copy) and only reject edits, like IntelliJ's viewers.
       EditorState.readOnly.of(!editable),
-      EditorView.editable.of(editable),
       EditorView.updateListener.of(u => {
         if (u.geometryChanged || u.viewportChanged) this.schedule();
       }),
@@ -328,7 +328,10 @@ export class MergeController {
   }
 
   /** The editor context menu (MergeThreesideViewer.createEditorPopupActions); hidden actions are left out like IntelliJ. */
-  contextMenu(pane: Pane, toggles: { compareClipboard: () => void; toggleCollapse: () => void; toggleSync: () => void }): MenuEntry[] {
+  contextMenu(
+    pane: Pane,
+    toggles: { clipboard: { cut: MenuEntry; copy: MenuEntry; paste: MenuEntry }; compareClipboard: () => void; toggleCollapse: () => void; toggleSync: () => void },
+  ): MenuEntry[] {
     const model = this.model;
     const has = (enabled: (c: MergeChange, s: ChangeState) => boolean) => this.selectedChanges(pane, enabled).length > 0;
     const sideOpen = (side: Side) => (_c: MergeChange, s: ChangeState) => !isSideResolved(s, side);
@@ -350,11 +353,52 @@ export class MergeController {
       if (has((_c, s) => !isResolved(s))) items.push({ label: t('Ignore'), icon: 'diff/remove@14x14', action: () => this.ignoreSelected() });
     }
     items.push({ separator: true });
+    if (pane === 'result') items.push(toggles.clipboard.cut, toggles.clipboard.copy, toggles.clipboard.paste);
+    else items.push(toggles.clipboard.copy);
+    items.push({ separator: true });
     items.push({ label: t('Compare with Clipboard'), icon: 'actions/diffWithClipboard', action: toggles.compareClipboard });
     items.push({ separator: true });
     if (this.init.contextLines !== -1) items.push({ label: t('Collapse Unchanged Fragments'), checked: this.settings.collapseUnchanged, action: toggles.toggleCollapse });
     items.push({ label: t('Synchronize Scrolling'), checked: this.settings.syncScroll, action: toggles.toggleSync });
     return items;
+  }
+
+  /**
+   * Cut / Copy / Paste. The webview handles them itself through the host clipboard: VS Code's own routing
+   * never reaches the read-only side editors and is unreliable in pop-out windows (issue #16).
+   * Without a selection, Copy and Cut take the caret lines like IntelliJ and CodeMirror.
+   */
+  private clipboardRanges(pane: Pane): { from: number; to: number }[] {
+    const s = this.views[pane].state;
+    const selected = s.selection.ranges.filter(r => !r.empty);
+    if (selected.length) return selected.map(r => ({ from: r.from, to: r.to }));
+    const lines: { from: number; to: number }[] = [];
+    for (const r of s.selection.ranges) {
+      const line = s.doc.lineAt(r.head);
+      if (lines.some(l => l.from === line.from)) continue;
+      lines.push({ from: line.from, to: Math.min(line.to + 1, s.doc.length) });
+    }
+    return lines;
+  }
+
+  copyText(pane: Pane): string {
+    const s = this.views[pane].state;
+    const ranges = this.clipboardRanges(pane);
+    const linewise = s.selection.ranges.every(r => r.empty);
+    return ranges.map(r => s.sliceDoc(r.from, r.to)).join(linewise ? '' : s.lineBreak);
+  }
+
+  cut(): string {
+    const v = this.views.result;
+    const text = this.copyText('result');
+    v.dispatch({ changes: this.clipboardRanges('result'), userEvent: 'delete.cut', scrollIntoView: true });
+    return text;
+  }
+
+  paste(text: string) {
+    const v = this.views.result;
+    v.dispatch(v.state.replaceSelection(text), { userEvent: 'input.paste', scrollIntoView: true });
+    v.focus();
   }
 
   selectionText(pane: Pane): string {
