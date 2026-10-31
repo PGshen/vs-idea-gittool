@@ -37,7 +37,7 @@ export function register(ctx: Ctx) {
   // Branches
   c('ideagittool.branches', () => ctx.commitView?.reveal('branches'));
   c('ideagittool.checkoutTagOrRevision', async (arg?: { root?: string }) => b.checkoutTagOrRevision(ctx, await repoFor(ctx, normalize(arg) ?? (activeRepo(ctx) ? { root: activeRepo(ctx)!.root } : undefined))));
-  c('ideagittool.createBranch', (arg?: { root?: string; startPoint?: string }) => b.newBranchCommand(ctx, normalize(arg)));
+  c('ideagittool.createBranch', (arg?: { root?: string; roots?: string[]; startPoint?: string }) => b.newBranchCommand(ctx, normalize(arg)));
   c('ideagittool.branch.checkout', (arg: b.BranchArg) => b.checkoutRef(ctx, arg));
   c('ideagittool.branch.newBranchFrom', (arg: b.BranchArg) => b.newBranchFrom(ctx, arg));
   c('ideagittool.branch.checkoutAndRebase', (arg: b.BranchArg) => b.checkoutAndRebase(ctx, arg));

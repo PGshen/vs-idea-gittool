@@ -6,11 +6,11 @@ import { Icon } from '../lib/icons';
 import { t } from '../lib/l10n';
 import { anchorAt, MenuEntry, showMenu } from '../lib/menu';
 import { call, persist, persisted, send } from '../lib/rpc';
-import { refActions } from './menus';
+import { MergedRef, refActions, refRoots, sendBranchAction } from './menus';
 import { RefIcon } from './refs';
 import { store, useStore } from './store';
 
-type Node = TreeNode<{ ref?: Ref; group?: string; remote?: string; root?: string }>;
+type Node = TreeNode<{ ref?: MergedRef; group?: string; remote?: string; root?: string }>;
 
 function groupByDirectory(refs: Ref[], prefix: string, nameOf: (r: Ref) => string, makeLeaf: (r: Ref, label: string) => Node, enabled: boolean): Node[] {
   if (!enabled) return refs.map(r => makeLeaf(r, nameOf(r)));
@@ -39,9 +39,36 @@ function groupByDirectory(refs: Ref[], prefix: string, nameOf: (r: Ref) => strin
 }
 
 function branchSort(a: Ref, b: Ref) {
-  if (a.current !== b.current) return a.current ? -1 : 1;
+  if (!!a.current !== !!b.current) return a.current ? -1 : 1;
   if (!!a.favorite !== !!b.favorite) return a.favorite ? -1 : 1;
   return compareRefNames(a.name, b.name);
+}
+
+/**
+ * Without Group by Repository, refs with the same name in several repositories become one row whose actions run in
+ * all of them (IntelliJ's multi-root branches tree). It is current / a favorite only when it is so everywhere.
+ */
+export function mergeByName(refs: Ref[]): MergedRef[] {
+  const byName = new Map<string, Ref[]>();
+  for (const r of refs) byName.set(r.fullName, [...(byName.get(r.fullName) ?? []), r]);
+  return [...byName.values()].map(all => {
+    const sum = (k: 'ahead' | 'behind') => all.reduce((n, r) => n + (r[k] ?? 0), 0) || undefined;
+    const upstreams = new Set(all.map(r => r.upstream));
+    return {
+      ...all[0],
+      current: all.every(r => r.current),
+      favorite: all.every(r => r.favorite),
+      ahead: sum('ahead'),
+      behind: sum('behind'),
+      upstream: upstreams.size === 1 ? all[0].upstream : undefined,
+      all,
+    };
+  });
+}
+
+/** Refs as one list per row: a merged ref expands to the refs of its repositories. */
+function expand(refs: MergedRef[]): Ref[] {
+  return refs.flatMap(r => r.all ?? [r]);
 }
 
 /** Branches pane of the Git log (BranchesDashboardTreeComponent). */
@@ -56,10 +83,15 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
   const nodes = useMemo(() => {
     const q = search.toLowerCase();
     const match = (r: Ref) => !q || r.name.toLowerCase().includes(q);
-    const leaf = (r: Ref, label: string): Node => {
+    const byRepo = s.init.multi && settings.branchesGroupByRepository;
+    const merged = s.init.multi && !settings.branchesGroupByRepository;
+    const byDirectory = settings.branchesGroupByDirectory && !byRepo;
+    const repoName = (root?: string) => s.repos.find(x => x.root === root)?.name ?? root ?? '';
+    const leaf = (r: MergedRef, label: string): Node => {
       const kinds = r.current ? (['head'] as const) : r.type === 'remote' ? (['remote'] as const) : r.type === 'tag' ? (['tag'] as const) : (['local'] as const);
+      const repoNames = merged ? (r.all ?? [r]).map(x => repoName(x.root)).join(', ') : undefined;
       return {
-        key: `ref:${r.root ?? ''}:${r.fullName}`,
+        key: `ref:${merged ? '*' : (r.root ?? '')}:${r.fullName}`,
         label,
         text: r.name,
         prefix: (
@@ -68,7 +100,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
             data-tip={r.favorite ? t('Remove from Favorites') : t('Add to Favorites')}
             onClick={e => {
               e.stopPropagation();
-              send('branchAction', { id: 'toggleFavorite', name: r.name, type: r.type, root: r.root });
+              sendBranchAction('toggleFavorite', r);
             }}
           >
             {r.favorite ? <Icon name="nodes/star" /> : r.type !== 'tag' ? <RefIcon kinds={[...kinds]} /> : <Icon name="nodes/tag" />}
@@ -82,20 +114,20 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
                 {r.ahead ? <span data-tip={t('{0} outgoing commits', r.ahead)}>↑{r.ahead}</span> : null}
               </span>
             ) : null}
-            {r.upstream && <span class="secondary" style={{ marginLeft: '6px' }}>{r.upstream}</span>}
+            {repoNames ? <span class="secondary" style={{ marginLeft: '6px' }}>({repoNames})</span> : r.upstream && <span class="secondary" style={{ marginLeft: '6px' }}>{r.upstream}</span>}
           </>
         ),
         bold: r.current,
         data: { ref: r },
-        tip: r.upstream ? `${r.name} → ${r.upstream}` : r.name,
+        tip: [r.upstream ? `${r.name} → ${r.upstream}` : r.name, repoNames].filter(Boolean).join('\n'),
       };
     };
     // Show My Branches: only local branches whose exclusive commits are all mine.
     const mine = (r: Ref) => !settings.showMyBranches || !s.myBranches || s.myBranches.has(s.init.multi ? `${r.root}\0${r.fullName}` : r.fullName);
-    const locals = s.refs.filter(r => r.type === 'local' && match(r) && mine(r)).sort(branchSort);
-    const remotes = settings.showMyBranches ? [] : s.refs.filter(r => r.type === 'remote' && match(r)).sort(branchSort);
-    const tags = s.refs.filter(r => r.type === 'tag' && match(r)).sort((a, b) => compareRefNames(a.name, b.name));
-    const byRepo = s.init.multi && settings.branchesGroupByRepository;
+    const list = (refs: Ref[]): MergedRef[] => (merged ? mergeByName(refs) : refs);
+    const locals = list(s.refs.filter(r => r.type === 'local' && match(r) && mine(r))).sort(branchSort);
+    const remotes = settings.showMyBranches ? [] : list(s.refs.filter(r => r.type === 'remote' && match(r))).sort(branchSort);
+    const tags = list(s.refs.filter(r => r.type === 'tag' && match(r))).sort((a, b) => compareRefNames(a.name, b.name));
     // Group by Repository: an extra level with one node per repository under Local / Remote / Tags.
     const perRepo = (refs: Ref[], prefix: string, build: (list: Ref[], key: string) => Node[]): Node[] =>
       byRepo
@@ -122,7 +154,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
       label: t('Local'),
       text: t('Local'),
       icon: 'nodes/folder',
-      children: perRepo(locals, 'local', (list, key) => groupByDirectory(list, key, r => r.name, leaf, settings.branchesGroupByDirectory)),
+      children: perRepo(locals, 'local', (list, key) => groupByDirectory(list, key, r => r.name, leaf, byDirectory)),
       data: { group: 'local' },
     });
     const remoteNodes = (list: Ref[], key: string): Node[] => {
@@ -134,7 +166,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
         text: remote,
         icon: 'nodes/folder',
         data: { group: remote, remote, root: refs[0]?.root },
-        children: groupByDirectory(refs, `${key}/${remote}`, r => r.name.slice(remote.length + 1), leaf, settings.branchesGroupByDirectory),
+        children: groupByDirectory(refs, `${key}/${remote}`, r => r.name.slice(remote.length + 1), leaf, byDirectory),
       }));
     };
     if (remotes.length || (!q && !settings.showMyBranches && s.refs.some(r => r.type === 'remote')))
@@ -156,8 +188,9 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
     return all;
   }, [search, expanded, nodes]);
 
-  const selectedRefs = (): Ref[] => {
-    const out: Ref[] = [];
+  /** Selected rows' refs; a merged row is one entry (see `expand`). */
+  const selectedRefs = (): MergedRef[] => {
+    const out: MergedRef[] = [];
     const walk = (ns: Node[]) =>
       ns.forEach(n => {
         if (selection.has(n.key) && n.data?.ref) out.push(n.data.ref);
@@ -188,24 +221,27 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
     else void call<{ index: number; hash: string } | undefined>('find', { q: hash, label }).then(r => r && store.selectIndex(r.index, { hash: r.hash }));
   };
 
+  const byRepository = store.init.multi && settings.branchesGroupByRepository;
   const settingsMenu = (): MenuEntry[] => [
     { separator: true, label: t('On Single Click') },
     { label: t('Update Branch Filter'), checked: settings.branchesSingleClickFilter, action: () => store.updateSettings({ branchesSingleClickFilter: true, branchesSingleClickNavigate: false }) },
     { label: t('Navigate Log to Branch Head'), checked: settings.branchesSingleClickNavigate, action: () => store.updateSettings({ branchesSingleClickNavigate: true, branchesSingleClickFilter: false }) },
     { separator: true },
-    { label: t('Group by Directory'), icon: 'actions/groupByPackage', checked: settings.branchesGroupByDirectory, action: () => store.updateSettings({ branchesGroupByDirectory: !settings.branchesGroupByDirectory }) },
-    { label: t('Group by Repository'), checked: store.init.multi && settings.branchesGroupByRepository, disabled: !store.init.multi, action: () => store.updateSettings({ branchesGroupByRepository: !settings.branchesGroupByRepository }) },
+    // Group by Directory and Group by Repository exclude each other: turning one on turns the other off.
+    { label: t('Group by Directory'), icon: 'actions/groupByPackage', checked: settings.branchesGroupByDirectory && !byRepository, action: () => store.updateSettings(byRepository ? { branchesGroupByDirectory: true, branchesGroupByRepository: false } : { branchesGroupByDirectory: !settings.branchesGroupByDirectory }) },
+    { label: t('Group by Repository'), checked: byRepository, disabled: !store.init.multi, action: () => store.updateSettings(byRepository ? { branchesGroupByRepository: false } : { branchesGroupByRepository: true, branchesGroupByDirectory: false }) },
     { label: t('Show Tags'), checked: settings.branchesShowTags, action: () => store.updateSettings({ branchesShowTags: !settings.branchesShowTags }) },
   ];
 
-  const sel = selectedRefs();
-  const one = sel.length === 1 ? sel[0] : undefined;
+  const rowRefs = selectedRefs();
+  const sel = expand(rowRefs);
+  const one = rowRefs.length === 1 ? rowRefs[0] : undefined;
   return (
     <div class="branches-panel">
       <Toolbar vertical class="branches-toolbar">
         <ActionButton icon="general/chevronLeft" tip={t('Hide Git Branches')} onClick={onHide} />
         <span class="toolbar-separator" style={{ width: '18px', height: '1px', margin: '4px 0' }} />
-        <ActionButton icon="general/add" tip={t('New Branch')} shortcut="Ctrl+Alt+N" onClick={() => send('command', { id: 'ideagittool.createBranch', args: { root: store.root, startPoint: one?.name } })} />
+        <ActionButton icon="general/add" tip={t('New Branch')} shortcut="Ctrl+Alt+N" onClick={() => send('command', { id: 'ideagittool.createBranch', args: one?.all ? { roots: refRoots(one), startPoint: one.name } : { root: store.root, startPoint: one?.name } })} />
         <ActionButton
           icon="vcs/update"
           tip={t('Update Selected')}
@@ -213,7 +249,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
           onClick={() => sel.filter(r => r.type === 'local').forEach(r => send('branchAction', { id: 'update', name: r.name, type: r.type, root: r.root }))}
         />
         <ActionButton icon="general/delete" tip={sel.length > 1 ? t('Delete Branches') : t('Delete Branch')} disabled={!sel.length || sel.some(r => r.current)} onClick={() => sel.forEach(r => send('branchAction', { id: 'delete', name: r.name, type: r.type, root: r.root }))} />
-        <ActionButton icon="vcs/diff" tip={t('Compare with Current')} shortcut="Ctrl+D" disabled={!one || one.current} onClick={() => one && send('branchAction', { id: 'compare', name: one.name, type: one.type, root: one.root })} />
+        <ActionButton icon="vcs/diff" tip={t('Compare with Current')} shortcut="Ctrl+D" disabled={!one || one.current} onClick={() => one && sendBranchAction('compare', one)} />
         <ActionButton
           icon="general/search"
           tip={t('Show My Branches')}
@@ -224,7 +260,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
           }}
         />
         <ActionButton icon="vcs/fetch" tip={t('Fetch')} onClick={() => (store.init.multi ? store.repos : [{ root: store.root }]).forEach(r => send('command', { id: 'ideagittool.fetch', args: { root: r.root } }))} />
-        <ActionButton icon="nodes/star" tip={t('Mark/Unmark As Favorite')} disabled={!sel.length || sel.some(r => r.type === 'tag')} onClick={() => sel.forEach(r => send('branchAction', { id: 'toggleFavorite', name: r.name, type: r.type, root: r.root }))} />
+        <ActionButton icon="nodes/star" tip={t('Mark/Unmark As Favorite')} disabled={!sel.length || sel.some(r => r.type === 'tag')} onClick={() => rowRefs.forEach(r => sendBranchAction('toggleFavorite', r))} />
         <ActionButton
           icon="general/locate"
           tip={t('Navigate Log to Selected Branch Head')}
@@ -251,7 +287,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
             <input placeholder={t('Search')} value={search} onInput={e => setSearch((e.currentTarget as HTMLInputElement).value)} onKeyDown={e => e.key === 'Escape' && setSearch('')} />
           </div>
         </div>
-        <Tree<{ ref?: Ref; group?: string; remote?: string; root?: string }>
+        <Tree<{ ref?: MergedRef; group?: string; remote?: string; root?: string }>
           nodes={nodes}
           expanded={effectiveExpanded}
           onExpandedChange={e => {
@@ -270,11 +306,11 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
           onKeyDown={(e, selected) => {
             const r = selected[0]?.data?.ref;
             if (e.key === 'Delete' && r) {
-              send('branchAction', { id: 'delete', name: r.name, type: r.type, root: r.root });
+              sendBranchAction('delete', r);
               return true;
             }
             if (e.key === 'F2' && r?.type === 'local') {
-              send('branchAction', { id: 'rename', name: r.name, type: r.type, root: r.root });
+              sendBranchAction('rename', r);
               return true;
             }
           }}
@@ -283,7 +319,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
             if (r && selected.length === 1) {
               showMenu([{ label: t('Update Branch Filter'), action: () => filterBy(selected[0]) }, { label: t('Navigate Log to Branch Head'), icon: 'general/locate', action: () => navigate(selected[0]) }, { separator: true }, ...refActions(r, current)], anchorAt(e));
             } else if (selected.length > 1) {
-              const refs = selected.map(n => n.data?.ref).filter((x): x is Ref => !!x);
+              const refs = expand(selected.map(n => n.data?.ref).filter((x): x is MergedRef => !!x));
               const withHead = selected.some(n => n.key === 'head');
               const sameRoot = new Set(refs.map(x => x.root ?? store.root)).size <= 1;
               const pair = !sameRoot ? undefined : withHead && refs.length === 1 ? { ref: refs[0].name, with: current ?? 'HEAD' } : refs.length === 2 ? { ref: refs[0].name, with: refs[1].name } : undefined;

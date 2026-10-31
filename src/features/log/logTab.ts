@@ -146,7 +146,7 @@ export class LogTab implements vscode.Disposable {
       find: (p: string | { q: string; label?: string }) => (typeof p === 'string' ? this.find(p) : this.find(p.q, p.label)),
       commitAction: (p: { id: string; hashes: string[]; arg?: string }) => this.commitAction(p.id, p.hashes, p.arg),
       changeAction: (p: { id: string; changes: Change[]; left: string; right: string; hashes: string[] }) => this.changeAction(p.id, p.changes, p.left, p.right, p.hashes),
-      branchAction: (p: { id: string; name: string; type: string; root?: string }) => this.branchAction(p.id, p.name, p.type, p.root),
+      branchAction: (p: { id: string; name: string; type: string; root?: string; roots?: string[] }) => this.branchAction(p.id, p.name, p.type, p.root, p.roots),
       command: (p: { id: string; args?: unknown }) => vscode.commands.executeCommand(p.id, p.args),
       pickPaths: () => this.pickPaths(),
       pickDate: (p: { which: 'since' | 'until' }) => this.pickDate(p.which),
@@ -825,9 +825,12 @@ export class LogTab implements vscode.Disposable {
     }
   }
 
-  private branchAction(id: string, name: string, type: string, root?: string) {
+  /** With `roots` (a branch merged by name across repositories) the action runs root by root, like synchronous branch control. */
+  private async branchAction(id: string, name: string, type: string, root?: string, roots?: string[]) {
     if (id === 'filter') return; // handled in the webview
-    return vscode.commands.executeCommand(`ideagittool.${type === 'tag' ? 'tag' : 'branch'}.${id}`, { root: root ?? this.repo.root, name, type });
+    if (roots && roots.length > 1 && id === 'newBranchFrom') return vscode.commands.executeCommand('ideagittool.createBranch', { roots, startPoint: name });
+    const command = `ideagittool.${type === 'tag' ? 'tag' : 'branch'}.${id}`;
+    for (const r of roots?.length ? roots : [root ?? this.repo.root]) await vscode.commands.executeCommand(command, { root: r, name, type });
   }
 
   private async pickPaths(): Promise<string[] | undefined> {

@@ -1,12 +1,13 @@
 // Preview fixture for the newer log features: multi-root log with root colors, long edges with arrows,
 // GPG Signature column, Not Cherry-Picked Commits dimming and the diff preview.
-// Variants via env LAYOUT: bottom (default) | right | unified | branches.
+// Variants via env LAYOUT: bottom (default) | right | unified | branches | branches-merged (without Group by Repository).
 import * as esbuild from 'esbuild';
 
 const built = await esbuild.build({ entryPoints: ['src/git/graph.ts'], bundle: true, write: false, format: 'esm', platform: 'neutral' });
 const { GraphLayout, visualizeRow } = await import('data:text/javascript;base64,' + Buffer.from(built.outputFiles[0].text).toString('base64'));
 
 const layoutVariant = process.env.LAYOUT ?? 'bottom';
+const branchesPane = layoutVariant.startsWith('branches');
 const roots = ['/work/ideagittool', '/work/intellij-community'];
 const t0 = Date.UTC(2026, 5, 17, 18, 56) / 1000;
 let n = 0;
@@ -67,7 +68,7 @@ export const initial = {
   filters: { branches: [], users: [], paths: [], text: '', regex: false, matchCase: false },
   options: { sort: 'topo', firstParent: false },
   settings: {
-    showBranches: layoutVariant === 'branches',
+    showBranches: branchesPane,
     columns: { author: true, date: true, hash: false, signature: true },
     columnWidths: { author: 120, date: 130, hash: 80, signature: 28 },
     compactRefs: true,
@@ -76,20 +77,20 @@ export const initial = {
     preferCommitDate: false,
     refsOnLeft: false,
     showDetails: true,
-    showRootNames: layoutVariant === 'branches',
+    showRootNames: branchesPane,
     highlightMyCommits: false,
     highlightMergeCommits: false,
     highlightCurrentBranch: true,
     changesGroupByDirectory: true,
     changesGroupByRepository: true,
     showOnlyAffectedChanges: false,
-    showDiffPreview: layoutVariant !== 'branches',
+    showDiffPreview: !branchesPane,
     diffPreviewLocation: layoutVariant === 'right' ? 'right' : 'bottom',
     diffUnified: layoutVariant === 'unified',
     diffCollapseUnchanged: true,
     diffPreviewSize: 330,
     branchesGroupByDirectory: true,
-    branchesGroupByRepository: true,
+    branchesGroupByRepository: layoutVariant !== 'branches-merged',
     branchesShowTags: false,
     branchesSingleClickFilter: false,
     branchesSingleClickNavigate: true,
@@ -184,7 +185,7 @@ export async function handle(method, params) {
 }
 
 export async function act(page) {
-  if (layoutVariant === 'branches') {
+  if (branchesPane) {
     await page.waitForTimeout(200);
     await page.waitForTimeout(200);
   }

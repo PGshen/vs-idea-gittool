@@ -104,19 +104,40 @@ function historyMenu(info: ContextInfo, count: number): MenuEntry[] {
   return entries;
 }
 
+/** A ref of the branches pane; `all` holds the same-named refs of several repositories merged into one row. */
+export type MergedRef = Ref & { all?: Ref[] };
+
+/** Repository roots a ref belongs to (several for a merged ref). */
+export function refRoots(r: MergedRef): string[] {
+  return r.all ? r.all.map(x => x.root ?? store.root) : [r.root ?? store.root];
+}
+
+/** Runs a branch action; a merged ref runs it in each of its repositories. */
+export function sendBranchAction(id: string, r: MergedRef) {
+  // A merged ref is a favorite only when it is one everywhere; toggling flips the repositories that differ from that.
+  const roots = id === 'toggleFavorite' && r.all ? r.all.filter(x => !!x.favorite === !!r.favorite).map(x => x.root ?? store.root) : refRoots(r);
+  send('branchAction', { id, name: r.name, type: r.type, root: roots[0], roots: roots.length > 1 ? roots : undefined });
+}
+
 /** Actions of a branch / tag node (Git.Branch.Backend + branches popup), with IntelliJ texts. */
-export function refActions(r: Ref, current: string | undefined): MenuEntry[] {
-  const root = r.root ?? store.root;
-  if (r.root) current = store.repos.find(x => x.root === r.root)?.head.branch ?? current;
+export function refActions(r: MergedRef, current: string | undefined): MenuEntry[] {
+  const roots = refRoots(r);
+  const root = roots[0];
+  if (r.all) {
+    // The current branch of a merged ref: the one shared by all its repositories, if any.
+    const heads = new Set(roots.map(x => store.repos.find(repo => repo.root === x)?.head.branch));
+    current = heads.size === 1 ? [...heads][0] : undefined;
+  } else if (r.root) current = store.repos.find(x => x.root === r.root)?.head.branch ?? current;
   const cur = current ?? 'HEAD';
-  const act = (id: string) => () => send('branchAction', { id, name: r.name, type: r.type, root });
+  const act = (id: string) => () => sendBranchAction(id, r);
+  const each = (id: string, args: (root: string) => object) => () => roots.forEach(x => send('command', { id, args: args(x) }));
   if (r.type === 'tag') {
     return [
       { label: t('Checkout'), action: act('checkout') },
-      { label: t("New Branch from '{0}'…", r.name), action: () => send('command', { id: 'ideagittool.createBranch', args: { root, startPoint: r.name } }) },
+      { label: t("New Branch from '{0}'…", r.name), action: () => send('command', { id: 'ideagittool.createBranch', args: roots.length > 1 ? { roots, startPoint: r.name } : { root, startPoint: r.name } }) },
       { separator: true },
-      { label: t("Compare with '{0}'", cur), action: () => send('command', { id: 'ideagittool.compareRefs', args: { root, ref: r.name, with: cur } }) },
-      { label: t('Show Diff with Working Tree'), action: () => send('command', { id: 'ideagittool.branch.showDiffWithWorkingTree', args: { root, name: r.name, type: 'tag' } }) },
+      { label: t("Compare with '{0}'", cur), action: each('ideagittool.compareRefs', x => ({ root: x, ref: r.name, with: cur })) },
+      { label: t('Show Diff with Working Tree'), action: each('ideagittool.branch.showDiffWithWorkingTree', x => ({ root: x, name: r.name, type: 'tag' })) },
       { separator: true },
       { label: t("Merge '{0}' into '{1}'", r.name, cur), action: act('mergeIntoCurrent') },
       { separator: true },

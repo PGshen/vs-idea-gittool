@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Git log branches pane with several repositories and *Group by Repository* off: branches with the same name are merged into one row that lists its repositories, like IntelliJ (`dev (gvideo-hub, gvideo-task, console)`). Its actions (Checkout, Update, Push, Rebase, Merge, Compare, Delete, New Branch from…, favorites) run in each of those repositories. Branch names in the pane are no longer cut to make room for the hint.
+- Git log branches pane: *Group by Directory* and *Group by Repository* exclude each other; turning one on turns the other off.
+- Multi-root Git log: consecutive commits of one repository share a single continuous root color strip, like IntelliJ.
+
 ## 0.4.2
 
 - Simplified Chinese UI: commands, settings, notifications, dialogs and all tool windows follow the VS Code display language (*Configure Display Language*), with IntelliJ's Chinese wording. English stays the default.
