@@ -399,6 +399,15 @@ body {
   display: flex;
   flex-direction: column;
 }
+/* The branch name keeps its room (any shrinking, even a fraction of a pixel, ellipsizes it); the hint (counts,
+   upstream, repositories) is cut instead. */
+.branches-panel .tree-row .label {
+  flex-shrink: 0;
+  max-width: 75%;
+}
+.branches-panel .tree-row .hint {
+  min-width: 0;
+}
 .branches-search {
   margin: 6px 6px 4px;
   display: flex;
@@ -463,7 +472,8 @@ body {
   margin-top: 4px;
 }
 
-/* Root color strip of the multi-root log (VcsLogColorManager), with names when "Root Names" is on. */
+/* Root color strip of the multi-root log (VcsLogColorManager), with names when "Root Names" is on. Consecutive
+   commits of one repository form a single strip: only its ends are inset and rounded. */
 .cell.root {
   width: 6px;
   align-self: stretch;
@@ -471,6 +481,16 @@ body {
   margin: 3px 4px 3px 0;
   border-radius: 2px;
   flex: none;
+}
+.cell.root.joined-top {
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.cell.root.joined-bottom {
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 .cell.root.named {
   width: 96px;

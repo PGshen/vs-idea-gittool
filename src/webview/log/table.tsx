@@ -259,7 +259,7 @@ export function LogTable() {
               >
                 {repo && (
                   <div
-                    class={`cell root ${settings.showRootNames ? 'named' : ''}`}
+                    class={`cell root ${settings.showRootNames ? 'named' : ''} ${s.rows.get(i - 1)?.r === r.r ? 'joined-top' : ''} ${s.rows.get(i + 1)?.r === r.r ? 'joined-bottom' : ''}`}
                     style={{ background: rootColor(repo.color, dark) }}
                     data-tip={`${repo.name}\n${repo.root}`}
                   >
