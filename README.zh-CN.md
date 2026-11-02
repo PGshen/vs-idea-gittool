@@ -2,28 +2,32 @@
 
 [English](README.md) | 简体中文
 
-一个 VS Code 插件，复刻了 [Rebased](https://github.com/detachhead/rebased)——基于 IntelliJ 平台的独立 Git 客户端。
-它保留了 IntelliJ 的 Git 工作流、菜单文案、快捷键、图标和 New UI 的界面布局。
+在 VS Code 里使用 IntelliJ 的 Git 工作流。
+
+如果你从 JetBrains IDE 转到 VS Code，又怀念它的 Git 工具，这个插件可以把它们带过来，菜单、文案和快捷键都保持一致。它复刻了 [Rebased](https://github.com/detachhead/rebased)（基于 IntelliJ 平台的独立 Git 客户端）的界面，可以和 VS Code 自带的 Git 同时使用。默认跟随 VS Code 主题，也可以切换为 IntelliJ New UI 外观。
 
 > 插件界面沿用 IntelliJ 的英文文案，下文提到的菜单、按钮名称都按界面上的原文写出。
 
+![](docs/image/20261102183431.jpg)
+![](docs/image/20261102185743.jpg)
+
+## 为什么用它
+
+- **用三栏合并窗口解决冲突。** 合并、变基或 cherry-pick 停下来时，直接弹出冲突对话框：Yours、可编辑的 Result 和 Theirs 并排显示，还可以一键解决所有简单冲突。
+- **在日志里改历史。** 在提交图上右键，就能 fixup、squash、drop、改提交信息，或开始交互式变基。
+- **勾选哪些文件就提交哪些。** 不用管暂存区，用 changelist 和 shelf 把不同的工作分开。
+
+此外还有 Local History、行内 blame、多仓库日志、worktree，以及一个显示所有 git 命令的控制台。完整列表见[功能](#功能)。
+
 ## 安装
 
+```
+code --install-extension ideagittool.ideagittool
+```
+
+也可以在扩展视图里搜索 **IdeaGitTool**，或打开[插件市场页面](https://marketplace.visualstudio.com/items?itemName=ideagittool.ideagittool)安装。插件市场发布新版本后，VS Code 会自动更新。
+
 **环境要求：** VS Code 1.90 或更高版本；Git 2.25 或更高版本，并已加入 `PATH`（也可以在设置 `ideagittool.gitPath` 里指定 git 路径）。Log 里不动工作区直接改提交的操作（Drop / Extract Selected Changes、Add Commits to Remote Branch）需要 Git 2.40 或更高版本；Rebase 的 `--update-refs` 选项需要 Git 2.38 或更高版本。
-
-### 从插件市场安装（推荐）
-
-- 在 VS Code 里打开扩展视图（Ctrl+Shift+X / Cmd+Shift+X），搜索 **IdeaGitTool**（发布者 `ideagittool`），点 **Install**（安装）。
-- 或者打开[插件市场页面](https://marketplace.visualstudio.com/items?itemName=ideagittool.ideagittool)，点 **Install**。
-- 或者按 Ctrl+P / Cmd+P，输入 `ext install ideagittool.ideagittool` 回车。
-- 或者在终端执行：
-  ```
-  code --install-extension ideagittool.ideagittool
-  ```
-
-插件市场发布新版本后，VS Code 会自动更新。
-
-![](docs/image/20261028181018.jpg)
 
 ### 用 .vsix 安装包安装
 
@@ -48,7 +52,7 @@ npm run package                                  # 生成 ideagittool-<version>.
 code --install-extension ideagittool-*.vsix
 ```
 
-### 开始使用
+## 开始使用
 
 - 打开一个包含 Git 仓库的文件夹。Git 日志会在底部的 **Git** 面板中自动打开，活动栏里会出现 **IdeaGitTool** 图标（Commit / Shelf / Stash / Branches）。
 - **Branches** 标签页（Ctrl+Shift+`）就是 IntelliJ 的分支弹出菜单：Update Project…、Commit…、Push…、New Branch…，以及所有本地、远程分支和标签及其操作。

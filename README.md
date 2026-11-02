@@ -2,28 +2,30 @@
 
 English | [简体中文](README.zh-CN.md)
 
-A VS Code extension that re-creates [Rebased](https://github.com/detachhead/rebased), the standalone git client built on the
-IntelliJ platform. It keeps the IntelliJ git workflow, menu wording, keyboard shortcuts, icons and New UI look.
+IntelliJ's Git workflow, in VS Code.
 
-![](docs/image/20261019175704.jpg)
+If you came to VS Code from a JetBrains IDE and miss its Git tools, this brings them over with the same menus, wording and shortcuts. It re-creates the UI of [Rebased](https://github.com/detachhead/rebased), the standalone client built on the IntelliJ platform, and runs next to VS Code's built-in Git. It follows your VS Code theme by default, or can use the IntelliJ New UI look.
+
+![](docs/image/20261102183431.jpg)
+![](docs/image/20261102185743.jpg)
+
+## Why use it
+
+- **Resolve conflicts in a three-pane merge window.** When a merge, rebase or cherry-pick stops, the Conflicts dialog opens right away: Yours, an editable Result and Theirs side by side, and a single action to resolve all simple conflicts.
+- **Edit history from the log.** Right-click commits in the graph to fixup, squash, drop, reword or start an interactive rebase.
+- **Commit the files you checked.** There is no staging area to manage. Changelists and the shelf keep separate pieces of work apart.
+
+Also included: Local History, inline blame, a multi-repository log, worktrees, and a console showing every git command it runs. See [Features](#features) for the full list.
 
 ## Installation
 
+```
+code --install-extension ideagittool.ideagittool
+```
+
+Or search for **IdeaGitTool** in the Extensions view, or use the [Marketplace page](https://marketplace.visualstudio.com/items?itemName=ideagittool.ideagittool). VS Code updates the extension automatically when a new version is published.
+
 **Requirements:** VS Code 1.90 or later, and Git 2.25 or later on your `PATH` (or set `ideagittool.gitPath`). The log actions that edit commits without touching the working tree (Drop / Extract Selected Changes, Add Commits to Remote Branch) need Git 2.40 or later, and the `--update-refs` rebase option needs Git 2.38 or later.
-
-### From the Marketplace (recommended)
-
-- In VS Code, open the Extensions view (Ctrl+Shift+X / Cmd+Shift+X), search for **IdeaGitTool** (publisher `ideagittool`) and click **Install**.
-- Or open the [Marketplace page](https://marketplace.visualstudio.com/items?itemName=ideagittool.ideagittool) and click **Install**.
-- Or press Ctrl+P / Cmd+P and run `ext install ideagittool.ideagittool`.
-- Or from a terminal:
-  ```
-  code --install-extension ideagittool.ideagittool
-  ```
-
-VS Code updates the extension automatically when a new version is published.
-
-![](docs/image/20261028181018.jpg)
 
 ### From the .vsix package
 
@@ -48,7 +50,7 @@ npm run package                                  # builds ideagittool-<version>.
 code --install-extension ideagittool-*.vsix
 ```
 
-### First steps
+## First steps
 
 - Open a folder that contains a Git repository. The Git log opens in the **Git** panel at the bottom, and the **IdeaGitTool** icon appears in the activity bar (Commit / Shelf / Stash / Branches).
 - The **Branches** tab (Ctrl+Shift+`) holds IntelliJ's branches popup: Update Project…, Commit…, Push…, New Branch…, and every local and remote branch and tag with its actions.
