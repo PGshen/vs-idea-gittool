@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { ActionButton, Toolbar, Tree, TreeNode } from '../lib/components';
-import { shortcutKey } from '../lib/keys';
+import { shortcutKey, isMac } from '../lib/keys';
 import { anchorAt, MenuEntry, showMenu } from '../lib/menu';
 import { t } from '../lib/l10n';
 import { persist, persisted, send } from '../lib/rpc';
@@ -132,7 +132,7 @@ export function ShelfTab({ state }: { state: CommitViewState }) {
   const onKeyDown = (e: KeyboardEvent, sel: TreeNode<NodeData>[]) => {
     const ctrl = e.ctrlKey || e.metaKey;
     if (ctrl && e.key.toLowerCase() === 'd') return void showDiff(sel), true;
-    if (e.key === 'Delete') return void del(sel), true;
+    if (e.key === 'Delete' || (isMac && e.key === 'Backspace')) return void del(sel), true;
     if (ctrl && e.altKey && shortcutKey(e) === 'u') return void unshelveSilently(sel), true;
     if (ctrl && e.shiftKey && e.key.toLowerCase() === 'u') {
       const { shelves, files } = selected(sel);
@@ -150,7 +150,7 @@ export function ShelfTab({ state }: { state: CommitViewState }) {
 
   const viewOptions = (): MenuEntry[] => [
     { separator: true, label: t('Group By') },
-    { label: t('Directory'), shortcut: 'Ctrl+Alt+P', checked: settings.groupByDirectory, action: () => send('setSettings', { groupByDirectory: !settings.groupByDirectory }) },
+    { label: t('Directory'), checked: settings.groupByDirectory, action: () => send('setSettings', { groupByDirectory: !settings.groupByDirectory }) },
     { separator: true, label: t('Show') },
     { label: t('Already Unshelved'), checked: settings.showRecycledShelves, action: () => send('setSettings', { showRecycledShelves: !settings.showRecycledShelves }) },
   ];

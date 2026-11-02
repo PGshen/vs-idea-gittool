@@ -304,7 +304,7 @@ export function RightPanel() {
       icon: 'general/show',
       children: [
         { separator: true, label: t('Group By') },
-        { label: t('Directory'), shortcut: 'Ctrl+Alt+P', checked: s.settings.changesGroupByDirectory, action: () => store.updateSettings({ changesGroupByDirectory: !s.settings.changesGroupByDirectory }) },
+        { label: t('Directory'), checked: s.settings.changesGroupByDirectory, action: () => store.updateSettings({ changesGroupByDirectory: !s.settings.changesGroupByDirectory }) },
         { label: t('Repository'), checked: s.init.multi && s.settings.changesGroupByRepository, disabled: !s.init.multi, action: () => store.updateSettings({ changesGroupByRepository: !s.settings.changesGroupByRepository }) },
       ],
     },

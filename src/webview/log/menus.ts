@@ -91,7 +91,7 @@ function historyMenu(info: ContextInfo, count: number): MenuEntry[] {
     { label: t('Show File at Revision'), disabled: !one, action: a('historyShowFile') },
     { label: t('Compare with Local'), disabled: !one, action: a('historyCompareWithLocal') },
     { label: t('Show Diff'), icon: 'vcs/diff', shortcut: 'Ctrl+D', action: a('historyDiff') },
-    { label: t('Show All Affected Files'), icon: 'vcs/changes', shortcut: 'Alt+Shift+A', disabled: !one, action: a('showDiff') },
+    { label: t('Show All Affected Files'), icon: 'vcs/changes', disabled: !one, action: a('showDiff') },
     { label: t('Annotate'), icon: 'general/listFiles', disabled: !one, action: a('historyAnnotate') },
     { label: t('Show in VCS Log'), icon: 'toolwindows/vcs', disabled: !one, action: a('showInLog') },
     { label: count > 1 ? t('Revert Commits') : t('Revert Commit'), disabled: info.operation !== 'none', action: a('revert') },

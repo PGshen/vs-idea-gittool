@@ -201,9 +201,9 @@ function App() {
   const cut = () => send('writeClipboard', { text: c.cut() });
   const paste = async () => c.paste(await call<string>('readClipboard'));
   const clipboardItems = (pane: Pane) => ({
-    cut: { label: t('Cut'), icon: 'general/cut', shortcut: isMac ? '⌘X' : 'Ctrl+X', action: cut },
-    copy: { label: t('Copy'), icon: 'general/copy', shortcut: isMac ? '⌘C' : 'Ctrl+C', action: () => copy(pane) },
-    paste: { label: t('Paste'), icon: 'general/paste', shortcut: isMac ? '⌘V' : 'Ctrl+V', action: () => void paste() },
+    cut: { label: t('Cut'), icon: 'general/cut', shortcut: 'Ctrl+X', action: cut },
+    copy: { label: t('Copy'), icon: 'general/copy', shortcut: 'Ctrl+C', action: () => copy(pane) },
+    paste: { label: t('Paste'), icon: 'general/paste', shortcut: 'Ctrl+V', action: () => void paste() },
   });
 
   // Gutter operations, folded fragments and the editor context menus.

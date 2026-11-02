@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { ActionButton, Separator, Split, Toolbar, Tree, TreeNode } from '../lib/components';
-import { shortcutKey } from '../lib/keys';
+import { shortcutKey, isMac } from '../lib/keys';
 import { anchorAt, MenuEntry, showMenu } from '../lib/menu';
 import { t } from '../lib/l10n';
 import { call, persist, persisted, send } from '../lib/rpc';
@@ -215,14 +215,14 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
         label: t('Copy Path/Reference…'),
         disabled: !files.length,
         children: [
-          { label: t('Absolute Path'), shortcut: 'Ctrl+Shift+C', action: () => send('copyPath', { keys, kind: 'absolute' }) },
+          { label: t('Absolute Path'), action: () => send('copyPath', { keys, kind: 'absolute' }) },
           { label: t('File Name'), action: () => send('copyPath', { keys, kind: 'name' }) },
           { separator: true },
           { label: t('Path with Line Number'), action: () => send('copyPath', { keys, kind: 'lineNumber' }) },
           { label: t('Path from Content Root'), action: () => send('copyPath', { keys, kind: 'contentRoot' }) },
           { label: t('Path From Repository Root'), action: () => send('copyPath', { keys, kind: 'repo' }) },
           { separator: true },
-          { label: t('Copy Reference'), shortcut: 'Ctrl+Alt+Shift+C', action: () => send('copyPath', { keys, kind: 'reference' }) },
+          { label: t('Copy Reference'), action: () => send('copyPath', { keys, kind: 'reference' }) },
         ],
       },
       { separator: true },
@@ -301,7 +301,7 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
       else showDiff(files);
       return true;
     }
-    if (e.key === 'Delete') return void send('deleteFiles', { keys: keysOf(files) }), true;
+    if (e.key === 'Delete' || (isMac && e.key === 'Backspace')) return void send('deleteFiles', { keys: keysOf(files) }), true;
     if (ctrl && e.altKey && shortcutKey(e) === 'z') return void rollback(), true;
     if (ctrl && e.altKey && shortcutKey(e) === 'a') return void send('addToVcs', { keys: keysOf(files.filter(f => f.status === '?')) }), true;
     if (e.altKey && e.shiftKey && shortcutKey(e) === 'm') return void send('moveToChangelist', { keys: keysOf(files) }), true;
@@ -321,7 +321,7 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
 
   const viewOptions = (): MenuEntry[] => [
     { separator: true, label: t('Group By') },
-    { label: t('Directory'), shortcut: 'Ctrl+Alt+P', checked: settings.groupByDirectory, action: () => send('setSettings', { groupByDirectory: !settings.groupByDirectory }) },
+    { label: t('Directory'), checked: settings.groupByDirectory, action: () => send('setSettings', { groupByDirectory: !settings.groupByDirectory }) },
     ...(multiRepo ? [{ label: t('Repository'), checked: settings.groupByRepository, action: () => send('setSettings', { groupByRepository: !settings.groupByRepository }) }] : []),
     { separator: true, label: t('Show') },
     { label: t('Ignored Files'), icon: settings.showIgnored ? undefined : 'actions/toggleVisibility', checked: settings.showIgnored, action: () => send('setSettings', { showIgnored: !settings.showIgnored }) },
@@ -356,7 +356,6 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
         <ActionButton
           icon="general/expandAll"
           tip={t('Expand All')}
-          shortcut="Ctrl+="
           onClick={() => {
             const next = new Set([...expanded, ...allGroupKeys(nodes)]);
             setExpanded(next);
@@ -366,7 +365,6 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
         <ActionButton
           icon="general/collapseAll"
           tip={t('Collapse All')}
-          shortcut="Ctrl+-"
           onClick={() => {
             setExpanded(new Set());
             persist('expanded', []);

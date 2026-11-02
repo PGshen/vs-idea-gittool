@@ -2,6 +2,7 @@ import { ComponentChildren } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
 import { Button, Checkbox, Radio } from '../../../lib/components';
 import { FileIcon, Icon } from '../../../lib/icons';
+import { formatHint } from '../../../lib/keys';
 import { t } from '../../../lib/l10n';
 import { call } from '../../../lib/rpc';
 import { DialogFrame, Group, Row } from '../../frame';
@@ -290,7 +291,7 @@ registerDialog<{ title: string; message: string; okLabel?: string; commits?: { h
           </Button>
         </>
       }
-      left={<span class="field-hint">{t('Press Ctrl+Enter to apply changes')}</span>}
+      left={<span class="field-hint">{formatHint(t('Press Ctrl+Enter to apply changes'))}</span>}
     >
       {props.commits && props.commits.length > 1 && (
         <div class="secondary" style={{ marginBottom: '4px' }}>

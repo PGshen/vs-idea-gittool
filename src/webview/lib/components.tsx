@@ -1,6 +1,7 @@
 import { ComponentChildren, JSX } from 'preact';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Icon } from './icons';
+import { formatShortcut } from './keys';
 import { t } from './l10n';
 import { anchorBelow, MenuEntry, showMenu } from './menu';
 import { persist, persisted } from './rpc';
@@ -26,7 +27,7 @@ function installTooltips() {
       if (target.dataset.shortcut) {
         const s = document.createElement('span');
         s.className = 'shortcut';
-        s.textContent = target.dataset.shortcut;
+        s.textContent = formatShortcut(target.dataset.shortcut);
         tooltipEl.appendChild(s);
       }
       document.body.appendChild(tooltipEl);
