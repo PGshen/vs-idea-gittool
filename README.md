@@ -27,12 +27,12 @@ VS Code updates the extension automatically when a new version is published.
 
 ### From the .vsix package
 
-1. Download [`ideagittool-0.4.2.vsix`](https://github.com/PGshen/vs-idea-gittool/raw/master/releases/ideagittool-0.4.2.vsix) from the `releases/` folder of this repository.
+1. Download [`ideagittool-0.4.3.vsix`](https://github.com/PGshen/vs-idea-gittool/raw/master/releases/ideagittool-0.4.3.vsix) from the `releases/` folder of this repository.
 2. Install it in one of these ways:
    - In VS Code, open the Extensions view (Ctrl+Shift+X / Cmd+Shift+X), click the `⋯` menu at the top, choose **Install from VSIX…** and select the file.
    - Or from a terminal:
      ```
-     code --install-extension ideagittool-0.4.2.vsix
+     code --install-extension ideagittool-0.4.3.vsix
      ```
 3. Reload the window if VS Code asks you to.
 

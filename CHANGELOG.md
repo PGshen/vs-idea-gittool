@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.4.3
 
+- New setting `ideagittool.language` (`system` / `en` / `zh-cn`): choose the language of IdeaGitTool's views, dialogs and notifications independently of VS Code's display language. Reload the window after changing it. Labels contributed to VS Code's menus and Settings editor still follow the display language.
+- Merge window: Cut, Copy and Paste work through the keyboard and the editor context menu, also in pop-out windows. The read-only side panes can be focused and support selecting and copying text.
+- Shortcuts: Option+letter shortcuts on macOS now fire (Option+M Amend, Cmd+Option+K/Z/A/U, Option+G). Ctrl+K in the Commit view's changes tree focuses the commit message, and Ctrl+Alt+K no longer risks committing twice. `ideagittool.intellijShortcutsInEditor` also binds Ctrl+K to Commit everywhere; with it on, Ctrl+K no longer starts VS Code's Ctrl+K chords.
 - Git log branches pane with several repositories and *Group by Repository* off: branches with the same name are merged into one row that lists its repositories, like IntelliJ (`dev (gvideo-hub, gvideo-task, console)`). Its actions (Checkout, Update, Push, Rebase, Merge, Compare, Delete, New Branch from…, favorites) run in each of those repositories. Branch names in the pane are no longer cut to make room for the hint.
 - Git log branches pane: *Group by Directory* and *Group by Repository* exclude each other; turning one on turns the other off.
 - Multi-root Git log: consecutive commits of one repository share a single continuous root color strip, like IntelliJ.
