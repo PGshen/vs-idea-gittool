@@ -10,6 +10,7 @@ import { changeKey } from '../../shared/commitProtocol';
 import { Change } from '../../shared/types';
 import { registerConflictEditor } from './conflictEditor';
 import { ConflictContext } from './conflicts';
+import { setApiKeyCommand } from './ai';
 import { StatusDecorations } from './decorations';
 import { addFiles, addToGitignore, stashFiles } from './gitOps';
 import { createPatchFromCommits } from './patchCommits';
@@ -63,6 +64,8 @@ export function register(ctx: Ctx) {
     await vscode.commands.executeCommand('ideagittool.commit.focus');
     view.post('setMessage', arg.message);
   });
+  ctx.command('ideagittool.ai.generateCommitMessage', () => view.aiGenerateCommand());
+  ctx.command('ideagittool.ai.setApiKey', () => setApiKeyCommand(ctx));
   ctx.command('ideagittool.commit', async (uri?: unknown, uris?: vscode.Uri[]) => {
     await ctx.repos.ready();
     if (isUriArg(uri)) {

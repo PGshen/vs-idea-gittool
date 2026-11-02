@@ -118,6 +118,16 @@
       "command": "ideagittool.merge.restoreVsCodeConflictUi",
       "title": "Restore VS Code's Built-in Merge Conflict UI",
       "category": "IdeaGitTool"
+    },
+    {
+      "command": "ideagittool.ai.generateCommitMessage",
+      "title": "Generate Commit Message with AI",
+      "category": "IdeaGitTool"
+    },
+    {
+      "command": "ideagittool.ai.setApiKey",
+      "title": "Set API Key for AI Commit Messages…",
+      "category": "IdeaGitTool"
     }
   ],
   "menus": {
@@ -143,6 +153,10 @@
       },
       {
         "command": "ideagittool.addToGitignore",
+        "when": "ideagittool.hasRepository"
+      },
+      {
+        "command": "ideagittool.ai.generateCommitMessage",
         "when": "ideagittool.hasRepository"
       },
       {
@@ -272,6 +286,41 @@
         "type": "boolean",
         "default": false,
         "description": "Do not run Git commit hooks (commit always runs with '--no-verify')."
+      },
+      "ideagittool.ai.provider": {
+        "type": "string",
+        "enum": ["openai", "anthropic"],
+        "enumDescriptions": [
+          "OpenAI-compatible chat completions: OpenAI, DeepSeek, Kimi, Qwen, Ollama (http://localhost:11434/v1), LM Studio, internal gateways.",
+          "Anthropic Messages API (Claude)."
+        ],
+        "default": "openai",
+        "description": "The provider of the AI that generates commit messages (the sparkle button in the Commit tool window)."
+      },
+      "ideagittool.ai.baseUrl": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "Base URL of the AI provider, replacing its official endpoint: everything up to (excluding) `chat/completions` (openai) or `v1/messages` (anthropic). Examples: `https://api.deepseek.com/v1`, `http://localhost:11434/v1` (Ollama). Empty uses the official endpoint."
+      },
+      "ideagittool.ai.model": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "The model asked to generate commit messages, e.g. `deepseek-chat`, `gpt-4o-mini`, `claude-haiku-5-5`, or an Ollama model name. The AI button warns when this is empty."
+      },
+      "ideagittool.ai.language": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "The language of AI-generated commit messages, as a word the model understands — e.g. `English`, `简体中文`, `日本語`, `Deutsch`. Empty follows VS Code's display language."
+      },
+      "ideagittool.ai.prompt": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "Replaces the built-in instructions for AI-generated commit messages (`{language}` is filled in). The changed files and the diff are always appended after the instructions."
+      },
+      "ideagittool.ai.maxDiffChars": {
+        "type": "number",
+        "default": 8000,
+        "description": "The diff sent to the AI is truncated beyond this many characters per repository (the prompt notes '...[diff truncated]'). 0 disables the limit."
       },
       "ideagittool.intellijShortcuts": {
         "type": "boolean",

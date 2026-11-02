@@ -1306,5 +1306,21 @@
   "Apply Non-Conflicting Changes from the Right Side": "应用右侧不冲突的更改",
   "Resolve Simple Conflicts": "解决简单冲突",
   "All changes have been processed": "所有更改均已处理",
-  "Save and Close": "保存并关闭"
+  "Save and Close": "保存并关闭",
+  "Generate Commit Message with AI": "使用 AI 生成提交消息",
+  "Generating Commit Message…": "正在生成提交消息…",
+  "AI model is not configured": "未配置 AI 模型",
+  "Set the model in IdeaGitTool settings (ideagittool.ai.model) to generate commit messages with AI.": "请在 IdeaGitTool 设置中配置模型 (ideagittool.ai.model)，才能使用 AI 生成提交消息。",
+  "No files to commit: select some changes to generate a commit message from": "没有可生成提交消息的更改：请先勾选要提交的文件",
+  "{0} error {1}: {2}": "{0} 错误 {1}：{2}",
+  "{0} returned an empty response": "{0} 返回了空响应",
+  "AI request failed: {0}": "AI 请求失败：{0}",
+  "Open Settings": "打开设置",
+  "Set API Key": "设置 API 密钥",
+  "API key for which provider?": "要为哪个提供方设置 API 密钥？",
+  "(current provider)": "（当前提供方）",
+  "API key for {0}": "{0} 的 API 密钥",
+  "Empty to send no API key (for internal gateways)": "留空表示不发送 API 密钥（适用于内部网关）",
+  "API key stored.": "API 密钥已存储。",
+  "API key removed.": "API 密钥已删除。"
 }

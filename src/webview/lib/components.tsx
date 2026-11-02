@@ -55,12 +55,14 @@ export interface ActionButtonProps {
   shortcut?: string;
   onClick?: (e: MouseEvent) => void;
   disabled?: boolean;
+  /** Shows a spinner instead of the icon and disables the button (a long-running RPC). */
+  busy?: boolean;
   toggled?: boolean;
   /** Shows the small dropdown mark and opens this menu on click. */
   menu?: () => MenuEntry[];
 }
 
-export function ActionButton({ icon, tip, shortcut, onClick, disabled, toggled, menu }: ActionButtonProps) {
+export function ActionButton({ icon, tip, shortcut, onClick, disabled, busy, toggled, menu }: ActionButtonProps) {
   const ref = useRef<HTMLButtonElement>(null);
   const [pressed, setPressed] = useState(false);
   return (
@@ -69,7 +71,7 @@ export function ActionButton({ icon, tip, shortcut, onClick, disabled, toggled, 
       class={`action-button ${toggled ? 'toggled' : ''} ${pressed ? 'pressed' : ''}`}
       data-tip={tip}
       data-shortcut={shortcut}
-      disabled={disabled}
+      disabled={disabled || busy}
       aria-label={tip}
       onClick={e => {
         if (menu) {
@@ -78,7 +80,7 @@ export function ActionButton({ icon, tip, shortcut, onClick, disabled, toggled, 
         } else onClick?.(e);
       }}
     >
-      <Icon name={icon} />
+      {busy ? <span class="spinner" /> : <Icon name={icon} />}
       {menu && <span class="dropdown-mark" />}
     </button>
   );

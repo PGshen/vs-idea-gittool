@@ -2,7 +2,7 @@
   "name": "ideagittool",
   "displayName": "IdeaGitTool",
   "description": "The Rebased / IntelliJ git client, remade as a VS Code extension: git log with graph, commit tool window, shelf, branches popup, interactive rebase, push/update dialogs, conflicts resolver and annotations.",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "publisher": "ideagittool",
   "license": "Apache-2.0",
   "repository": {
@@ -126,6 +126,44 @@
           "type": "boolean",
           "default": false,
           "description": "%config.commit.skipHooks.description%"
+        },
+        "ideagittool.ai.provider": {
+          "type": "string",
+          "enum": [
+            "openai",
+            "anthropic"
+          ],
+          "enumDescriptions": [
+            "%config.ai.provider.enumDescriptions.0%",
+            "%config.ai.provider.enumDescriptions.1%"
+          ],
+          "default": "openai",
+          "description": "%config.ai.provider.description%"
+        },
+        "ideagittool.ai.baseUrl": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "%config.ai.baseUrl.markdownDescription%"
+        },
+        "ideagittool.ai.model": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "%config.ai.model.markdownDescription%"
+        },
+        "ideagittool.ai.language": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "%config.ai.language.markdownDescription%"
+        },
+        "ideagittool.ai.prompt": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "%config.ai.prompt.markdownDescription%"
+        },
+        "ideagittool.ai.maxDiffChars": {
+          "type": "number",
+          "default": 8000,
+          "description": "%config.ai.maxDiffChars.description%"
         },
         "ideagittool.intellijShortcuts": {
           "type": "boolean",
@@ -467,6 +505,16 @@
       {
         "command": "ideagittool.merge.restoreVsCodeConflictUi",
         "title": "%command.merge.restoreVsCodeConflictUi.title%",
+        "category": "IdeaGitTool"
+      },
+      {
+        "command": "ideagittool.ai.generateCommitMessage",
+        "title": "%command.ai.generateCommitMessage.title%",
+        "category": "IdeaGitTool"
+      },
+      {
+        "command": "ideagittool.ai.setApiKey",
+        "title": "%command.ai.setApiKey.title%",
         "category": "IdeaGitTool"
       },
       {
@@ -1125,6 +1173,10 @@
         },
         {
           "command": "ideagittool.addToGitignore",
+          "when": "ideagittool.hasRepository"
+        },
+        {
+          "command": "ideagittool.ai.generateCommitMessage",
           "when": "ideagittool.hasRepository"
         },
         {
