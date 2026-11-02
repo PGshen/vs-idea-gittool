@@ -75,6 +75,7 @@ code --install-extension ideagittool-*.vsix
 **Commit 工具窗口**（活动栏）
 - Commit / Shelf / Stash / Branches 四个标签页。支持 changelist、未跟踪文件、合并冲突分组、复选框、Group By、快速搜索、拖放。
 - Amend（也能修改更早的提交）、提交信息历史、Commit / Commit and Push…，提交选项（Author、Sign-off、为文件移动额外生成一个提交）。和 IntelliJ 一样不经过暂存区，只提交勾选的文件。
+- **使用 AI 生成提交消息**：消息历史旁的星光按钮把勾选文件的 diff 发给配置的 AI 提供方——OpenAI 兼容端点（OpenAI、DeepSeek、Kimi、Qwen、Ollama、LM Studio、内网网关）或 Anthropic Messages API——生成过程流式填入消息框，同 IntelliJ 的 AI Assistant。风格跟随仓库近期提交和 `ideagittool.ai.language`；`ideagittool.ai.prompt` 可整体替换内置指令（例如改成 Conventional Commits 格式）；diff 超过 `ideagittool.ai.maxDiffChars` 会截断。生成期间输入框只读、Commit 禁用；取消或失败会恢复原消息。API 密钥可选、按提供方存放在 SecretStorage（命令 *Set API Key for AI Commit Messages…*）；留空则请求不带认证头（适配内网网关）。
 - Shelve / Unshelve（未跟踪文件也能搁置）、Stash / Unstash 对话框、Rollback、Add to VCS、Add to .gitignore。
 - 冲突对话框采用 IntelliJ 的迭代模式（Rebased 的默认设置）：
   - Unresolved / Resolved 两组，每个文件带 `已解决/总数` 徽标，行内 Accept 按钮。
@@ -117,7 +118,7 @@ code --install-extension ideagittool-*.vsix
   - `vscode`（默认）：所有视图和对话框都按 VS Code 原生样式绘制，按钮、输入框、复选框、列表、菜单、悬停提示、滚动条、字体和颜色都取自当前 VS Code 主题，单色图标使用主题的图标颜色。
   - `intellij`：保留 IntelliJ New UI 的外观（IntelliJ 的浅色/深色配色和控件形状）。
   - 两种外观的布局和功能完全相同，`scripts/layout-check.mjs` 会检查元素位置没有变化。
-- `ideagittool.log.showInEditor`、`ideagittool.log.openOnStartup`、`ideagittool.commit.gpgSign`、`ideagittool.commit.skipHooks`、`ideagittool.updateMethod`、`ideagittool.push.*`、`ideagittool.annotate.*`、`ideagittool.branches.*` 等。在设置编辑器里搜索 "ideagittool" 可以看到全部设置。
+- `ideagittool.log.showInEditor`、`ideagittool.log.openOnStartup`、`ideagittool.commit.gpgSign`、`ideagittool.commit.skipHooks`、`ideagittool.ai.*`、`ideagittool.updateMethod`、`ideagittool.push.*`、`ideagittool.annotate.*`、`ideagittool.branches.*` 等。在设置编辑器里搜索 "ideagittool" 可以看到全部设置。
 - `ideagittool.inlineBlame.enabled`（默认开启）：在光标所在行的行尾显示该行最后一次提交的信息。打开 *Annotate with Git Blame* 时会自动隐藏。
 - `ideagittool.merge.handleConflicts`（默认 `ask`）：工作区里第一次出现冲突时询问一次，是否由 IdeaGitTool 代替 VS Code 自带的冲突界面处理冲突。同意（或设为 `always`）后，会在用户设置里关闭 `merge-conflict.codeLens.enabled`、`merge-conflict.decorators.enabled`，以及你手动打开过的 `git.mergeEditor`。设为 `never` 则不改动 VS Code 的设置；未经你同意绝不修改。命令 *Restore VS Code's Built-in Merge Conflict UI* 可恢复原来的值。git 扩展自带的 *Resolve in Merge Editor* 按钮没有对应的设置，无法隐藏。
 - `ideagittool.dialogs.openInNewWindow`（默认关闭）：对话框和合并窗口改为在独立窗口中打开，像 IntelliJ 的浮动对话框一样，而不是编辑器标签页。对话框关闭时窗口也随之关闭。

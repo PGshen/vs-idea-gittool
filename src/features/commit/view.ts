@@ -10,6 +10,7 @@ import { ask, notifySuccess, notifyWarning, withProgress } from '../../host/ui';
 import { CancelledError, Handler, showError, WebviewConnection } from '../../host/webviewHost';
 import { changeKey, CommitOptionsState, CommitRepoInfo, CommitViewState, StashInfo, ViewSettings } from '../../shared/commitProtocol';
 import { Change } from '../../shared/types';
+import { AiCommitAssistant, AiResult } from './ai';
 import { changelistDisplayName, ChangeLists, DEFAULT_CHANGELIST_NAME } from './changelists';
 import { ConflictContext, ConflictsController } from './conflicts';
 import {
@@ -44,6 +45,7 @@ export class CommitView implements vscode.WebviewViewProvider {
   readonly changelists: ChangeLists;
   readonly shelf: Shelf;
   readonly conflicts: ConflictsController;
+  readonly ai: AiCommitAssistant;
   private changeByKey = new Map<string, Change>();
   private lastState: CommitViewState | undefined;
   private pushTimer: NodeJS.Timeout | undefined;
@@ -55,6 +57,7 @@ export class CommitView implements vscode.WebviewViewProvider {
     this.changelists = new ChangeLists(ext.workspaceState);
     this.shelf = new Shelf(ext.storageUri ?? ext.globalStorageUri);
     this.conflicts = new ConflictsController(ctx);
+    this.ai = new AiCommitAssistant(ctx, (n, d) => this.post(n, d), keys => this.changes(keys), changes => this.byRepo(changes));
     ctx.repos.onDidChangeRepository(() => this.schedulePush());
     ctx.repos.onDidChangeRepositories(() => this.schedulePush());
     this.changelists.onDidChange(() => this.schedulePush());
@@ -105,6 +108,12 @@ export class CommitView implements vscode.WebviewViewProvider {
     this.pendingTab = tab;
     await vscode.commands.executeCommand('ideagittool.commit.focus');
     if (tab) this.conn?.post('selectTab', tab);
+  }
+
+  /** Command palette entry: reveal the Commit tab and generate a message for the included changes. */
+  async aiGenerateCommand(): Promise<AiResult> {
+    await this.reveal('commit');
+    return this.ai.generate(this.changelists.getIncluded());
   }
 
 
@@ -254,6 +263,7 @@ export class CommitView implements vscode.WebviewViewProvider {
             return { hash, subject, author, date: +date, root: repo.root };
           });
       },
+      aiGenerate: (p: { keys: string[] }) => this.ai.generate(p.keys),
       rollback: (p: { keys: string[] }) => this.rollbackDialog(p.keys),
       deleteFiles: (p: { keys: string[] }) => this.deleteFiles(p.keys),
       addToVcs: async (p: { keys: string[] }) => {

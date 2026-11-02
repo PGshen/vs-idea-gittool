@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Commit tool window: *Generate Commit Message with AI* — the sparkle button next to the commit message history sends the diff of the checked files to the configured AI provider and streams the generated message into the box, like IntelliJ's AI Assistant. Providers: OpenAI-compatible endpoints (OpenAI, DeepSeek, Kimi, Qwen, Ollama, LM Studio, internal gateways) and the Anthropic Messages API (`ideagittool.ai.provider` / `baseUrl` / `model`); only the checked files are sent, the diff per repository is capped at `ideagittool.ai.maxDiffChars`; recent commit messages give the repository's style; `ideagittool.ai.language` sets the language and `ideagittool.ai.prompt` replaces the built-in instructions. API keys are stored in SecretStorage (command *Set API Key for AI Commit Messages…*) and are optional. Cancelling the progress notification or a failure restores the previous message; while generating the box is read-only and Commit is blocked.
+
 ## 0.4.3
 
 - New setting `ideagittool.language` (`system` / `en` / `zh-cn`): choose the language of IdeaGitTool's views, dialogs and notifications independently of VS Code's display language. Reload the window after changing it. Labels contributed to VS Code's menus and Settings editor still follow the display language.

@@ -25,11 +25,17 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
   const [amendTarget, setAmendTarget] = useState<AmendCandidate | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
   // Guards against a second commit before `busy` re-renders, e.g. Ctrl+Alt+K handled here and by the keybinding.
   const committing = useRef(false);
   const draftBeforeAmend = useRef('');
   const textRef = useRef<HTMLTextAreaElement>(null);
   const saveTimer = useRef<number>();
+  // The AI events are subscribed once, so they read the message through a ref instead of a stale closure.
+  const messageRef = useRef(message);
+  messageRef.current = message;
+  const aiBefore = useRef('');
+  const aiBusyRef = useRef(false);
 
   const updateMessage = (m: string) => {
     setMessage(m);
@@ -49,6 +55,29 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
     [],
   );
   useEffect(() => on('commitAndPush', () => doCommit(true)), [message, amend, amendTarget, included]);
+  useEffect(
+    () =>
+      on('aiStart', () => {
+        aiBefore.current = messageRef.current;
+        aiBusyRef.current = true;
+        setAiBusy(true);
+        updateMessage('');
+      }),
+    [],
+  );
+  // The whole text so far (already partially cleaned by the host), replacing the box content.
+  useEffect(() => on('aiProgress', (text: string) => setMessage(text)), []);
+  useEffect(
+    () =>
+      on('aiEnd', (d: { status: string; message?: string; error?: string }) => {
+        // Validation failures never sent aiStart: the box keeps what the user typed.
+        if (!aiBusyRef.current) return;
+        aiBusyRef.current = false;
+        updateMessage(d.status === 'done' && d.message !== undefined ? d.message : aiBefore.current);
+        setAiBusy(false);
+      }),
+    [],
+  );
   useEffect(() => {
     if (commitTrigger) textRef.current?.focus();
   }, [commitTrigger]);
@@ -71,7 +100,7 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
   };
 
   const doCommit = async (push: boolean) => {
-    if (committing.current) return;
+    if (committing.current || aiBusyRef.current) return;
     committing.current = true;
     setBusy(true);
     try {
@@ -159,24 +188,33 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
         </span>
         <span style={{ width: '4px' }} />
         <ActionButton icon="general/history" tip={t('Commit Message History')} shortcut="Ctrl+M" onClick={e => showHistory(e.currentTarget as Element)} />
+        <span style={{ width: '4px' }} />
+        <ActionButton
+          icon="toolwindows/toolWindowAskAI"
+          tip={aiBusy ? t('Generating Commit Message…') : t('Generate Commit Message with AI')}
+          busy={aiBusy}
+          disabled={included.size === 0 || aiBusy}
+          onClick={() => void call('aiGenerate', { keys: [...included] })}
+        />
       </div>
       <div class="message-box">
         <textarea
           ref={textRef}
           class="text-area"
-          placeholder={t('Commit Message')}
+          placeholder={aiBusy ? t('Generating Commit Message…') : t('Commit Message')}
           aria-label={t('Commit Message')}
           spellcheck={false}
+          readOnly={aiBusy}
           value={message}
           onInput={e => updateMessage((e.currentTarget as HTMLTextAreaElement).value)}
         />
       </div>
       {error && <div class="message-error">{error}</div>}
       <div class="commit-buttons">
-        <Button onClick={() => doCommit(false)} disabled={busy} tip="Ctrl+Enter">
+        <Button onClick={() => doCommit(false)} disabled={busy || aiBusy} tip="Ctrl+Enter">
           {commitLabel}
         </Button>
-        <Button onClick={() => doCommit(true)} disabled={busy} tip="Ctrl+Alt+K">
+        <Button onClick={() => doCommit(true)} disabled={busy || aiBusy} tip="Ctrl+Alt+K">
           {commitAndPushLabel}
         </Button>
         <span class="spacer" />
