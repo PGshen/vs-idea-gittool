@@ -2,6 +2,7 @@
 // labels and the order can be tested (test/branchActions.test.ts).
 import * as vscode from 'vscode';
 import { translate } from '../../shared/l10n';
+import { formatShortcutFor } from '../../shared/shortcutText';
 import { ActionItem, BranchOperation, BranchRef } from '../../shared/branchesProtocol';
 
 /** Ref submenu actions that are not plain `{root, name, type}` commands. */
@@ -10,14 +11,7 @@ export const NEW_WORKTREE = 'worktree.create';
 
 /** Keyboard shortcut text as IntelliJ shows it: "⇧⌘K" on macOS, "Ctrl+Shift+K" elsewhere. */
 export function shortcut(keys: string, mac: boolean): string {
-  const parts = keys.split('+');
-  if (!mac) return parts.join('+');
-  const order = ['Ctrl', 'Alt', 'Shift', 'Cmd'];
-  const symbols: Record<string, string> = { Ctrl: '⌘', Cmd: '⌘', Alt: '⌥', Shift: '⇧' };
-  const mods = parts.slice(0, -1).sort((a, b) => order.indexOf(a) - order.indexOf(b));
-  // On macOS, IntelliJ's ⌘ replaces Ctrl and is printed after ⌥ / ⇧.
-  const printed = [...mods.filter(m => m !== 'Ctrl' && m !== 'Cmd'), ...mods.filter(m => m === 'Ctrl' || m === 'Cmd')];
-  return printed.map(m => symbols[m] ?? m).join('') + parts[parts.length - 1];
+  return formatShortcutFor(keys, mac);
 }
 
 const SEP: ActionItem = { label: '', separator: true };

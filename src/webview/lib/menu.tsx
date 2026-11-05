@@ -1,6 +1,7 @@
 import { ComponentChildren, render } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { Icon } from './icons';
+import { formatShortcut } from './keys';
 import { t } from './l10n';
 
 export interface MenuItem {
@@ -256,7 +257,7 @@ function MenuList({ entries, close, title, searchable, depth = 0 }: { entries: M
               {e.label}
               {e.hint && <span class="secondary" style={{ marginLeft: 8 }}>{e.hint}</span>}
             </span>
-            {e.shortcut && <span class="menu-shortcut">{e.shortcut}</span>}
+            {e.shortcut && <span class="menu-shortcut">{formatShortcut(e.shortcut)}</span>}
             {e.children && <Icon name="general/chevronRight" class="menu-arrow" />}
           </div>
         ),

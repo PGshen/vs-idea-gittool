@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { Button, Split, Tree, TreeNode } from '../lib/components';
+import { isMac } from '../lib/keys';
 import { anchorAt, MenuEntry, showMenu } from '../lib/menu';
 import { t } from '../lib/l10n';
 import { call, send } from '../lib/rpc';
@@ -130,7 +131,7 @@ export function StashTab({ state }: { state: CommitViewState }) {
         onContextMenu={(e, sel) => showMenu(stashMenu(sel.map(n => stashOf(n.key)).find(Boolean)), anchorAt(e))}
         onKeyDown={(e, sel) => {
           const s = sel.map(n => stashOf(n.key)).find(Boolean);
-          if (e.key === 'Delete' && s) return void send('stashDrop', { root: s.root, ref: s.ref, message: s.message }), true;
+          if ((e.key === 'Delete' || (isMac && e.key === 'Backspace' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey)) && s) return void send('stashDrop', { root: s.root, ref: s.ref, message: s.message }), true;
           if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && s) return void send('stashApply', { root: s.root, ref: s.ref, pop: false }), true;
           return false;
         }}

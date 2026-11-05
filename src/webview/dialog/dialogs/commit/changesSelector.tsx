@@ -50,7 +50,6 @@ export function ChangesSelector({
         <ActionButton
           icon="actions/groupByPackage"
           tip={t('Group By Directory')}
-          shortcut="Ctrl+Alt+P"
           toggled={groupByDirectory}
           onClick={() => {
             setGroupByDirectory(!groupByDirectory);

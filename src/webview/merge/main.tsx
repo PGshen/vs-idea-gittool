@@ -9,10 +9,10 @@ import { anchorAt, anchorBelow, MenuEntry, showMenu } from '../lib/menu';
 import { boot, call, on, send, theme } from '../lib/rpc';
 import { iterativeUnprocessedMessage, Side, statusText, unprocessedMessage } from '../../shared/mergeModel';
 import { CompareMode, MergeFinish, MergeInit, MergeResult, MergeSettings, TitleParts } from '../../shared/mergeProtocol';
+import { isMac } from '../lib/keys';
 import { MergeController, Pane } from './controller';
 
 const init = boot.initial as MergeInit;
-const isMac = navigator.platform.startsWith('Mac');
 
 function Title({ parts }: { parts: TitleParts }) {
   return (
@@ -201,9 +201,9 @@ function App() {
   const cut = () => send('writeClipboard', { text: c.cut() });
   const paste = async () => c.paste(await call<string>('readClipboard'));
   const clipboardItems = (pane: Pane) => ({
-    cut: { label: t('Cut'), icon: 'general/cut', shortcut: isMac ? '⌘X' : 'Ctrl+X', action: cut },
-    copy: { label: t('Copy'), icon: 'general/copy', shortcut: isMac ? '⌘C' : 'Ctrl+C', action: () => copy(pane) },
-    paste: { label: t('Paste'), icon: 'general/paste', shortcut: isMac ? '⌘V' : 'Ctrl+V', action: () => void paste() },
+    cut: { label: t('Cut'), icon: 'general/cut', shortcut: 'Ctrl+X', action: cut },
+    copy: { label: t('Copy'), icon: 'general/copy', shortcut: 'Ctrl+C', action: () => copy(pane) },
+    paste: { label: t('Paste'), icon: 'general/paste', shortcut: 'Ctrl+V', action: () => void paste() },
   });
 
   // Gutter operations, folded fragments and the editor context menus.
@@ -273,6 +273,13 @@ function App() {
           else void paste();
         }
         return;
+      }
+      // Navigate / Accept Left-Right: run by the CodeMirror keymap and kept from VS Code's webview key
+      // forwarding (on macOS ⌘⌥R would be Reveal in Finder there). Option+R/A report as ®/å in e.key,
+      // so match the physical key.
+      if (pane && mod && e.altKey && !e.shiftKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.code === 'KeyR' || e.code === 'KeyA')) {
+        e.preventDefault();
+        e.stopPropagation();
       }
       if (e.key === 'F7') {
         e.preventDefault();

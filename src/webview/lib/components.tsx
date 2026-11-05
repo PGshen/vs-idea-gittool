@@ -1,6 +1,8 @@
 import { ComponentChildren, JSX } from 'preact';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { speedSearchBackspace } from '../../shared/shortcutText';
 import { Icon } from './icons';
+import { formatShortcut } from './keys';
 import { t } from './l10n';
 import { anchorBelow, MenuEntry, showMenu } from './menu';
 import { persist, persisted } from './rpc';
@@ -26,7 +28,7 @@ function installTooltips() {
       if (target.dataset.shortcut) {
         const s = document.createElement('span');
         s.className = 'shortcut';
-        s.textContent = target.dataset.shortcut;
+        s.textContent = formatShortcut(target.dataset.shortcut);
         tooltipEl.appendChild(s);
       }
       document.body.appendChild(tooltipEl);
@@ -334,6 +336,13 @@ export function Tree<T>(props: TreeProps<T>) {
   const selectedNodes = () => rows.filter(r => selection.has(r.node.key)).map(r => r.node);
 
   const onKeyDown = (e: KeyboardEvent) => {
+    // Speed search takes ⌫ before the tab's handler: tabs that delete their selection on plain ⌫ (macOS)
+    // must not delete anything while the user is fixing a typo in the query.
+    if (speedSearchBackspace(e, search)) {
+      setSearch(search.slice(0, -1));
+      e.preventDefault();
+      return;
+    }
     if (props.onKeyDown?.(e, selectedNodes())) {
       e.preventDefault();
       return;
@@ -417,7 +426,7 @@ export function Tree<T>(props: TreeProps<T>) {
               break;
             }
           }
-        } else if (e.key === 'Backspace' && search) setSearch(search.slice(0, -1));
+        }
     }
   };
 

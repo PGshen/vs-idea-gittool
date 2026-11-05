@@ -4,6 +4,7 @@ import { ActionItem, BranchesState, BranchRef, RefAddress } from '../../shared/b
 import { BranchRow, buildBranchRows } from '../../shared/branchesTree';
 import { ActionButton } from '../lib/components';
 import { Icon } from '../lib/icons';
+import { isMac } from '../lib/keys';
 import { t } from '../lib/l10n';
 import { Anchor, MenuEntry, showMenu } from '../lib/menu';
 import { call, on, persist, persisted, send } from '../lib/rpc';
@@ -199,6 +200,17 @@ export function BranchesTab({ visible, focusToken }: { visible: boolean; focusTo
 
   const onKeyDown = (e: KeyboardEvent) => {
     const r = rows[index];
+    // Delete / ⌫ runs the Delete action of the selected ref, like the context menu (hidden for the
+    // current branch); while the search field has the key, it edits the query.
+    if (
+      e.target !== searchRef.current &&
+      r?.kind === 'branch' && !r.ref.current &&
+      (e.key === 'Delete' || (isMac && e.key === 'Backspace')) && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey
+    ) {
+      send('branches.runRef', { ...address(r), action: r.ref.type === 'tag' ? 'ideagittool.tag.delete' : 'ideagittool.branch.delete' });
+      e.preventDefault();
+      return;
+    }
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();

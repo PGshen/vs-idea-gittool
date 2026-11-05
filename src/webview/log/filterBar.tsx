@@ -278,7 +278,7 @@ export function FilterBar({ onGoTo }: { onGoTo: () => void }) {
         <>
           <ActionButton icon="general/refresh" tip={t('Refresh')} onClick={() => void call('refreshRepo').then(() => store.setFilters(store.filters))} />
           <ActionButton icon="vcs/diff" tip={t('Show Diff')} shortcut="Ctrl+D" disabled={!s.selection.size} onClick={() => runCommitAction('historyDiff')} />
-          <ActionButton icon="vcs/changes" tip={t('Show All Affected Files')} shortcut="Alt+Shift+A" disabled={s.selection.size !== 1} onClick={() => runCommitAction('showDiff')} />
+          <ActionButton icon="vcs/changes" tip={t('Show All Affected Files')} disabled={s.selection.size !== 1} onClick={() => runCommitAction('showDiff')} />
           <ActionButton icon="general/show" tip={t('View Options')} menu={viewOptionsMenu} />
           <ActionButton icon="toolwindows/vcs" tip={t('Show in VCS Log')} disabled={s.selection.size !== 1} onClick={() => runCommitAction('showInLog')} />
         </>
