@@ -22,8 +22,16 @@ export function formatShortcutFor(keys: string, mac: boolean): string {
   return printed.map(m => GLYPHS[m] ?? m).join('') + (ARROWS[key] ?? key);
 }
 
-/** Rewrites the "Ctrl+X" style combos inside sentence-like texts ("Press Ctrl+Enter…") for macOS. */
+/** Rewrites the "Ctrl+X" style combos inside sentence-like texts ("Press Ctrl+Enter…") for macOS, in canonical order. */
 export function formatHintFor(text: string, mac: boolean): string {
   if (!mac) return text;
-  return text.replace(/Ctrl\+/g, '⌘').replace(/Alt\+/g, '⌥').replace(/Shift\+/g, '⇧');
+  return text.replace(/(?:(?:Ctrl|Alt|Shift|Cmd)\+)+[A-Za-z0-9]+/g, m => formatShortcutFor(m, true));
+}
+
+/**
+ * True when a Backspace edits a Tree's speed-search text instead of reaching the tab's key handler: tabs that
+ * delete their selection on plain ⌫ (macOS) must not see the key while a query is being typed.
+ */
+export function speedSearchBackspace(e: { key: string; ctrlKey?: boolean; metaKey?: boolean; altKey?: boolean; shiftKey?: boolean }, search: string): boolean {
+  return !!search && e.key === 'Backspace' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey;
 }

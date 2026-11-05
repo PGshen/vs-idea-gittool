@@ -3,6 +3,7 @@ import { compareRefNames } from '../../shared/branchesTree';
 import type { Ref } from '../../shared/types';
 import { ActionButton, Toolbar, Tree, TreeNode } from '../lib/components';
 import { Icon } from '../lib/icons';
+import { isMac } from '../lib/keys';
 import { t } from '../lib/l10n';
 import { anchorAt, MenuEntry, showMenu } from '../lib/menu';
 import { call, persist, persisted, send } from '../lib/rpc';
@@ -305,7 +306,7 @@ export function BranchesPanel({ onHide }: { onHide: () => void }) {
           onOpen={n => filterBy(n)}
           onKeyDown={(e, selected) => {
             const r = selected[0]?.data?.ref;
-            if (e.key === 'Delete' && r) {
+            if ((e.key === 'Delete' || (isMac && e.key === 'Backspace' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey)) && r) {
               sendBranchAction('delete', r);
               return true;
             }

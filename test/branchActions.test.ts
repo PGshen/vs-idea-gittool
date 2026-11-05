@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { refActionModel, shortcut, topActionModel, OPEN_WORKTREE, NEW_WORKTREE } from '../src/features/ops/branchActions';
-import { formatHintFor, formatShortcutFor } from '../src/shared/shortcutText';
+import { formatHintFor, formatShortcutFor, speedSearchBackspace } from '../src/shared/shortcutText';
 import { buildBranchRows, compareRefNames, matchText } from '../src/shared/branchesTree';
 import type { BranchesState } from '../src/shared/branchesProtocol';
 
@@ -173,4 +173,18 @@ test('formatHintFor rewrites combos inside sentences for macOS', () => {
   assert.equal(formatHintFor('按 Ctrl+Enter 应用更改', true), '按 ⌘Enter 应用更改');
   assert.equal(formatHintFor('{0}\nCtrl+click to resolve conflict', true), '{0}\n⌘click to resolve conflict');
   assert.equal(formatHintFor('Press Ctrl+Enter to apply changes', false), 'Press Ctrl+Enter to apply changes');
+  // Canonical modifier order, same as formatShortcutFor.
+  assert.equal(formatHintFor('Ctrl+Alt+K now', true), '⌥⌘K now');
+  assert.equal(formatHintFor('Merge with previous (Alt+M)', true), 'Merge with previous (⌥M)');
+});
+
+test('speed search takes Backspace before the tab key handler (macOS delete on ⌫)', () => {
+  assert.equal(speedSearchBackspace({ key: 'Backspace' }, 'mai'), true);
+  // No query typed: the key falls through to the tab handler.
+  assert.equal(speedSearchBackspace({ key: 'Backspace' }, ''), false);
+  assert.equal(speedSearchBackspace({ key: 'Delete' }, 'mai'), false);
+  // Any modifier held (⌘⌫, ⌥⌫, ⌃⌫, ⇧⌫): not a search edit.
+  for (const mod of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }, { shiftKey: true }]) {
+    assert.equal(speedSearchBackspace({ key: 'Backspace', ...mod }, 'mai'), false);
+  }
 });

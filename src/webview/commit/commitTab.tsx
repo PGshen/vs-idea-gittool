@@ -301,7 +301,7 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
       else showDiff(files);
       return true;
     }
-    if (e.key === 'Delete' || (isMac && e.key === 'Backspace')) return void send('deleteFiles', { keys: keysOf(files) }), true;
+    if (e.key === 'Delete' || (isMac && e.key === 'Backspace' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey)) return void send('deleteFiles', { keys: keysOf(files) }), true;
     if (ctrl && e.altKey && shortcutKey(e) === 'z') return void rollback(), true;
     if (ctrl && e.altKey && shortcutKey(e) === 'a') return void send('addToVcs', { keys: keysOf(files.filter(f => f.status === '?')) }), true;
     if (e.altKey && e.shiftKey && shortcutKey(e) === 'm') return void send('moveToChangelist', { keys: keysOf(files) }), true;

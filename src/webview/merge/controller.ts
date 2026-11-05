@@ -452,9 +452,14 @@ export class MergeController {
       { key: 'Shift-F7', run: () => (this.navigate(-1), true) },
       { key: 'Mod-Alt-ArrowDown', run: () => (this.navigate(1), true) },
       { key: 'Mod-Alt-ArrowUp', run: () => (this.navigate(-1), true) },
+      // The physical-Control forms keep working where they already did (they were the only match before Mod-).
+      { key: 'Ctrl-Alt-ArrowDown', run: () => (this.navigate(1), true) },
+      { key: 'Ctrl-Alt-ArrowUp', run: () => (this.navigate(-1), true) },
       // Diff.ApplyLeftSide / Diff.ApplyRightSide: consumed even when there is nothing to do.
       { key: 'Mod-Alt-r', run: () => (pane !== 'right' && this.applySelected(pane, 'left', false), true) },
       { key: 'Mod-Alt-a', run: () => (pane !== 'left' && this.applySelected(pane, 'right', false), true) },
+      { key: 'Ctrl-Alt-r', run: () => (pane !== 'right' && this.applySelected(pane, 'left', false), true) },
+      { key: 'Ctrl-Alt-a', run: () => (pane !== 'left' && this.applySelected(pane, 'right', false), true) },
     ];
   }
 

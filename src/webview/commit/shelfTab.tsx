@@ -132,7 +132,7 @@ export function ShelfTab({ state }: { state: CommitViewState }) {
   const onKeyDown = (e: KeyboardEvent, sel: TreeNode<NodeData>[]) => {
     const ctrl = e.ctrlKey || e.metaKey;
     if (ctrl && e.key.toLowerCase() === 'd') return void showDiff(sel), true;
-    if (e.key === 'Delete' || (isMac && e.key === 'Backspace')) return void del(sel), true;
+    if (e.key === 'Delete' || (isMac && e.key === 'Backspace' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey)) return void del(sel), true;
     if (ctrl && e.altKey && shortcutKey(e) === 'u') return void unshelveSilently(sel), true;
     if (ctrl && e.shiftKey && e.key.toLowerCase() === 'u') {
       const { shelves, files } = selected(sel);

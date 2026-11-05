@@ -17,7 +17,7 @@ interface MenuItem extends vscode.QuickPickItem {
 const SEP = vscode.QuickPickItemKind.Separator;
 
 function item(label: string, command: string, opts: { icon?: string; shortcut?: string; args?: unknown[] } = {}): MenuItem {
-  return { label, command, description: opts.shortcut, iconPath: opts.icon ? ijIcon(opts.icon) : undefined, args: opts.args };
+  return { label, command, description: opts.shortcut ? shortcut(opts.shortcut, MAC) : undefined, iconPath: opts.icon ? ijIcon(opts.icon) : undefined, args: opts.args };
 }
 
 function sep(label = ''): MenuItem {
@@ -35,11 +35,11 @@ export function fileActions(): MenuItem[] {
   const a = uri ? [uri] : [];
   return [
     item(translate('Commit File'), 'ideagittool.commit', { args: a }),
-    item(translate('Add'), 'ideagittool.addToVcs', { icon: 'general/add', shortcut: shortcut('Ctrl+Alt+A', MAC), args: a }),
+    item(translate('Add'), 'ideagittool.addToVcs', { icon: 'general/add', args: a }),
     item(translate('Add to .gitignore'), 'ideagittool.addToGitignore', { args: a }),
     sep(),
     item(translate('Annotate with Git Blame'), 'ideagittool.annotate', { args: a }),
-    item(translate('Compare with Same Repository Version'), 'ideagittool.showLocalDiff', { icon: 'vcs/diff', shortcut: shortcut('Ctrl+D', MAC), args: a }),
+    item(translate('Compare with Same Repository Version'), 'ideagittool.showLocalDiff', { icon: 'vcs/diff', args: a }),
     item(translate('Compare with Revision…'), 'ideagittool.compareWithRevision', { args: a }),
     item(translate('Compare with Branch or Tag…'), 'ideagittool.compareWithBranch', { args: a }),
     item(translate('Show History'), 'ideagittool.showFileHistory', { icon: 'general/history', args: a }),
@@ -52,9 +52,9 @@ export function mainMenuItems(repo: Repository | undefined): MenuItem[] {
   const root = repo ? [{ root: repo.root }] : [];
   const op = repo?.detectOperation() ?? 'none';
   const items: MenuItem[] = [
-    item(translate('Commit…'), 'ideagittool.commit', { icon: 'vcs/commit', shortcut: shortcut('Ctrl+K', MAC) }),
-    item(translate('Push…'), 'ideagittool.push', { icon: 'vcs/push', shortcut: shortcut('Ctrl+Shift+K', MAC) }),
-    item(translate('Update Project'), 'ideagittool.updateProject', { icon: 'vcs/update', shortcut: shortcut('Ctrl+T', MAC) }),
+    item(translate('Commit…'), 'ideagittool.commit', { icon: 'vcs/commit', shortcut: 'Ctrl+K' }),
+    item(translate('Push…'), 'ideagittool.push', { icon: 'vcs/push', shortcut: 'Ctrl+Shift+K' }),
+    item(translate('Update Project'), 'ideagittool.updateProject', { icon: 'vcs/update', shortcut: 'Ctrl+T' }),
     item(translate('Pull…'), 'ideagittool.pull', { args: root }),
     item(translate('Fetch'), 'ideagittool.fetch', { icon: 'vcs/fetch' }),
   ];
@@ -75,8 +75,8 @@ export function mainMenuItems(repo: Repository | undefined): MenuItem[] {
   items.push(item(translate('Resolve Conflicts…'), 'ideagittool.resolveConflicts', { args: root }));
   items.push(
     sep(),
-    item(translate('Branches…'), 'ideagittool.branches', { icon: 'general/vcs', shortcut: shortcut('Ctrl+Shift+`', MAC), args: root }),
-    item(translate('New Branch…'), 'ideagittool.createBranch', { icon: 'general/add', shortcut: shortcut('Ctrl+Alt+N', MAC), args: root }),
+    item(translate('Branches…'), 'ideagittool.branches', { icon: 'general/vcs', shortcut: 'Ctrl+Shift+`', args: root }),
+    item(translate('New Branch…'), 'ideagittool.createBranch', { icon: 'general/add', shortcut: 'Ctrl+Alt+N', args: root }),
     item(translate('New Tag…'), 'ideagittool.createTag', { args: root }),
     item(translate('Reset HEAD…'), 'ideagittool.resetHead', { args: root }),
     sep(),
@@ -102,7 +102,7 @@ export function mainMenuItems(repo: Repository | undefined): MenuItem[] {
         item(translate('Show Git Stash'), 'ideagittool.showStashes'),
         item(translate('Stash Changes…'), 'ideagittool.stash', { args: root }),
         item(translate('Unstash Changes…'), 'ideagittool.unstash', { args: root }),
-        item(translate('Rollback…'), 'ideagittool.rollback', { icon: 'vcs/revert', shortcut: shortcut('Ctrl+Alt+Z', MAC) }),
+        item(translate('Rollback…'), 'ideagittool.rollback', { icon: 'vcs/revert', shortcut: 'Ctrl+Alt+Z' }),
       ],
     },
     { label: translate('Current File'), description: '▸', children: fileActions },
@@ -125,9 +125,9 @@ export function quickListItems(repo: Repository | undefined): MenuItem[] {
   const a = uri ? [uri] : [];
   const items: MenuItem[] = [
     sep('Git'),
-    item(translate('Commit…'), 'ideagittool.commit', { icon: 'vcs/commit', shortcut: shortcut('Ctrl+K', MAC) }),
-    item(translate('Branches…'), 'ideagittool.branches', { icon: 'general/vcs', shortcut: shortcut('Ctrl+Shift+`', MAC), args: root }),
-    item(translate('Push…'), 'ideagittool.push', { icon: 'vcs/push', shortcut: shortcut('Ctrl+Shift+K', MAC) }),
+    item(translate('Commit…'), 'ideagittool.commit', { icon: 'vcs/commit', shortcut: 'Ctrl+K' }),
+    item(translate('Branches…'), 'ideagittool.branches', { icon: 'general/vcs', shortcut: 'Ctrl+Shift+`', args: root }),
+    item(translate('Push…'), 'ideagittool.push', { icon: 'vcs/push', shortcut: 'Ctrl+Shift+K' }),
     item(translate('Stash Changes…'), 'ideagittool.stash', { args: root }),
     item(translate('Unstash Changes…'), 'ideagittool.unstash', { args: root }),
     sep(),
@@ -138,11 +138,11 @@ export function quickListItems(repo: Repository | undefined): MenuItem[] {
   if (repo?.info.shallow) items.push(item(translate('Unshallow repository'), 'ideagittool.unshallow', { args: root }));
   items.push(
     sep(),
-    item(translate('Rollback…'), 'ideagittool.rollback', { icon: 'vcs/revert', shortcut: shortcut('Ctrl+Alt+Z', MAC) }),
+    item(translate('Rollback…'), 'ideagittool.rollback', { icon: 'vcs/revert', shortcut: 'Ctrl+Alt+Z' }),
     sep(),
     item(translate('Show History'), 'ideagittool.showFileHistory', { icon: 'general/history', args: a }),
     item(translate('Annotate'), 'ideagittool.annotate', { args: a }),
-    item(translate('Compare with Same Repository Version'), 'ideagittool.showLocalDiff', { icon: 'vcs/diff', shortcut: shortcut('Ctrl+D', MAC), args: a }),
+    item(translate('Compare with Same Repository Version'), 'ideagittool.showLocalDiff', { icon: 'vcs/diff', args: a }),
     sep(),
     { label: 'Git', description: '▸', children: () => mainMenuItems(repo) },
   );
