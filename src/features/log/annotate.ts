@@ -4,6 +4,7 @@ import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { fromGitUri, GIT_SCHEME } from '../../host/gitContent';
 import { themeData } from '../../host/webviewHost';
+import { workingTreeAnnotation } from './annotationTarget';
 
 export interface BlameCommit {
   hash: string;
@@ -221,7 +222,7 @@ class AnnotationController implements vscode.Disposable {
       this.updateContext();
       return;
     }
-    const target = this.resolve(editor.document.uri);
+    const target = await this.resolve(editor.document.uri);
     if (!target) {
       void vscode.window.showWarningMessage(translate('The file is not under Git version control.'));
       return;
@@ -231,15 +232,14 @@ class AnnotationController implements vscode.Disposable {
     this.updateContext();
   }
 
-  private resolve(uri: vscode.Uri): { repo: Repository; path: string; rev?: string } | undefined {
+  private async resolve(uri: vscode.Uri): Promise<{ repo: Repository; path: string; rev?: string } | undefined> {
     if (uri.scheme === GIT_SCHEME) {
+      await this.ctx.repos.ready();
       const q = fromGitUri(uri);
       const repo = this.ctx.repos.get(q.root);
       return repo && /^[0-9a-f]{7,40}$/.test(q.ref) ? { repo, path: q.path, rev: q.ref } : undefined;
     }
-    if (uri.scheme !== 'file') return undefined;
-    const repo = this.ctx.repos.getForFile(uri.fsPath);
-    return repo ? { repo, path: repo.relPath(uri.fsPath) } : undefined;
+    return workingTreeAnnotation(this.ctx.repos, uri, vscode.workspace.workspaceFolders ?? []);
   }
 
   private async load(key: string) {
