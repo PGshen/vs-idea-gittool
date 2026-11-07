@@ -52,7 +52,7 @@ code --install-extension ideagittool-*.vsix
 
 ## First steps
 
-- Open a folder that contains a Git repository. The Git log opens in the **Git** panel at the bottom, and the **IdeaGitTool** icon appears in the activity bar (Commit / Shelf / Stash / Branches).
+- Open a folder that contains a Git repository. The **IdeaGitTool** icon appears in the activity bar (Commit / Shelf / Stash / Branches). Use **Show Git Log** to open the log. Automatic opening is off by default; enable `ideagittool.log.openOnStartup` to opt in.
 - The **Branches** tab (Ctrl+Shift+`) holds IntelliJ's branches popup: Update Project…, Commit…, Push…, New Branch…, and every local and remote branch and tag with its actions.
 - IdeaGitTool works next to VS Code's built-in Git extension; nothing has to be disabled.
 - IntelliJ shortcuts are on by default and replace some VS Code shortcuts (for example Ctrl+T). Turn off `ideagittool.intellijShortcuts` to keep the VS Code ones (see Settings).
