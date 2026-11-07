@@ -8,7 +8,7 @@
       },
       "ideagittool.log.openOnStartup": {
         "type": "boolean",
-        "default": true,
+        "default": false,
         "description": "Show the Git log when a workspace with a Git repository is opened (in the \"Git\" panel, or in the editor with ideagittool.log.showInEditor)."
       },
       "ideagittool.annotate.showAuthor": {

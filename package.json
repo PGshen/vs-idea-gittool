@@ -227,7 +227,7 @@
         },
         "ideagittool.log.openOnStartup": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "%config.log.openOnStartup.description%"
         },
         "ideagittool.annotate.showAuthor": {
