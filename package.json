@@ -31,6 +31,7 @@
     "ideagittool"
   ],
   "main": "./dist/extension.js",
+  "extensionKind": ["workspace"],
   "activationEvents": [
     "workspaceContains:.git",
     "onStartupFinished"
