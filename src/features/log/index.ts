@@ -9,6 +9,7 @@ import { registerInlineBlame } from './inlineBlame';
 import { registerCompare } from './compare';
 import { EMPTY_FILTERS, filtersTitle, LogFilters, LogOptions } from './filters';
 import { LogTab, LogTabState } from './logTab';
+import { showLogOnStartup } from './startup';
 import { fileFromArg } from './util';
 
 const MAIN_KEY = 'ideagittool.log.main';
@@ -203,24 +204,27 @@ export function register(ctx: Ctx) {
   registerInlineBlame(ctx, registerAnnotate(ctx));
   registerCompare(ctx, (repo, state) => tabs.newTab(repo, state));
 
-  // Show the log on startup: in the "Git" panel at the bottom (default), or in the editor like Rebased.
-  void (async () => {
-    await ctx.repos.ready();
-    const cfg = vscode.workspace.getConfiguration('ideagittool.log');
-    const repo = ctx.repos.repositories[0];
-    if (!repo || !cfg.get<boolean>('openOnStartup', false)) return;
+  // With ideagittool.log.openOnStartup (off by default), show the log on startup: in the "Git" panel
+  // at the bottom, or in the editor with ideagittool.log.showInEditor.
+  const cfg = () => vscode.workspace.getConfiguration('ideagittool.log');
+  void showLogOnStartup({
+    ready: () => ctx.repos.ready(),
+    repo: () => ctx.repos.repositories[0],
+    // The default comes from the contributed configuration (contrib/20-log.json).
+    enabled: () => !!cfg().get<boolean>('openOnStartup'),
     // A restored panel (serializer) counts as opened.
-    await new Promise(r => setTimeout(r, 1500));
-    if (tabs.main()) return;
-    if (cfg.get<boolean>('showInEditor', false)) {
-      await tabs.showMain(repo, true);
-      return;
-    }
-    // Reveal the panel without taking the focus from the editor.
-    const hadEditor = !!vscode.window.activeTextEditor;
-    await vscode.commands.executeCommand('ideagittool.logView.focus');
-    if (hadEditor) await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
-  })();
+    alreadyOpen: () => !!tabs.main(),
+    show: async repo => {
+      if (cfg().get<boolean>('showInEditor', false)) {
+        await tabs.showMain(repo, true);
+        return;
+      }
+      // Reveal the panel without taking the focus from the editor.
+      const hadEditor = !!vscode.window.activeTextEditor;
+      await vscode.commands.executeCommand('ideagittool.logView.focus');
+      if (hadEditor) await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
+    },
+  });
 
   vscode.workspace.onDidChangeConfiguration(
     e => {
