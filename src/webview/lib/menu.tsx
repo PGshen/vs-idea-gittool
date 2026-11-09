@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/ho
 import { Icon } from './icons';
 import { formatShortcut } from './keys';
 import { t } from './l10n';
+import { submenuPlacement } from './menuPlacement';
 
 export interface MenuItem {
   label: string;
@@ -147,7 +148,7 @@ function isItem(e: MenuEntry): e is MenuItem {
 function MenuList({ entries, close, title, searchable, depth = 0 }: { entries: MenuEntry[]; close: () => void; title?: string; searchable?: boolean; depth?: number }) {
   const [active, setActive] = useState(-1);
   const [filter, setFilter] = useState('');
-  const [submenu, setSubmenu] = useState<{ index: number; anchor: Anchor } | null>(null);
+  const [submenu, setSubmenu] = useState<{ index: number; row: DOMRect; parent: DOMRect } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const visible = useMemo(() => {
@@ -174,11 +175,15 @@ function MenuList({ entries, close, title, searchable, depth = 0 }: { entries: M
     const e = visible[i];
     if (!e || !isItem(e) || e.disabled) return;
     if (e.children) {
-      const row = listRef.current?.querySelector(`[data-index="${i}"]`);
-      if (row) {
-        const r = row.getBoundingClientRect();
-        setSubmenu({ index: i, anchor: { x: r.right + 2, y: r.top - 6, flipHeight: -r.height } });
+      // Submenus open on click (or Enter / →) only, never on hover: a submenu popping up under a passing pointer
+      // gets its items clicked by accident (issue #25). Clicking the open submenu's row again closes it.
+      if (submenu?.index === i) {
+        setSubmenu(null);
+        return;
       }
+      const row = listRef.current?.querySelector(`[data-index="${i}"]`);
+      const popup = listRef.current?.closest('.popup');
+      if (row && popup) setSubmenu({ index: i, row: row.getBoundingClientRect(), parent: popup.getBoundingClientRect() });
       return;
     }
     close();
@@ -245,11 +250,7 @@ function MenuList({ entries, close, title, searchable, depth = 0 }: { entries: M
             key={i}
             data-index={i}
             class={`menu-item ${i === active || submenu?.index === i ? 'active' : ''} ${e.disabled ? 'disabled' : ''}`}
-            onMouseEnter={() => {
-              setActive(i);
-              if (e.children && !e.disabled) activate(i);
-              else setSubmenu(null);
-            }}
+            onMouseEnter={() => setActive(i)}
             onClick={() => activate(i)}
           >
             <span class="menu-icon">{e.checked ? <Icon name="actions/checked" /> : e.icon ? <Icon name={e.icon} /> : null}</span>
@@ -265,7 +266,9 @@ function MenuList({ entries, close, title, searchable, depth = 0 }: { entries: M
       {visible.length === 0 && <div class="menu-item disabled">{t('Nothing found')}</div>}
       {submenu && (
         <SubmenuPopup
-          anchor={submenu.anchor}
+          row={submenu.row}
+          parent={submenu.parent}
+          onEnter={() => setActive(submenu.index)}
           entries={(visible[submenu.index] as MenuItem).children!}
           closeAll={close}
           closeSelf={() => setSubmenu(null)}
@@ -276,20 +279,11 @@ function MenuList({ entries, close, title, searchable, depth = 0 }: { entries: M
   );
 }
 
-function SubmenuPopup({ anchor, entries, closeAll, closeSelf, depth }: { anchor: Anchor; entries: MenuEntry[]; closeAll: () => void; closeSelf: () => void; depth: number }) {
+function SubmenuPopup({ row, parent, onEnter, entries, closeAll, closeSelf, depth }: { row: DOMRect; parent: DOMRect; onEnter: () => void; entries: MenuEntry[]; closeAll: () => void; closeSelf: () => void; depth: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const el = ref.current!;
-    const w = el.offsetWidth;
-    position(el, anchor);
-    // Flip to the left side when there is no room on the right.
-    if (anchor.x + w > window.innerWidth - 4) {
-      const parentLeft = anchor.x - 2 - (el.parentElement?.closest('.popup') as HTMLElement | null)!.offsetWidth;
-      el.style.left = `${Math.max(4, parentLeft - w)}px`;
-    }
-  }, [anchor]);
+  useLayoutEffect(() => placeSubmenu(ref.current!, row, parent), [row, parent]);
   return (
-    <div class="popup" ref={ref} onMouseDown={e => e.stopPropagation()}>
+    <div class="popup" ref={ref} onMouseDown={e => e.stopPropagation()} onMouseEnter={onEnter}>
       <MenuList
         entries={entries}
         depth={depth}
@@ -301,6 +295,26 @@ function SubmenuPopup({ anchor, entries, closeAll, closeSelf, depth }: { anchor:
       />
     </div>
   );
+}
+
+
+/**
+ * Places a submenu like native (VS Code / JetBrains) menus: flush against the parent menu's right edge, or its left
+ * edge when the right side has no room, with the first item level with the parent row.
+ *
+ * A webview cannot draw outside its own frame, so in a narrow panel (the Commit tool window in the side bar) neither
+ * side may fit. The submenu must then overlap the parent menu, but it never covers the parent row the pointer is on:
+ * it opens below that row, or above it, whichever fits (scrolling when needed). Covering the row would put a submenu
+ * item right under the pointer, and the next click would run it by accident (issue #25).
+ */
+export function placeSubmenu(el: HTMLElement, row: DOMRect, parent: DOMRect, vw = window.innerWidth, vh = window.innerHeight) {
+  el.style.maxHeight = '';
+  const w = el.offsetWidth;
+  const h = el.offsetHeight;
+  const { left, top, maxHeight } = submenuPlacement(w, h, row, parent, vw, vh);
+  el.style.left = `${left}px`;
+  el.style.top = `${top}px`;
+  if (maxHeight !== undefined) el.style.maxHeight = `${maxHeight}px`;
 }
 
 function cleanSeparators(entries: MenuEntry[]): MenuEntry[] {

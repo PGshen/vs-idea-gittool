@@ -503,6 +503,8 @@ select.combo {
   box-shadow: var(--shadow);
   padding: 6px 0;
   min-width: 140px;
+  /* A webview cannot draw outside its frame: never be wider than the view (long labels get an ellipsis). */
+  max-width: calc(100vw - 8px);
   max-height: calc(100vh - 16px);
   overflow-y: auto;
   outline: none;
@@ -531,13 +533,18 @@ select.combo {
 }
 .menu-item .menu-text {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .menu-item .menu-shortcut {
   color: var(--fg-info);
   margin-left: 24px;
+  flex: none;
 }
 .menu-item .menu-arrow {
   margin-left: 12px;
+  flex: none;
 }
 .menu-separator {
   height: 1px;
