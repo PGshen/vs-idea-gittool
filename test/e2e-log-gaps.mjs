@@ -48,7 +48,7 @@ export async function run({ window, shot, sleep }) {
   // Show the diff preview from the changes browser view options.
   await log.click('.right [data-tip="View Options"]');
   await sleep(300);
-  await log.hover('.menu-item >> text=Configure Layout');
+  await log.click('.menu-item >> text=Configure Layout');
   await sleep(300);
   await log.click('.menu-item >> text=Show Diff Preview');
   await sleep(1500);
