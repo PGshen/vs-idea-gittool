@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ActionButton, Button, Checkbox } from '../lib/components';
 import { Icon } from '../lib/icons';
-import { shortcutKey } from '../lib/keys';
+import { formatHint, formatShortcut, shortcutKey } from '../lib/keys';
 import { t } from '../lib/l10n';
 import { anchorBelow, MenuEntry, showMenu, showPopup } from '../lib/menu';
 import { boot, call, on, persist, persisted, send } from '../lib/rpc';
@@ -176,7 +176,7 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
   return (
     <div class="commit-panel" onKeyDown={onKeyDown}>
       <div class="amend-row">
-        <Checkbox checked={amend} disabled={emptyRepo || merging} onChange={v => toggleAmend(v)} label={t('Amend')} tip={t('Merge this commit with the previous one (Alt+M)')} />
+        <Checkbox checked={amend} disabled={emptyRepo || merging} onChange={v => toggleAmend(v)} label={t('Amend')} tip={formatHint(t('Merge this commit with the previous one (Alt+M)'))} />
         <span
           class="amend-target"
           data-tip={t('Choose the commit to amend')}
@@ -211,10 +211,10 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
       </div>
       {error && <div class="message-error">{error}</div>}
       <div class="commit-buttons">
-        <Button onClick={() => doCommit(false)} disabled={busy || aiBusy} tip="Ctrl+Enter">
+        <Button onClick={() => doCommit(false)} disabled={busy || aiBusy} tip={formatShortcut('Ctrl+Enter')}>
           {commitLabel}
         </Button>
-        <Button onClick={() => doCommit(true)} disabled={busy || aiBusy} tip="Ctrl+Alt+K">
+        <Button onClick={() => doCommit(true)} disabled={busy || aiBusy} tip={formatShortcut('Ctrl+Alt+K')}>
           {commitAndPushLabel}
         </Button>
         <span class="spacer" />

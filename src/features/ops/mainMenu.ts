@@ -4,6 +4,9 @@ import { Ctx } from '../../context';
 import { Repository } from '../../git/repository';
 import { showError } from '../../host/webviewHost';
 import { ijIcon } from './icons';
+import { shortcut } from './branchActions';
+
+const MAC = process.platform === 'darwin';
 
 interface MenuItem extends vscode.QuickPickItem {
   command?: string;
@@ -14,7 +17,7 @@ interface MenuItem extends vscode.QuickPickItem {
 const SEP = vscode.QuickPickItemKind.Separator;
 
 function item(label: string, command: string, opts: { icon?: string; shortcut?: string; args?: unknown[] } = {}): MenuItem {
-  return { label, command, description: opts.shortcut, iconPath: opts.icon ? ijIcon(opts.icon) : undefined, args: opts.args };
+  return { label, command, description: opts.shortcut ? shortcut(opts.shortcut, MAC) : undefined, iconPath: opts.icon ? ijIcon(opts.icon) : undefined, args: opts.args };
 }
 
 function sep(label = ''): MenuItem {
@@ -32,11 +35,11 @@ export function fileActions(): MenuItem[] {
   const a = uri ? [uri] : [];
   return [
     item(translate('Commit File'), 'ideagittool.commit', { args: a }),
-    item(translate('Add'), 'ideagittool.addToVcs', { icon: 'general/add', shortcut: 'Ctrl+Alt+A', args: a }),
+    item(translate('Add'), 'ideagittool.addToVcs', { icon: 'general/add', args: a }),
     item(translate('Add to .gitignore'), 'ideagittool.addToGitignore', { args: a }),
     sep(),
     item(translate('Annotate with Git Blame'), 'ideagittool.annotate', { args: a }),
-    item(translate('Compare with Same Repository Version'), 'ideagittool.showLocalDiff', { icon: 'vcs/diff', shortcut: 'Ctrl+D', args: a }),
+    item(translate('Compare with Same Repository Version'), 'ideagittool.showLocalDiff', { icon: 'vcs/diff', args: a }),
     item(translate('Compare with Revision…'), 'ideagittool.compareWithRevision', { args: a }),
     item(translate('Compare with Branch or Tag…'), 'ideagittool.compareWithBranch', { args: a }),
     item(translate('Show History'), 'ideagittool.showFileHistory', { icon: 'general/history', args: a }),
@@ -107,7 +110,8 @@ export function mainMenuItems(repo: Repository | undefined): MenuItem[] {
     item(translate('Manage Remotes…'), 'ideagittool.remotes', { args: root }),
     item(translate('Clone…'), 'ideagittool.clone'),
     sep(),
-    item(translate('VCS Operations Popup…'), 'ideagittool.vcsOperationsPopup', { shortcut: 'Alt+`' }),
+    // The mac binding is the physical Ctrl+V (package.json), shown with the ⌃ glyph like IntelliJ does.
+    item(translate('VCS Operations Popup…'), 'ideagittool.vcsOperationsPopup', { shortcut: MAC ? '⌃V' : 'Alt+`' }),
   );
   if (op === 'revert') items.push(sep(), item(translate('Abort Revert'), 'ideagittool.abortOperation', { args: root }));
   if (op === 'cherry-pick') items.push(sep(), item(translate('Continue Cherry-Pick'), 'ideagittool.continueOperation', { args: root }), item(translate('Abort Cherry-Pick'), 'ideagittool.abortOperation', { args: root }));
@@ -138,7 +142,7 @@ export function quickListItems(repo: Repository | undefined): MenuItem[] {
     sep(),
     item(translate('Show History'), 'ideagittool.showFileHistory', { icon: 'general/history', args: a }),
     item(translate('Annotate'), 'ideagittool.annotate', { args: a }),
-    item(translate('Compare with Same Repository Version'), 'ideagittool.showLocalDiff', { icon: 'vcs/diff', shortcut: 'Ctrl+D', args: a }),
+    item(translate('Compare with Same Repository Version'), 'ideagittool.showLocalDiff', { icon: 'vcs/diff', args: a }),
     sep(),
     { label: 'Git', description: '▸', children: () => mainMenuItems(repo) },
   );

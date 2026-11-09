@@ -7,6 +7,7 @@ import { ChangeState, isChange, isResolved, isSideResolved, linesContent, MergeC
 import { MergeInit, MergeSettings } from '../../shared/mergeProtocol';
 import { innerDifferences } from '../../shared/mergeResolve';
 import { iconUrl } from '../lib/icons';
+import { formatHint } from '../lib/keys';
 import { t } from '../lib/l10n';
 import { MenuEntry } from '../lib/menu';
 import {
@@ -449,9 +450,14 @@ export class MergeController {
     return [
       { key: 'F7', run: () => (this.navigate(1), true) },
       { key: 'Shift-F7', run: () => (this.navigate(-1), true) },
+      { key: 'Mod-Alt-ArrowDown', run: () => (this.navigate(1), true) },
+      { key: 'Mod-Alt-ArrowUp', run: () => (this.navigate(-1), true) },
+      // The physical-Control forms keep working where they already did (they were the only match before Mod-).
       { key: 'Ctrl-Alt-ArrowDown', run: () => (this.navigate(1), true) },
       { key: 'Ctrl-Alt-ArrowUp', run: () => (this.navigate(-1), true) },
       // Diff.ApplyLeftSide / Diff.ApplyRightSide: consumed even when there is nothing to do.
+      { key: 'Mod-Alt-r', run: () => (pane !== 'right' && this.applySelected(pane, 'left', false), true) },
+      { key: 'Mod-Alt-a', run: () => (pane !== 'left' && this.applySelected(pane, 'right', false), true) },
       { key: 'Ctrl-Alt-r', run: () => (pane !== 'right' && this.applySelected(pane, 'left', false), true) },
       { key: 'Ctrl-Alt-a', run: () => (pane !== 'left' && this.applySelected(pane, 'right', false), true) },
     ];
@@ -485,7 +491,7 @@ export class MergeController {
         const sideResolved = isSideResolved(st, side);
         regions[side].push({ l0: c[side][0], l1: c[side][1], kind: c.kind, resolved: sideResolved, inner: inner?.[side] });
         if (!sideResolved) {
-          const tip = (text: string) => (c.kind === 'conflict' ? t('{0}\nCtrl+click to resolve conflict', text) : text);
+          const tip = (text: string) => (c.kind === 'conflict' ? formatHint(t('{0}\nCtrl+click to resolve conflict', text)) : text);
           const apply: Operation = {
             i: c.index,
             action: 'apply',

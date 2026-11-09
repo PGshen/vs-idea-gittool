@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { refActionModel, shortcut, topActionModel, OPEN_WORKTREE, NEW_WORKTREE } from '../src/features/ops/branchActions';
+import { formatHintFor, formatShortcutFor, speedSearchBackspace } from '../src/shared/shortcutText';
 import { buildBranchRows, compareRefNames, matchText } from '../src/shared/branchesTree';
 import type { BranchesState } from '../src/shared/branchesProtocol';
 
@@ -148,4 +149,42 @@ test('tree: synchronous control lists common branches, then repositories', () =>
 test('tree: branch names sort numbers by value (issue #4)', () => {
   const names = ['3.2.0.0-dev', '3.10.0.0-release', '3.1.1.0-qa', '3.10.0.0-dev', '2.5.0.0-release', '3.1.0.0-dev'];
   assert.deepEqual([...names].sort(compareRefNames), ['2.5.0.0-release', '3.1.0.0-dev', '3.1.1.0-qa', '3.2.0.0-dev', '3.10.0.0-dev', '3.10.0.0-release']);
+});
+
+test('formatShortcutFor renders mac glyphs and passes everything else through', () => {
+  assert.equal(formatShortcutFor('Ctrl+D', true), '⌘D');
+  assert.equal(formatShortcutFor('Delete', true), '⌫');
+  assert.equal(formatShortcutFor('Ctrl+Space', true), '⌃Space');
+  assert.equal(formatShortcutFor('Delete', false), 'Delete');
+  assert.equal(formatShortcutFor('Ctrl+Space', false), 'Ctrl+Space');
+  assert.equal(formatShortcutFor('Ctrl+Alt+A', true), '⌥⌘A');
+  assert.equal(formatShortcutFor('Ctrl+Alt+Shift+C', true), '⌥⇧⌘C');
+  assert.equal(formatShortcutFor('Alt+Up', true), '⌥↑');
+  // Already-glyph, F-key and plain-key texts pass through untouched (idempotent).
+  assert.equal(formatShortcutFor('⌘X', true), '⌘X');
+  assert.equal(formatShortcutFor('⇧⌘K', true), '⇧⌘K');
+  assert.equal(formatShortcutFor('F4', true), 'F4');
+  assert.equal(formatShortcutFor('←', true), '←');
+  assert.equal(formatShortcutFor('Ctrl+D', false), 'Ctrl+D');
+});
+
+test('formatHintFor rewrites combos inside sentences for macOS', () => {
+  assert.equal(formatHintFor('Press Ctrl+Enter to apply changes', true), 'Press ⌘Enter to apply changes');
+  assert.equal(formatHintFor('按 Ctrl+Enter 应用更改', true), '按 ⌘Enter 应用更改');
+  assert.equal(formatHintFor('{0}\nCtrl+click to resolve conflict', true), '{0}\n⌘click to resolve conflict');
+  assert.equal(formatHintFor('Press Ctrl+Enter to apply changes', false), 'Press Ctrl+Enter to apply changes');
+  // Canonical modifier order, same as formatShortcutFor.
+  assert.equal(formatHintFor('Ctrl+Alt+K now', true), '⌥⌘K now');
+  assert.equal(formatHintFor('Merge with previous (Alt+M)', true), 'Merge with previous (⌥M)');
+});
+
+test('speed search takes Backspace before the tab key handler (macOS delete on ⌫)', () => {
+  assert.equal(speedSearchBackspace({ key: 'Backspace' }, 'mai'), true);
+  // No query typed: the key falls through to the tab handler.
+  assert.equal(speedSearchBackspace({ key: 'Backspace' }, ''), false);
+  assert.equal(speedSearchBackspace({ key: 'Delete' }, 'mai'), false);
+  // Any modifier held (⌘⌫, ⌥⌫, ⌃⌫, ⇧⌫): not a search edit.
+  for (const mod of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }, { shiftKey: true }]) {
+    assert.equal(speedSearchBackspace({ key: 'Backspace', ...mod }, 'mai'), false);
+  }
 });
