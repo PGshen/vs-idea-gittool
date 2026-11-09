@@ -30,6 +30,8 @@ const userSettings = {
   'workbench.tips.enabled': false,
   'update.mode': 'none',
   'telemetry.telemetryLevel': 'off',
+  // The scenarios start from the log shown on startup, which is opt-in.
+  'ideagittool.log.openOnStartup': true,
   ...(scenario.settings ?? {}),
 };
 mkdirSync(`${userData}/User`, { recursive: true });
