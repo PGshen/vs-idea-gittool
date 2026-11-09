@@ -25,7 +25,7 @@ export function formatShortcutFor(keys: string, mac: boolean): string {
 /** Rewrites the "Ctrl+X" style combos inside sentence-like texts ("Press Ctrl+Enter…") for macOS, in canonical order. */
 export function formatHintFor(text: string, mac: boolean): string {
   if (!mac) return text;
-  return text.replace(/(?:(?:Ctrl|Alt|Shift|Cmd)\+)+[A-Za-z0-9]+/g, m => formatShortcutFor(m, true));
+  return text.replace(/(?:(?:Ctrl|Alt|Shift|Cmd)\+)+[\p{L}\p{N}]+/gu, m => formatShortcutFor(m, true));
 }
 
 /**

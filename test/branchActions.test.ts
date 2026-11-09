@@ -176,6 +176,8 @@ test('formatHintFor rewrites combos inside sentences for macOS', () => {
   // Canonical modifier order, same as formatShortcutFor.
   assert.equal(formatHintFor('Ctrl+Alt+K now', true), '⌥⌘K now');
   assert.equal(formatHintFor('Merge with previous (Alt+M)', true), 'Merge with previous (⌥M)');
+  // Non-Latin key words (zh-cn "Ctrl+点击") are rewritten too.
+  assert.equal(formatHintFor('{0}\nCtrl+点击以解决冲突', true), '{0}\n⌘点击以解决冲突');
 });
 
 test('speed search takes Backspace before the tab key handler (macOS delete on ⌫)', () => {
