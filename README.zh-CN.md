@@ -54,7 +54,7 @@ code --install-extension ideagittool-*.vsix
 
 ## 开始使用
 
-- 打开一个包含 Git 仓库的文件夹。Git 日志会在底部的 **Git** 面板中自动打开，活动栏里会出现 **IdeaGitTool** 图标（Commit / Shelf / Stash / Branches）。
+- 打开一个包含 Git 仓库的文件夹，活动栏里会出现 **IdeaGitTool** 图标（Commit / Shelf / Stash / Branches）。使用 **Show Git Log** 打开日志。默认不自动打开；如需启动时打开，启用 `ideagittool.log.openOnStartup`。
 - **Branches** 标签页（Ctrl+Shift+`）就是 IntelliJ 的分支弹出菜单：Update Project…、Commit…、Push…、New Branch…，以及所有本地、远程分支和标签及其操作。
 - IdeaGitTool 可以和 VS Code 自带的 Git 扩展同时使用，不需要禁用任何东西。
 - IntelliJ 快捷键默认开启，会覆盖部分 VS Code 快捷键（例如 Ctrl+T）。想保留 VS Code 的快捷键，关闭设置 `ideagittool.intellijShortcuts` 即可（见"设置"一节）。

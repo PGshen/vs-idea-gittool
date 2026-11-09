@@ -208,7 +208,7 @@ export function register(ctx: Ctx) {
     await ctx.repos.ready();
     const cfg = vscode.workspace.getConfiguration('ideagittool.log');
     const repo = ctx.repos.repositories[0];
-    if (!repo || !cfg.get<boolean>('openOnStartup', true)) return;
+    if (!repo || !cfg.get<boolean>('openOnStartup', false)) return;
     // A restored panel (serializer) counts as opened.
     await new Promise(r => setTimeout(r, 1500));
     if (tabs.main()) return;
