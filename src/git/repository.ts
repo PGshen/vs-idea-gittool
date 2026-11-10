@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { Change, ChangeStatus, OngoingOperation, Ref, Remote, RepoInfo, Stash } from '../shared/types';
 import { ExecOptions, ExecResult, git, splitNul } from './exec';
+import { relativeToRoot } from './paths';
 
 export interface StatusSnapshot {
   changes: Change[];
@@ -286,7 +287,7 @@ export class Repository implements vscode.Disposable {
   }
 
   relPath(abs: string) {
-    return path.relative(this.root, abs).replace(/\\/g, '/');
+    return (relativeToRoot(this.root, abs) ?? path.relative(this.root, abs)).replace(/\\/g, '/');
   }
 
   // Favorite branches are kept in workspace state by the manager, see RepositoryManager.

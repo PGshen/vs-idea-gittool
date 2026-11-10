@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { translate } from '../shared/l10n';
 import { git } from './exec';
+import { fileCandidates, isInside, resolveDirectoryPath } from './paths';
 import { Repository } from './repository';
 
 /**
@@ -65,12 +66,14 @@ export class RepositoryManager implements vscode.Disposable {
   private async findTopLevel(dir: string): Promise<string | undefined> {
     const r = await git(['rev-parse', '--show-toplevel'], { cwd: dir, allowFailure: true, quiet: true }).catch(() => undefined);
     if (!r || r.exitCode !== 0) return undefined;
-    return path.normalize(r.stdout.trim());
+    return resolveDirectoryPath(r.stdout.trim());
   }
 
   /** Opens a repository by root path (used after clone / init too). */
   async open(root: string, fire = true): Promise<Repository | undefined> {
-    root = path.normalize(root);
+    // Key repositories by their real root, as `git rev-parse --show-toplevel` reports it, so a
+    // workspace opened through a symlinked directory doesn't yield a second copy of the repository.
+    root = resolveDirectoryPath(root);
     const existing = this.repos.get(root);
     if (existing) return existing;
     const r = await git(['rev-parse', '--absolute-git-dir', '--git-common-dir'], { cwd: root, allowFailure: true, quiet: true });
@@ -96,18 +99,21 @@ export class RepositoryManager implements vscode.Disposable {
   }
 
   get(root: string): Repository | undefined {
-    return this.repos.get(path.normalize(root));
+    return this.repos.get(path.normalize(root)) ?? (root ? this.repos.get(resolveDirectoryPath(root)) : undefined);
   }
 
   /** Finds the repository that contains a file. */
   getForFile(file: string): Repository | undefined {
-    const abs = path.normalize(file);
-    let best: Repository | undefined;
-    for (const repo of this.repos.values()) {
-      const rel = path.relative(repo.root, abs);
-      if (!rel.startsWith('..') && !path.isAbsolute(rel) && (!best || repo.root.length > best.root.length)) best = repo;
+    if (!file) return undefined;
+    // Roots are real paths, while editors may show the file through a symlinked directory.
+    for (const candidate of fileCandidates(file)) {
+      let best: Repository | undefined;
+      for (const repo of this.repos.values()) {
+        if (isInside(path.relative(repo.root, candidate)) && (!best || repo.root.length > best.root.length)) best = repo;
+      }
+      if (best) return best;
     }
-    return best;
+    return undefined;
   }
 
   /**
@@ -151,7 +157,7 @@ function findNestedGitDirs(dir: string, depth: number): string[] {
   for (const e of entries) {
     if (!e.isDirectory() || e.name === 'node_modules' || e.name === '.git') continue;
     const sub = path.join(dir, e.name);
-    if (fs.existsSync(path.join(sub, '.git'))) out.push(path.normalize(sub));
+    if (fs.existsSync(path.join(sub, '.git'))) out.push(resolveDirectoryPath(sub));
     out.push(...findNestedGitDirs(sub, depth - 1));
   }
   return out;
