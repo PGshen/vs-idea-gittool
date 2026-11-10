@@ -91,6 +91,14 @@ body {
 }
 .commit-buttons .btn {
   min-width: 0;
+  overflow: hidden;
+}
+/* Narrow panel: shrink the labels with an ellipsis instead of letting the text spill over the neighbouring button (#34). */
+.commit-buttons .btn-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .options-popup {
   padding: 10px 14px 12px;
