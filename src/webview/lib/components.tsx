@@ -124,9 +124,9 @@ export function Radio({ checked, onChange, label, name, disabled }: { checked: b
   );
 }
 
-export function Button({ children, primary, onClick, disabled, tip, style }: { children: ComponentChildren; primary?: boolean; onClick?: () => void; disabled?: boolean; tip?: string; style?: JSX.CSSProperties }) {
+export function Button({ children, primary, onClick, disabled, tip, shortcut, style }: { children: ComponentChildren; primary?: boolean; onClick?: () => void; disabled?: boolean; tip?: string; shortcut?: string; style?: JSX.CSSProperties }) {
   return (
-    <button class={`btn ${primary ? 'primary' : ''}`} onClick={onClick} disabled={disabled} data-tip={tip} style={style}>
+    <button class={`btn ${primary ? 'primary' : ''}`} onClick={onClick} disabled={disabled} data-tip={tip} data-shortcut={shortcut} style={style}>
       {children}
     </button>
   );

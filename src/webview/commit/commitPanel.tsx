@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ActionButton, Button, Checkbox } from '../lib/components';
 import { Icon } from '../lib/icons';
-import { formatHint, formatShortcut, shortcutKey } from '../lib/keys';
+import { formatHint, shortcutKey } from '../lib/keys';
 import { t } from '../lib/l10n';
 import { anchorBelow, MenuEntry, showMenu, showPopup } from '../lib/menu';
 import { boot, call, on, persist, persisted, send } from '../lib/rpc';
@@ -211,11 +211,11 @@ export function CommitPanel({ state, included, commitTrigger, visible }: { state
       </div>
       {error && <div class="message-error">{error}</div>}
       <div class="commit-buttons">
-        <Button onClick={() => doCommit(false)} disabled={busy || aiBusy} tip={formatShortcut('Ctrl+Enter')}>
-          {commitLabel}
+        <Button onClick={() => doCommit(false)} disabled={busy || aiBusy} tip={commitLabel} shortcut="Ctrl+Enter">
+          <span class="btn-label">{commitLabel}</span>
         </Button>
-        <Button onClick={() => doCommit(true)} disabled={busy || aiBusy} tip={formatShortcut('Ctrl+Alt+K')}>
-          {commitAndPushLabel}
+        <Button onClick={() => doCommit(true)} disabled={busy || aiBusy} tip={commitAndPushLabel} shortcut="Ctrl+Alt+K">
+          <span class="btn-label">{commitAndPushLabel}</span>
         </Button>
         <span class="spacer" />
         {busy && <span class="spinner" />}
