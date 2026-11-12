@@ -9,10 +9,11 @@ import { commitMenu, runCommitAction } from './menus';
 import { refLabels, RefLabels } from './refs';
 import { store, useStore } from './store';
 
-const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' });
-
+/** e.g. `2026/3/20, 17:00` (24-hour, local time). */
 export function formatDate(sec: number) {
-  return fmt.format(new Date(sec * 1000)).replace(/\s?(AM|PM)$/, m => m.toLowerCase());
+  const d = new Date(sec * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 /** VcsLogColorManagerFactory.NEW_UI_ROOT_COLORS_OPENED_STATE (light, dark). */
