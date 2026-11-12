@@ -8,11 +8,9 @@ import { call, persisted, send } from '../lib/rpc';
 import { changeAction, changesMenu, layoutMenu } from './menus';
 import { refLabels, RefLabels } from './refs';
 import { store, useStore } from './store';
+import { formatDate } from './table';
 
-const dateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'short' });
-const timeFmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
-const lower = (s: string) => s.replace(/\s?(AM|PM)$/, m => m.toLowerCase());
-const onDate = (ts: number) => t('{0} at {1}', dateFmt.format(new Date(ts * 1000)), lower(timeFmt.format(new Date(ts * 1000))));
+const onDate = (ts: number) => formatDate(ts);
 
 type CNode = TreeNode<{ change?: Change }>;
 
