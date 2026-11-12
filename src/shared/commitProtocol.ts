@@ -25,6 +25,8 @@ export interface ViewSettings {
   showIgnored: boolean;
   /** What a double click on a file does. */
   doubleClick: 'diff' | 'source';
+  /** Show Diff Preview: the diff editor follows the selected file (single click or arrow keys). */
+  showDiffPreview: boolean;
   showRecycledShelves: boolean;
 }
 

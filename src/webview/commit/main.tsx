@@ -61,6 +61,11 @@ function App() {
           tip={t('Options')}
           menu={() => [
             {
+              label: t('Show Diff Preview'),
+              checked: state.settings.showDiffPreview,
+              action: () => send('setSettings', { showDiffPreview: !state.settings.showDiffPreview }),
+            },
+            {
               label: t('Show on Double-Click'),
               children: [
                 { label: t('Show Diff on Double-Click'), checked: state.settings.doubleClick === 'diff', action: () => send('setSettings', { doubleClick: 'diff' }) },

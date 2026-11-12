@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { ActionButton, Separator, Split, Toolbar, Tree, TreeNode } from '../lib/components';
 import { shortcutKey, isMac } from '../lib/keys';
 import { anchorAt, MenuEntry, showMenu } from '../lib/menu';
@@ -8,6 +8,7 @@ import { changeKey, CommitRepoInfo, CommitViewState } from '../../shared/commitP
 import { Change } from '../../shared/types';
 import { allGroupKeys, countText, filesOfNodes, groupFiles, makeCheckState, NodeData } from './changesTree';
 import { CommitPanel } from './commitPanel';
+import { diffPreviewKey } from './diffPreview';
 
 const keysOf = (changes: Change[]) => changes.map(changeKey);
 
@@ -169,6 +170,20 @@ export function CommitTab({ state, visible }: { state: CommitViewState; visible:
 
   const showDiff = (files = selectedFiles()) => files.length && send('showDiff', { keys: keysOf(files) });
   const openSource = (files = selectedFiles()) => files.length && send('openSource', { keys: keysOf(files) });
+  // Show Diff Preview: the diff editor follows the selected file. Waits briefly so that holding an arrow key does not
+  // open every file on the way; a refresh that keeps the same file selected does not reopen it.
+  const previewKey = settings.showDiffPreview ? diffPreviewKey(selectedNodes()) : undefined;
+  const previewed = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!previewKey) return void (previewed.current = undefined);
+    if (previewKey === previewed.current) return;
+    const timer = setTimeout(() => {
+      previewed.current = previewKey;
+      send('previewDiff', { key: previewKey });
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [previewKey]);
+
   const rollback = () => send('rollback', { keys: keysOf(selectedFiles().filter(f => f.status !== '?')) });
 
   const contextMenu = (e: MouseEvent, sel: TreeNode<NodeData>[]) => {

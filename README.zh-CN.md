@@ -73,7 +73,7 @@ code --install-extension ideagittool-*.vsix
 - 多仓库合并日志（按仓库着色）、按仓库分组；在提交的文件列表里直接丢弃或拆分部分改动（Drop / Extract Selected Changes）、Add Commits to Remote Branch。
 
 **Commit 工具窗口**（活动栏）
-- Commit / Shelf / Stash / Branches 四个标签页。支持 changelist、未跟踪文件、合并冲突分组、复选框、Group By、快速搜索、拖放。
+- Commit / Shelf / Stash / Branches 四个标签页。支持 changelist、未跟踪文件、合并冲突分组、复选框、Group By、快速搜索、拖放。打开 *Show Diff Preview*（⋮ 选项菜单）后，单击或用方向键选中文件即可预览其差异，同 IntelliJ 的差异预览。
 - Amend（也能修改更早的提交）、提交信息历史、Commit / Commit and Push…，提交选项（Author、Sign-off、为文件移动额外生成一个提交）。和 IntelliJ 一样不经过暂存区，只提交勾选的文件。
 - **使用 AI 生成提交消息**：消息历史旁的星光按钮把勾选文件的 diff 发给配置的 AI 提供方——OpenAI 兼容端点（OpenAI、DeepSeek、Kimi、Qwen、Ollama、LM Studio、内网网关）或 Anthropic Messages API——生成过程流式填入消息框，同 IntelliJ 的 AI Assistant。风格跟随仓库近期提交和 `ideagittool.ai.language`；`ideagittool.ai.prompt` 可整体替换内置指令（例如改成 Conventional Commits 格式）；diff 超过 `ideagittool.ai.maxDiffChars` 会截断。生成期间输入框只读、Commit 禁用；取消或失败会恢复原消息。API 密钥可选、按提供方存放在 SecretStorage（命令 *Set API Key for AI Commit Messages…*）；留空则请求不带认证头（适配内网网关）。
 - Shelve / Unshelve（未跟踪文件也能搁置）、Stash / Unstash 对话框、Rollback、Add to VCS、Add to .gitignore。
