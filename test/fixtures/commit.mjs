@@ -17,7 +17,7 @@ export const state = {
   ignored: [],
   conflicts: process.env.OP ? [{ root, path: 'src/conflict.ts', status: 'U', index: 'U', workTree: 'U' }] : [],
   included: [],
-  settings: { groupByDirectory: false, groupByRepository: true, showIgnored: false, doubleClick: 'diff', showRecycledShelves: true },
+  settings: { groupByDirectory: false, groupByRepository: true, showIgnored: false, doubleClick: 'diff', showDiffPreview: false, showRecycledShelves: true },
   options: { author: '', signOff: false, extraMoveCommit: false },
   shelves: [
     { id: 's1', root, name: 'WIP on graph colors', date: now - 3600, files: [{ root, path: 'src/graph.ts', status: 'M' }, { root, path: 'src/new.ts', status: 'A' }] },

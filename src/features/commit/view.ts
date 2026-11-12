@@ -34,7 +34,7 @@ const OPTIONS_KEY = 'ideagittool.commit.options';
 const HISTORY_KEY = 'ideagittool.commit.messageHistory';
 const DRAFT_KEY = 'ideagittool.commit.draft';
 
-const DEFAULT_SETTINGS: ViewSettings = { groupByDirectory: false, groupByRepository: true, showIgnored: false, doubleClick: 'diff', showRecycledShelves: false };
+const DEFAULT_SETTINGS: ViewSettings = { groupByDirectory: false, groupByRepository: true, showIgnored: false, doubleClick: 'diff', showDiffPreview: false, showRecycledShelves: false };
 
 /**
  * The Commit tool window (IntelliJ's commit workflow in the "Commit" tool window with Commit / Shelf / Stash tabs).
@@ -245,6 +245,7 @@ export class CommitView implements vscode.WebviewViewProvider {
         return name ? `${name} <${email ?? ''}>` : '';
       },
       showDiff: (p: { keys: string[] }) => this.showDiff(p.keys),
+      previewDiff: (p: { key: string }) => this.previewDiff(p.key),
       openSource: (p: { keys: string[] }) => this.openSource(p.keys),
       commit: (p: { message: string; amend: boolean; amendHash?: string; push: boolean; keys: string[] }) => this.commit(p),
       amendMessage: async (p: { root?: string; hash?: string }) => {
@@ -376,6 +377,14 @@ export class CommitView implements vscode.WebviewViewProvider {
     const repo = this.ctx.repos.get(c.root);
     const left = repo?.info.empty ? REV_EMPTY : 'HEAD';
     await openChangeDiff(c, left, 'WORKTREE');
+  }
+
+  /** Show Diff Preview: shows the selected file in the preview editor and keeps the keyboard focus in the changes tree. */
+  async previewDiff(key: string) {
+    const c = this.changes([key])[0];
+    if (!c || c.status === '!') return;
+    const left = this.ctx.repos.get(c.root)?.info.empty ? REV_EMPTY : 'HEAD';
+    await openChangeDiff(c, left, 'WORKTREE', { preview: true, preserveFocus: true });
   }
 
   async openSource(keys: string[]) {
